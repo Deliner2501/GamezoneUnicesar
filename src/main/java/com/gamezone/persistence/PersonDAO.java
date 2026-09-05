@@ -1,6 +1,7 @@
 
 package com.gamezone.persistence;
 
-public class SellerDAO {
+
+public class PersonDAO {
     
 }
