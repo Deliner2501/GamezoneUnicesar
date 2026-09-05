@@ -18,6 +18,10 @@ public class Console extends Product {
         this.generation = generation;
     }
 
+    public String getBrand() { return brand; }
+    public String getModel() { return model; }
+    public String getGeneration() { return generation; }
+
     /**
      * Returns a full description integrating this console's
      * specific characteristics.

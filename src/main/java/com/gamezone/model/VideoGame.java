@@ -18,6 +18,10 @@ public class VideoGame extends Product {
         this.ageRating = ageRating;
     }
 
+    public String getPlatform() { return platform; }
+    public String getGenre() { return genre; }
+    public String getAgeRating() { return ageRating; }
+
     /**
      * Returns a full description integrating this video game's
      * specific characteristics.
