@@ -18,10 +18,26 @@ public class VideoGame extends Product {
         this.ageRating = ageRating;
     }
 
+        /**
+     * Returns the platform this video game was developed for.
+     *
+     * @return the platform
+     */
     public String getPlatform() { return platform; }
-    public String getGenre() { return genre; }
-    public String getAgeRating() { return ageRating; }
 
+    /**
+     * Returns the genre of this video game.
+     *
+     * @return the genre
+     */
+    public String getGenre() { return genre; }
+
+    /**
+     * Returns the recommended age rating for this video game.
+     *
+     * @return the age rating
+     */
+    public String getAgeRating() { return ageRating; }
     /**
      * Returns a full description integrating this video game's
      * specific characteristics.
