@@ -16,7 +16,7 @@ own characteristics. Subclasses implement this method differently
 using polymorphism and the @Override annotation. This ensures that 
 each product provides its own description.
 # On sales and relationships between entities
-# 5. A sale involves a customer, a salesperson, and one or more products. What types of relationships exist between the class representing the sale and the other classes in the system? Are these relationships inheritance, association, composition, or another type? Justify your answer.
+## 5. A sale involves a customer, a salesperson, and one or more products. What types of relationships exist between the class representing the sale and the other classes in the system? Are these relationships inheritance, association, composition, or another type? Justify your answer.
 **Answer:** Sale relates to Customer, Seller, and Product through associations, because a Sale uses objects from those classes but does not inherit from them. A Sale belongs to a Customer, is handled by a Seller, and involves one or more Products. The relationship between Sale and Product can be represented as aggregation because the products exist independently of the sale. If a sale is deleted, the products should still exist in the system, for example, in the inventory. Therefore, this relationship is better represented as aggregation rather than composition.
 ## 6. Should the sale be responsible for calculating its own total, or should this responsibility fall to another class? Justify your decision. 
 **Answer:** The responsibility for calculating the total should belong to Sale, because 
