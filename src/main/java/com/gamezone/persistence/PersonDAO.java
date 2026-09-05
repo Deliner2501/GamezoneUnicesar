@@ -17,84 +17,58 @@ import java.util.List;
  */
 public class PersonDAO {
 
-    // Rutas donde se van a guardar los archivos de texto.
-    // Son "constantes" (static final) porque nunca cambian durante la ejecución.
+    // Los clientes los manejamos completamente nosotros: formato .txt,
+    // separado por ; y SIN fila de encabezado (porque nadie más lee este archivo)
     private static final String CUSTOMERS_FILE = "data/customers.txt";
-    private static final String SELLERS_FILE = "data/sellers.txt";
+    private static final String CUSTOMERS_SEPARATOR = ";";
 
-    // Este es el caracter que usamos para separar cada dato dentro de una línea.
-    // Ejemplo de línea real: "C001;Juan Perez;3001234567;juan@email.com"
-    private static final String SEPARATOR = ";";
+    // Los vendedores vienen precargados por el equipo en un archivo .csv
+    // que SÍ tiene fila de encabezado y usa comas, así que debemos leerlo
+    // exactamente en ese formato para que coincida con lo que ya subieron
+    private static final String SELLERS_FILE = "data/sellers.csv";
+    private static final String SELLERS_SEPARATOR = ",";
 
     /**
      * Saves the complete list of customers to the customers file,
      * overwriting any previous content.
-     *
-     * @param customers the list of customers to save
-     * @throws IOException if the file cannot be written
      */
     public void saveCustomers(List<Customer> customers) throws IOException {
-        // Creamos un objeto File que representa la ruta del archivo (a\u00fan no existe en disco)
         File file = new File(CUSTOMERS_FILE);
-
-        // getParentFile() nos da la carpeta "data". mkdirs() la crea si no existe.
-        // Sin esta línea, si la carpeta "data" no existe, el programa fallaría al escribir.
+        // Creamos la carpeta "data" si todavía no existe
         file.getParentFile().mkdirs();
 
-        // "try-with-resources": abre el escritor y lo cierra automáticamente al terminar,
-        // incluso si ocurre un error en el medio. Evita tener que hacer writer.close() manual.
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-
-            // Recorremos cada cliente de la lista, uno por uno
             for (Customer customer : customers) {
-
-                // Armamos el texto de la línea uniendo cada dato con el separador ";"
-                String line = customer.getId() + SEPARATOR
-                        + customer.getName() + SEPARATOR
-                        + customer.getPhone() + SEPARATOR
+                // Armamos la línea: id;nombre;telefono;email
+                String line = customer.getId() + CUSTOMERS_SEPARATOR
+                        + customer.getName() + CUSTOMERS_SEPARATOR
+                        + customer.getPhone() + CUSTOMERS_SEPARATOR
                         + customer.getEmail();
-
-                // Escribimos esa línea en el archivo
                 writer.write(line);
-
-                // Saltamos a la siguiente línea, si no, todos los clientes quedarían pegados
                 writer.newLine();
             }
         }
-        // Al salir del "try", el archivo se cierra y guarda automáticamente
     }
 
     /**
      * Loads all customers stored in the customers file.
-     * If the file does not exist yet, an empty list is returned.
-     *
-     * @return the list of customers found in the file
-     * @throws IOException if the file exists but cannot be read
      */
     public List<Customer> loadCustomers() throws IOException {
-        // Creamos la lista vacía donde vamos a ir agregando los clientes que encontremos
         List<Customer> customers = new ArrayList<>();
         File file = new File(CUSTOMERS_FILE);
 
-        // Si el archivo no existe (por ejemplo, la primerísima vez que se abre el programa),
-        // no hay nada que leer, así que devolvemos la lista vacía sin error.
+        // Si el archivo aún no existe (primera vez que corre el programa),
+        // no hay nada que leer, devolvemos lista vacía sin error
         if (!file.exists()) {
             return customers;
         }
 
-        // Abrimos el archivo para leerlo línea por línea
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
-
-            // readLine() devuelve null cuando ya no hay más líneas que leer, ahí termina el ciclo
             while ((line = reader.readLine()) != null) {
-
-                // split(";") separa el texto de la línea en un arreglo, cortando por cada ";"
-                // Ejemplo: "C001;Juan Perez;3001234567;juan@email.com" se vuelve:
-                // parts[0] = "C001", parts[1] = "Juan Perez", parts[2] = "3001234567", parts[3] = "juan@email.com"
-                String[] parts = line.split(SEPARATOR);
-
-                // Reconstruimos el objeto Customer con esos datos y lo agregamos a la lista
+                // Como este archivo lo creamos nosotros mismos, no tiene encabezado,
+                // así que cada línea que leamos es directamente un cliente real
+                String[] parts = line.split(CUSTOMERS_SEPARATOR);
                 customers.add(new Customer(parts[1], parts[0], parts[2], parts[3]));
             }
         }
@@ -104,22 +78,23 @@ public class PersonDAO {
     /**
      * Saves the complete list of sellers to the sellers file,
      * overwriting any previous content.
-     *
-     * @param sellers the list of sellers to save
-     * @throws IOException if the file cannot be written
      */
     public void saveSellers(List<Seller> sellers) throws IOException {
-        // Misma lógica que saveCustomers, pero para vendedores
         File file = new File(SELLERS_FILE);
         file.getParentFile().mkdirs();
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            // Escribimos primero la línea de encabezado, para que el archivo
+            // mantenga siempre el mismo formato que el que subió el equipo
+            writer.write("id,name,phone,employeeCode,workShift");
+            writer.newLine();
+
             for (Seller seller : sellers) {
-                // Los vendedores tienen 2 datos extra: employeeCode y workShift
-                String line = seller.getId() + SEPARATOR
-                        + seller.getName() + SEPARATOR
-                        + seller.getPhone() + SEPARATOR
-                        + seller.getEmployeeCode() + SEPARATOR
+                // Armamos la línea: id,nombre,telefono,codigoEmpleado,turno
+                String line = seller.getId() + SELLERS_SEPARATOR
+                        + seller.getName() + SELLERS_SEPARATOR
+                        + seller.getPhone() + SELLERS_SEPARATOR
+                        + seller.getEmployeeCode() + SELLERS_SEPARATOR
                         + seller.getWorkShift();
                 writer.write(line);
                 writer.newLine();
@@ -129,13 +104,8 @@ public class PersonDAO {
 
     /**
      * Loads all sellers stored in the sellers file.
-     * If the file does not exist yet, an empty list is returned.
-     *
-     * @return the list of sellers found in the file
-     * @throws IOException if the file exists but cannot be read
      */
     public List<Seller> loadSellers() throws IOException {
-        // Misma lógica que loadCustomers, pero para vendedores
         List<Seller> sellers = new ArrayList<>();
         File file = new File(SELLERS_FILE);
 
@@ -145,9 +115,25 @@ public class PersonDAO {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
+
+            // Esta variable nos ayuda a recordar si vamos en la primera línea del archivo.
+            // La usamos como una especie de "bandera": empieza en true, y la apagamos
+            // (false) apenas pasamos por la primera vuelta del ciclo.
+            boolean isFirstLine = true;
+
             while ((line = reader.readLine()) != null) {
-                // Aquí el arreglo tiene 5 posiciones en vez de 4, porque Seller tiene más datos
-                String[] parts = line.split(SEPARATOR);
+
+                // La primera línea del CSV es el encabezado: "id,name,phone,..."
+                // Eso NO es un vendedor real, es solo el título de las columnas.
+                // Si isFirstLine todavía es true, la saltamos con "continue"
+                // (esto significa "no proceses esta línea, ve directo a la siguiente vuelta del ciclo")
+                if (isFirstLine) {
+                    isFirstLine = false; // ya pasamos la primera línea, apagamos la bandera
+                    continue;
+                }
+
+                // A partir de aquí, cada línea sí es un vendedor real
+                String[] parts = line.split(SELLERS_SEPARATOR);
                 sellers.add(new Seller(parts[1], parts[0], parts[2], parts[3], parts[4]));
             }
         }
