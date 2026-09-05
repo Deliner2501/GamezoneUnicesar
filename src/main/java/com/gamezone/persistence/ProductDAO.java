@@ -9,11 +9,11 @@ import java.util.List;
 
 /**
  * Handles persistence operations for products, storing and retrieving
- * them from a text file.
+ * them from a CSV file.
  */
 public class ProductDAO {
 
-    private static final String FILE_PATH = "data/products.txt";
+    private static final String FILE_PATH = "data/products.csv";
 
     /**
      * Saves a single product by appending it to the file.
@@ -40,8 +40,12 @@ public class ProductDAO {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                Product p = parseLine(line);
-                if (p != null) products.add(p);
+                try {
+                    Product p = parseLine(line);
+                    if (p != null) products.add(p);
+                } catch (Exception e) {
+                    System.out.println("Skipping corrupted line: " + line);
+                }
             }
         } catch (IOException e) {
             System.out.println("Error reading products: " + e.getMessage());
@@ -86,14 +90,14 @@ public class ProductDAO {
             for (Product p : products) {
                 if (p instanceof VideoGame) {
                     VideoGame vg = (VideoGame) p;
-                    writer.println("VIDEOGAME;" + vg.getId() + ";" + vg.getTitle() + ";"
-                            + vg.getPrice() + ";" + vg.getStock() + ";"
-                            + vg.getPlatform() + ";" + vg.getGenre() + ";" + vg.getAgeRating());
+                    writer.println("VIDEOGAME," + vg.getId() + "," + vg.getTitle() + ","
+                            + vg.getPrice() + "," + vg.getStock() + ","
+                            + vg.getPlatform() + "," + vg.getGenre() + "," + vg.getAgeRating());
                 } else if (p instanceof Console) {
                     Console c = (Console) p;
-                    writer.println("CONSOLE;" + c.getId() + ";" + c.getTitle() + ";"
-                            + c.getPrice() + ";" + c.getStock() + ";"
-                            + c.getBrand() + ";" + c.getModel() + ";" + c.getGeneration());
+                    writer.println("CONSOLE," + c.getId() + "," + c.getTitle() + ","
+                            + c.getPrice() + "," + c.getStock() + ","
+                            + c.getBrand() + "," + c.getModel() + "," + c.getGeneration());
                 }
             }
         } catch (IOException e) {
@@ -102,7 +106,7 @@ public class ProductDAO {
     }
 
     private Product parseLine(String line) {
-        String[] parts = line.split(";");
+        String[] parts = line.split(",");
         String type = parts[0];
         String id = parts[1];
         String title = parts[2];
