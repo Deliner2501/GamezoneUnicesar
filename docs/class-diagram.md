@@ -66,7 +66,7 @@ classDiagram
         +getProducts() List~Product~
     }
 
-    %% ===================== DAO LAYER =====================
+    %% ===================== PERSISTENCE LAYER =====================
     class CustomerDAO {
         +save(customer Customer) void
         +findAll() List~Customer~
@@ -122,7 +122,7 @@ classDiagram
         +listSalesBySeller(sellerId String) List~Sale~
     }
 
-    %% ===================== VIEW LAYER =====================
+    %% ===================== UI LAYER =====================
     class MainMenu {
         -CustomerService customerService
         -SellerService sellerService
