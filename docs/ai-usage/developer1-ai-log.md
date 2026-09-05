@@ -1,62 +1,37 @@
-\# AI Usage Log — Developer 1 (Product Module)
+# AI Usage Log — Developer 1 (Product Module)
 
-\*\*Student:\*\* Ronald
+**Student:** Ronald
 
+---
 
+1. **"What exactly do I get as Developer 1 of the product module, according to the workshop document?" **
 
-\---
+The AI explained to me that my responsibility is 5 classes through the 3 layers (model, persistence, service): the abstract class of products, their two derivatives, persistence and service - and that the rest (people, sales, the interface and the Main) is the responsibility of my colleagues.
 
+2. **"How do I clone the repository and create my own branch without touching main or develop directly?" **
 
+I was guided step by step in PowerShell: git clone, git checkout develop, git pull origin develop, and then git checkout -b feature/product-module to create my work branch following the Git Flow model required by the workshop.
 
-1\. \*\*"¿Qué me toca exactamente como Desarrollador 1 del módulo de productos, según el documento del taller?"\*\*
+3. **"I made git commit but the code on GitHub appears empty, with only the template that generates NetBeans. What happened?" **
 
-&#x20;  La IA me explicó que mi responsabilidad son 5 clases atravesando las 3 capas (model, persistence, service): la clase abstracta de productos, sus dos derivadas, la persistencia y el servicio — y que el resto (personas, ventas, la interfaz y el Main) es responsabilidad de mis compañeros.
+We identified that he had done git add/commit before actually saving the file in NetBeans (Ctrl+S). I learned to always check with cat archivo.java in PowerShell before commiting, to confirm that the content on the disk matched what I saw in the editor.
 
+4. **"When I push my new branch, it didn't appear on GitHub. Why?" **
 
+The branch existed only locally because the first push had never been made. I used git push -u origin feature/product-module to create it on the remote and link it with my local branch.
 
-2\. \*\*"¿Cómo clono el repositorio y creo mi propia rama sin tocar main o develop directamente?"\*\*
+5. **"The class diagram sent by the leader does not have setters in Product, but my code does. Should I leave them?" **
 
-&#x20;  Me guio paso a paso en PowerShell: `git clone`, `git checkout develop`, `git pull origin develop`, y luego `git checkout -b feature/product-module` para crear mi rama de trabajo siguiendo el modelo Git Flow que exige el taller.
+We compared the official diagram against my code and confirmed that the diagram only defined getters (plus reduceStock() to modify the stock), so I removed the four setters to keep the class faithful to the design agreed by the team.
 
+6. **"When compiling the complete project I get error: release version 26 not supported. Is it my mistake?" **
 
+The AI explained to me that this error comes from the maven.compiler.release configuration in the pom.xml, a general configuration file of the project that it is not up to me to modify - I warned the leader to adjust it.
 
-3\. \*\*"Hice `git commit` pero el código en GitHub aparece vacío, con solo la plantilla que genera NetBeans. ¿Qué pasó?"\*\*
+7. **"A colleague suggested that the leader work on a separate project and copy the code later to avoid Git conflicts. Is that necessary?" **
 
-&#x20;  Identificamos que había hecho `git add`/`commit` antes de guardar realmente el archivo en NetBeans (`Ctrl+S`). Aprendí a verificar siempre con `cat archivo.java` en PowerShell antes de comitear, para confirmar que el contenido en disco coincidiera con lo que veía en el editor.
+I asked the AI if that made technical sense. He explained to me that Git merges files, not folders, so two modules with folders of the same name (persistence, for example) do not generate conflict if they have different files - the team decided to continue working directly on the real repo.
 
+9. **"What do the prefixes feat:, fix:, refactor: mean in the commits, and when is each one used?" **
 
-
-4\. \*\*"Al hacer `git push` a mi rama nueva no aparecía en GitHub. ¿Por qué?"\*\*
-
-&#x20;  La rama existía solo localmente porque nunca se había hecho el primer `push`. Usé `git push -u origin feature/product-module` para crearla en el remoto y vincularla con mi rama local.
-
-
-
-5\. \*\*"El diagrama de clases que mandó el líder no tiene setters en `Product`, pero mi código sí. ¿Debo dejarlos?"\*\*
-
-&#x20;  Comparamos el diagrama oficial contra mi código y confirmamos que el diagrama solo definía getters (más `reduceStock()` para modificar el stock), así que quité los cuatro setters para mantener la clase fiel al diseño acordado por el equipo.
-
-
-
-6\. \*\*"Al compilar el proyecto completo me sale `error: release version 26 not supported`. ¿Es un error mío?"\*\*
-
-&#x20;  La IA me explicó que ese error viene de la configuración `maven.compiler.release` en el `pom.xml`, un archivo de configuración general del proyecto que no me corresponde modificar a mí — le avisé al líder para que lo ajustara.
-
-
-
-7\. \*\*"Un compañero le sugirió al líder trabajar en un proyecto aparte y copiar el código después para evitar conflictos de Git. ¿Eso es necesario?"\*\*
-
-&#x20;  Le pregunté a la IA si eso tenía sentido técnicamente. Me explicó que Git fusiona archivos, no carpetas, así que dos módulos con carpetas del mismo nombre (`persistence`, por ejemplo) no generan conflicto si tienen archivos distintos — el equipo decidió seguir trabajando directo en el repo real.
-
-
-
-
-
-9\. \*\*"¿Qué significan los prefijos `feat:`, `fix:`, `refactor:` en los commits, y cuándo se usa cada uno?"\*\*
-
-&#x20;  Me explicó la convención Conventional Commits que exige el taller: `feat:` para funcionalidad nueva, `fix:` para corregir errores, `refactor:` para reorganizar sin cambiar comportamiento, y `docs:`/`chore:` para documentación y mantenimiento.
-
-
-
-
-
+He explained to me the Conventional Commits convention that the workshop requires: feat: for new functionality, fix: to correct errors, refactor: to reorganize without changing behavior, and docs:/chore: for documentation and maintenance.
