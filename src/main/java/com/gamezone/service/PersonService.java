@@ -13,11 +13,7 @@ import java.util.List;
  */
 public class PersonService {
 
-    // El service usa el DAO para guardar/cargar, nunca accede a archivos directamente
     private PersonDAO personDAO;
-
-    // Mantenemos las listas en memoria mientras el programa está corriendo,
-    // así no hay que leer el archivo cada vez que alguien pide la lista de clientes
     private List<Customer> customers;
     private List<Seller> sellers;
 
@@ -29,11 +25,7 @@ public class PersonService {
      * @throws IOException if the stored data cannot be read
      */
     public PersonService() throws IOException {
-        // Creamos nuestra propia instancia del DAO para usarla internamente
         this.personDAO = new PersonDAO();
-
-        // Apenas se crea el service, cargamos todo lo que ya estaba guardado en los archivos.
-        // Si es la primera vez que se ejecuta el programa, esto devuelve listas vacías (no falla).
         this.customers = personDAO.loadCustomers();
         this.sellers = personDAO.loadSellers();
     }
@@ -50,24 +42,13 @@ public class PersonService {
      * @throws IOException              if the data cannot be saved
      */
     public void registerCustomer(String name, String id, String phone, String email) throws IOException {
-        // Antes de registrar, recorremos todos los clientes actuales
-        // para asegurarnos de que no exista ya alguien con ese mismo id.
-        // Esto es una regla de negocio: no puede haber dos clientes con la misma identificación.
         for (Customer customer : customers) {
             if (customer.getId().equals(id)) {
-                // Si encontramos uno repetido, lanzamos una excepción y detenemos el registro
                 throw new IllegalArgumentException("Ya existe un cliente con el id: " + id);
             }
         }
-
-        // Si pasó la validación, creamos el nuevo cliente
         Customer newCustomer = new Customer(name, id, phone, email);
-
-        // Lo agregamos a la lista en memoria
         customers.add(newCustomer);
-
-        // Y de una vez lo guardamos en el archivo, para no perder el dato
-        // si el programa se cierra inesperadamente después de este punto
         personDAO.saveCustomers(customers);
     }
 
@@ -76,9 +57,6 @@ public class PersonService {
      * @return an unmodifiable view of the customers list
      */
     public List<Customer> listCustomers() {
-        // Collections.unmodifiableList() devuelve una "copia protegida" de la lista.
-        // Esto evita que quien reciba la lista pueda modificarla por fuera del service
-        // (por ejemplo, agregando o borrando clientes sin pasar por registerCustomer()).
         return Collections.unmodifiableList(customers);
     }
 
@@ -87,9 +65,34 @@ public class PersonService {
      * @return an unmodifiable view of the sellers list
      */
     public List<Seller> listSellers() {
-        // Misma idea que arriba, pero para vendedores.
-        // Nota: no hay un método "registerSeller" porque el taller dice que los vendedores
-        // ya vienen precargados desde el archivo, no se registran desde el menú.
         return Collections.unmodifiableList(sellers);
+    }
+
+    /**
+     * Finds a customer by their id.
+     * @param id the customer's identification number
+     * @return the matching Customer, or null if not found
+     */
+    public Customer findCustomerById(String id) {
+        for (Customer customer : customers) {
+            if (customer.getId().equals(id)) {
+                return customer;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Finds a seller by their id.
+     * @param id the seller's identification number
+     * @return the matching Seller, or null if not found
+     */
+    public Seller findSellerById(String id) {
+        for (Seller seller : sellers) {
+            if (seller.getId().equals(id)) {
+                return seller;
+            }
+        }
+        return null;
     }
 }
