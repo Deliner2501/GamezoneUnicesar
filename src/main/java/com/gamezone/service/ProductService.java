@@ -15,12 +15,20 @@ public class ProductService {
         this.productDAO = productDAO;
     }
 
-    /**
+        /**
      * Registers a new product and persists it.
      *
      * @param product the product to register
+     * @throws IllegalArgumentException if the product is null, has an empty id,
+     *         or has a negative price
      */
     public void registerProduct(Product product) {
+        if (product == null || product.getId() == null || product.getId().isEmpty()) {
+            throw new IllegalArgumentException("Product must have a valid id");
+        }
+        if (product.getPrice() < 0) {
+            throw new IllegalArgumentException("Product price cannot be negative");
+        }
         productDAO.save(product);
     }
 
