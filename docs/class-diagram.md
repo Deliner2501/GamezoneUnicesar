@@ -67,16 +67,10 @@ classDiagram
     }
 
     %% ===================== PERSISTENCE LAYER =====================
-    class CustomerDAO {
-        +save(customer Customer) void
-        +findAll() List~Customer~
-        +findById(id String) Customer
-    }
-
-    class SellerDAO {
-        +save(seller Seller) void
-        +findAll() List~Seller~
-        +findById(id String) Seller
+    class PersonDAO {
+        +save(person Person) void
+        +findAll() List~Person~
+        +findById(id String) Person
     }
 
     class ProductDAO {
@@ -94,17 +88,13 @@ classDiagram
     }
 
     %% ===================== SERVICE LAYER =====================
-    class CustomerService {
-        -CustomerDAO customerDAO
+    class PersonService {
+        -PersonDAO personDAO
         +registerCustomer(customer Customer) void
-        +listCustomers() List~Customer~
-        +getPurchaseHistory(customerId String) List~Sale~
-    }
-
-    class SellerService {
-        -SellerDAO sellerDAO
         +registerSeller(seller Seller) void
+        +listCustomers() List~Customer~
         +listSellers() List~Seller~
+        +getPurchaseHistory(customerId String) List~Sale~
     }
 
     class ProductService {
@@ -124,8 +114,7 @@ classDiagram
 
     %% ===================== UI LAYER =====================
     class MainMenu {
-        -CustomerService customerService
-        -SellerService sellerService
+        -PersonService personService
         -ProductService productService
         -SaleService saleService
         +showMainMenu() void
@@ -143,23 +132,19 @@ classDiagram
     Sale "1" --> "1" Seller : attended by
     Sale "1" *-- "1..*" Product : contains
 
-    CustomerDAO ..> Customer : depends on
-    SellerDAO ..> Seller : depends on
+    PersonDAO ..> Person : depends on
     ProductDAO ..> Product : depends on
     SaleDAO ..> Sale : depends on
 
-    CustomerService --> CustomerDAO : uses
-    CustomerService ..> Customer : depends on
-    SellerService --> SellerDAO : uses
-    SellerService ..> Seller : depends on
+    PersonService --> PersonDAO : uses
+    PersonService ..> Person : depends on
     ProductService --> ProductDAO : uses
     ProductService ..> Product : depends on
     SaleService --> SaleDAO : uses
     SaleService --> ProductDAO : uses
     SaleService ..> Sale : depends on
 
-    MainMenu --> CustomerService : uses
-    MainMenu --> SellerService : uses
+    MainMenu --> PersonService : uses
     MainMenu --> ProductService : uses
     MainMenu --> SaleService : uses
 ```

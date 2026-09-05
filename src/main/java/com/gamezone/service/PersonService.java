@@ -2,6 +2,6 @@
 package com.gamezone.service;
 
 
-public class SellerService {
+public class PersonService {
     
 }
