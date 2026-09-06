@@ -41,11 +41,11 @@ public class PersonService {
      * @throws IllegalArgumentException if a customer with the same id already exists
      * @throws IOException              if the data cannot be saved
      */
+    
     public void registerCustomer(String name, String id, String phone, String email) throws IOException {
-        for (Customer customer : customers) {
-            if (customer.getId().equals(id)) {
-                throw new IllegalArgumentException("Ya existe un cliente con el id: " + id);
-            }
+        // Reutilizamos findCustomerById en vez de repetir el ciclo de búsqueda
+        if (findCustomerById(id) != null) {
+            throw new IllegalArgumentException("Ya existe un cliente con el id: " + id);
         }
         Customer newCustomer = new Customer(name, id, phone, email);
         customers.add(newCustomer);
