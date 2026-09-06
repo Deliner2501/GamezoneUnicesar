@@ -50,7 +50,7 @@ The system provides the following main functionalities:
 * **CSV and TXT files for persistence**
 * **Console-based user interface**
 
-The project uses Java release **26** as configured in the Maven `pom.xml`.
+The project uses Java release **21** as configured in the Maven `pom.xml`.
 
 ---
 
@@ -257,7 +257,7 @@ A `Sale` is associated with:
 
 To run the project, the following software is required:
 
-* **JDK 26**
+* **JDK 21**
 * **Apache Maven**
 * **Git** (optional, if cloning the repository)
 
