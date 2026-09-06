@@ -1,2 +1,424 @@
-# GamezoneUnicesar
-Data management system for the "GameZone Unicesar" video game store.
+# GameZoneUnicesar
+
+GameZoneUnicesar is a Java-based data management system developed for a video game and console store. The system allows the store to manage its products, customers, sellers, and sales through a console-based user interface.
+
+The project was developed using object-oriented programming principles and a four-layer architecture: **Model, Persistence, Service, and UI**.
+
+---
+
+## Features
+
+The system provides the following main functionalities:
+
+### Product Management
+
+* Register video games.
+* Register consoles.
+* List available products.
+* Manage product information such as ID, title, price, stock, and type-specific characteristics.
+* Automatically update product stock after a sale.
+
+### Customer and Seller Management
+
+* Register customers.
+* List registered customers.
+* List registered sellers.
+* Search customers and sellers by their ID when processing sales.
+
+### Sales Management
+
+* Register a sale associated with a customer and a seller.
+* Add one or more products to a sale.
+* Calculate the total value of a sale automatically.
+* Validate that the customer and seller exist.
+* Validate that the products exist.
+* Validate that the requested quantity is positive.
+* Validate that there is enough stock before completing a sale.
+* Automatically reduce product stock after a successful sale.
+* List all registered sales.
+* Consult a customer's purchase history.
+* Consult the sales handled by a specific seller.
+
+---
+
+## Technologies Used
+
+* **Java**
+* **Maven**
+* **Object-Oriented Programming (OOP)**
+* **Git and GitHub**
+* **CSV and TXT files for persistence**
+* **Console-based user interface**
+
+The project uses Java release **26** as configured in the Maven `pom.xml`.
+
+---
+
+## Project Architecture
+
+The application follows a four-layer architecture:
+
+```text
+┌─────────────────────────┐
+│           UI            │
+│     MainMenu.java       │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│        SERVICE          │
+│ PersonService           │
+│ ProductService          │
+│ SaleService             │
+└────────────┬────────────┘
+             │
+       ┌─────┴─────┐
+       ▼           ▼
+┌────────────┐ ┌──────────────┐
+│   MODEL    │ │ PERSISTENCE  │
+│            │ │              │
+│ Product    │ │ ProductDAO   │
+│ VideoGame  │ │ PersonDAO    │
+│ Console    │ │ SaleDAO      │
+│ Person     │ │              │
+│ Customer   │ └──────┬───────┘
+│ Seller     │        │
+│ Sale       │◄───────┘
+└────────────┘
+```
+
+### Model
+
+The `model` layer contains the main domain entities of the system.
+
+* `Product` — abstract base class for store products.
+* `VideoGame` — represents a video game.
+* `Console` — represents a console.
+* `Person` — abstract base class for people interacting with the store.
+* `Customer` — represents a customer.
+* `Seller` — represents a seller.
+* `Sale` — represents a store transaction.
+
+`Product` uses polymorphism through the `getFullDescription()` abstract method, which is implemented by its subclasses.
+
+`Person` is also abstract because the system works with specific roles such as customers and sellers.
+
+### Persistence
+
+The `persistence` layer is responsible for saving and loading information from files.
+
+* `ProductDAO` — manages product information.
+* `PersonDAO` — manages customers and sellers.
+* `SaleDAO` — manages sales.
+
+The system uses files inside the `data` directory to maintain information between executions.
+
+### Service
+
+The `service` layer contains the application's business rules.
+
+* `ProductService` — handles product registration, listing, and stock validation.
+* `PersonService` — handles customer and seller information.
+* `SaleService` — handles sales, validations, total processing, and inventory updates.
+
+The service layer prevents invalid operations before information is persisted.
+
+### UI
+
+The `ui` layer contains the console interface.
+
+* `MainMenu` — displays the main menu and the submenus for products, people, and sales.
+
+The UI communicates with the service layer and does not access the persistence layer directly.
+
+---
+
+## Project Structure
+
+```text
+GamezoneUnicesar/
+│
+├── data/
+│   └── sellers.csv
+│
+├── docs/
+│   ├── ai-usage/
+│   │   ├── leader-ai-log.md
+│   │   ├── developer1-ai-log.md
+│   │   └── developer2-ai-log.md
+│   ├── analysis.md
+│   ├── class-diagram.md
+│   ├── hierarchy-diagram.md
+│   └── layers-diagram.md
+│
+├── src/
+│   └── main/
+│       └── java/
+│           └── com/
+│               └── gamezone/
+│                   ├── model/
+│                   ├── persistence/
+│                   ├── service/
+│                   ├── ui/
+│                   └── Main.java
+│
+├── pom.xml
+├── TEAM.md
+└── README.md
+```
+
+The `data` directory also contains files generated by the application during execution, such as customer, product, and sales data.
+
+---
+
+## Data Persistence
+
+The system stores information in local files so that data can remain available between executions.
+
+The main files are:
+
+* `data/products.csv` — stores products.
+* `data/customers.txt` — stores registered customers.
+* `data/sellers.csv` — stores sellers.
+* `data/sales.txt` — stores registered sales.
+
+If some files do not exist when the application starts, the system creates the necessary data structures and generates the files when information is saved.
+
+---
+
+## Business Rules
+
+The system applies several business validations:
+
+1. A sale must contain at least one product.
+2. The customer associated with a sale must exist.
+3. The seller associated with a sale must exist.
+4. Every product included in a sale must exist.
+5. The quantity of a product must be greater than zero.
+6. The available stock must be enough to complete the sale.
+7. Product stock is automatically reduced after a successful sale.
+8. A product cannot have a negative price.
+9. Customers cannot be registered using an ID that already exists.
+10. Products require a valid ID.
+
+These rules are mainly handled in the service layer.
+
+---
+
+## Object-Oriented Design
+
+The project applies several object-oriented programming concepts.
+
+### Inheritance
+
+The system uses inheritance in both main hierarchies:
+
+```text
+Product
+├── VideoGame
+└── Console
+```
+
+```text
+Person
+├── Customer
+└── Seller
+```
+
+### Abstraction
+
+`Product` and `Person` are abstract classes because they represent common characteristics and behavior without being directly instantiated as generic objects.
+
+### Polymorphism
+
+Each product type provides its own implementation of:
+
+```java
+getFullDescription()
+```
+
+This allows the system to obtain the specific description of a product according to its type.
+
+### Encapsulation
+
+The domain classes use private attributes and provide methods to access their information.
+
+### Associations
+
+A `Sale` is associated with:
+
+* One `Customer`.
+* One `Seller`.
+* One or more `Product` objects.
+
+---
+
+## Requirements
+
+To run the project, the following software is required:
+
+* **JDK 26**
+* **Apache Maven**
+* **Git** (optional, if cloning the repository)
+
+The Java version should match the version configured in `pom.xml`.
+
+---
+
+## How to Run the Project
+
+### 1. Clone the repository
+
+```bash
+git clone <repository-url>
+```
+
+### 2. Enter the project directory
+
+```bash
+cd GamezoneUnicesar
+```
+
+### 3. Compile the project
+
+```bash
+mvn clean compile
+```
+
+### 4. Run the application
+
+After compiling, run the main class:
+
+```bash
+java -cp target/classes com.gamezone.Main
+```
+
+The application will display the main console menu:
+
+```text
+===== GameZone Unicesar =====
+1. Gestionar productos
+2. Gestionar clientes y vendedores
+3. Gestionar ventas
+0. Salir
+```
+
+---
+
+## Application Flow
+
+The main menu provides access to three modules:
+
+```text
+GameZone Unicesar
+│
+├── Product Management
+│   ├── Register Video Game
+│   ├── Register Console
+│   └── List Available Products
+│
+├── Customer and Seller Management
+│   ├── Register Customer
+│   ├── List Customers
+│   └── List Sellers
+│
+└── Sales Management
+    ├── Register Sale
+    ├── List Sales
+    ├── Customer Purchase History
+    └── Seller Sales History
+```
+
+---
+
+## Team
+
+| Name                             | Student ID | Role             |
+| -------------------------------- | ---------- | ---------------- |
+| Deiner Andrés De Luque Navarro   | 1067604165 | Technical Leader |
+| Ronald Yessid Mendoza Fernandez  | 1122399234 | Developer 1      |
+| Santiago Manuel Meza Meza Guerra | 1066873262 | Developer 2      |
+
+### Responsibilities
+
+**Technical Leader — Deiner Andrés De Luque Navarro**
+Responsible for the sales module, repository configuration, team coordination, Pull Request integration, system integration, UI menu, and application entry point.
+
+**Developer 1 — Ronald Yessid Mendoza Fernandez**
+Responsible for the product module, including the product hierarchy, persistence, and service layer.
+
+**Developer 2 — Santiago Manuel Meza Meza Guerra**
+Responsible for the person module, including customers, sellers, persistence, and service layer.
+
+More information about the team's organization and class distribution can be found in [`TEAM.md`](TEAM.md).
+
+---
+
+## Git Workflow
+
+The project was managed using a Git Flow-based workflow:
+
+```text
+main
+  │
+  └── develop
+        │
+        ├── feature/product-module
+        ├── feature/person-module
+        └── feature/sale-module
+```
+
+The `main` branch represents the stable version of the project, while `develop` was used for integration.
+
+Feature branches were used to develop individual modules, which were later integrated through Pull Requests.
+
+---
+
+## Documentation
+
+Additional project documentation is available in the `docs` directory:
+
+* [`analysis.md`](docs/analysis.md) — analysis questions and answers.
+* [`class-diagram.md`](docs/class-diagram.md) — class diagram.
+* [`hierarchy-diagram.md`](docs/hierarchy-diagram.md) — class hierarchy.
+* [`layers-diagram.md`](docs/layers-diagram.md) — layered architecture diagram.
+* [`ai-usage/`](docs/ai-usage/) — individual AI usage logs for each team member.
+
+---
+
+## AI Usage
+
+Artificial intelligence was used as a support tool during the development process for:
+
+* Understanding object-oriented programming concepts.
+* Clarifying layered architecture and dependencies.
+* Understanding Git and GitHub commands.
+* Understanding Maven-related errors.
+* Reviewing specific code written by the team.
+* Clarifying Java functionality and naming conventions.
+
+AI was not used to replace the team's analysis, design, understanding, or decision-making. The individual AI usage logs are available in `docs/ai-usage/`.
+
+---
+
+## Project Status
+
+**Final version completed.**
+
+The system includes the three main modules:
+
+* Product management.
+* Customer and seller management.
+* Sales management.
+
+It also includes persistence, business validations, layered architecture, documentation, Git workflow, and a console-based user interface.
+
+---
+
+## Authors
+
+**El Tridente de Java Team**
+
+Universidad Popular del Cesar
+Systems Engineering
+
