@@ -5,7 +5,9 @@ import java.util.List;
 
 /**
  * Represents a return transaction, referencing an original sale and
- * the specific products being returned from it.
+ * the specific products being returned from it. The reference to the
+ * original sale and the list of returned products are immutable once
+ * the return is created.
  */
 public class Return {
 
@@ -18,6 +20,15 @@ public class Return {
 
     public Return(String id, LocalDate date, Sale originalSale,
                   List<Product> returnedProducts, String reason) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("The return id cannot be empty");
+        }
+        if (originalSale == null) {
+            throw new IllegalArgumentException("A return must reference an original sale");
+        }
+        if (returnedProducts == null || returnedProducts.isEmpty()) {
+            throw new IllegalArgumentException("A return must include at least one product");
+        }
         this.id = id;
         this.date = date;
         this.originalSale = originalSale;
