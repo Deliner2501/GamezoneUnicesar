@@ -53,6 +53,9 @@ public class ReturnService {
      * @throws IOException if the return cannot be persisted
      */
     public Return registerReturn(String saleId, List<String> productIds, String reason) throws IOException {
+        if (saleId == null || saleId.isBlank()) {
+            throw new IllegalArgumentException("Debe indicar el id de la venta original");
+        }
         if (productIds == null || productIds.isEmpty()) {
             throw new IllegalArgumentException("Debe indicar al menos un producto para devolver");
         }
