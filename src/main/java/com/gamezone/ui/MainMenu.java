@@ -1,5 +1,6 @@
 package com.gamezone.ui;
 
+import com.gamezone.model.Accessory;
 import com.gamezone.model.Console;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Product;
@@ -311,6 +312,9 @@ public class MainMenu {
     System.out.println("1. Registrar un control");
     System.out.println("2. Registrar un cable");
     System.out.println("3. Registrar una memoria");
+    System.out.println("4. Listar todos los accesorios");
+    System.out.println("5. Listar accesorios por tipo");
+    System.out.println("6. Consultar accesorios compatibles con una consola");
     System.out.println("0. Volver");
     System.out.print("Seleccione una opción: ");
 
@@ -318,10 +322,14 @@ public class MainMenu {
         case "1" -> registerController();
         case "2" -> registerCable();
         case "3" -> registerMemory();
+        case "4" -> listAllAccessories();
+        case "5" -> listAccessoriesByType();
+        case "6" -> listAccessoriesCompatibleWithConsole();
         case "0" -> { }
         default -> System.out.println("Opción inválida.");
     }
 }
+
 
 private void registerController() {
     try {
@@ -405,6 +413,35 @@ private void registerCompatibleConsoles(String accessoryId) {
         } else {
             accessoryService.registerCompatibility(accessoryId, consoleId);
         }
+    }
+}
+
+private void listAllAccessories() {
+    List<Accessory> accessories = accessoryService.listAllAccessories();
+    printAccessories(accessories);
+}
+
+private void listAccessoriesByType() {
+    System.out.print("Tipo de accesorio (CONTROLLER/CABLE/MEMORY): ");
+    String type = scanner.nextLine();
+    List<Accessory> accessories = accessoryService.listAccessoriesByType(type);
+    printAccessories(accessories);
+}
+
+private void listAccessoriesCompatibleWithConsole() {
+    System.out.print("Id de la consola: ");
+    String consoleId = scanner.nextLine();
+    List<Accessory> accessories = accessoryService.findAccessoriesCompatibleWith(consoleId);
+    printAccessories(accessories);
+}
+
+private void printAccessories(List<Accessory> accessories) {
+    if (accessories.isEmpty()) {
+        System.out.println("No se encontraron accesorios.");
+        return;
+    }
+    for (Accessory accessory : accessories) {
+        System.out.println(accessory.getFullDescription());
     }
 }
 }

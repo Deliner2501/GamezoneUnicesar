@@ -1,10 +1,12 @@
 package com.gamezone.service;
 
 import com.gamezone.model.Customer;
+import com.gamezone.model.Accessory;
 import com.gamezone.model.Product;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
 import com.gamezone.persistence.ProductDAO;
+import com.gamezone.persistence.AccessoryDAO;
 import com.gamezone.persistence.SaleDAO;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -22,6 +24,7 @@ public class SaleService {
 
     private SaleDAO saleDAO;
     private ProductDAO productDAO;
+    private AccessoryDAO accessoryDAO;
     private PersonService personService;
 
     /**
@@ -30,12 +33,14 @@ public class SaleService {
      * @param saleDAO       the DAO used to persist and query sales
      * @param productDAO    the DAO used to look up and update product stock
      * @param personService the service used to resolve customers and sellers by id
+     * @param accessoryDAO  the DAO used to look up and update accessory stock
      */
-    public SaleService(SaleDAO saleDAO, ProductDAO productDAO, PersonService personService) {
-        this.saleDAO = saleDAO;
-        this.productDAO = productDAO;
-        this.personService = personService;
-    }
+    public SaleService(SaleDAO saleDAO, ProductDAO productDAO, AccessoryDAO accessoryDAO, PersonService personService) {
+    this.saleDAO = saleDAO;
+    this.productDAO = productDAO;
+    this.accessoryDAO = accessoryDAO;
+    this.personService = personService;
+}
 
     /**
      * Registers a new sale for the given customer and seller, buying the
@@ -72,24 +77,43 @@ public class SaleService {
             throw new IllegalArgumentException("Seller not found: " + sellerId);
         }
 
-        // First pass: validate everything BEFORE touching any stock,
+                // First pass: validate everything BEFORE touching any stock,
         // so a failure halfway through never leaves inventory in a bad state.
+        // Each item can be either a product or an accessory, so both DAOs
+        // are checked, and each match is kept in its own map so the second
+        // pass knows which DAO to use for the stock update.
         Map<Product, Integer> resolvedProducts = new LinkedHashMap<>();
+        Map<Accessory, Integer> resolvedAccessories = new LinkedHashMap<>();
         for (Map.Entry<String, Integer> entry : productQuantities.entrySet()) {
-            Product product = productDAO.findById(entry.getKey());
-            if (product == null) {
-                throw new IllegalArgumentException("Product not found: " + entry.getKey());
-            }
+            String itemId = entry.getKey();
             int quantity = entry.getValue();
             if (quantity <= 0) {
-                throw new IllegalArgumentException("Quantity must be positive for product: " + entry.getKey());
+                throw new IllegalArgumentException("Quantity must be positive for item: " + itemId);
             }
-            if (product.getStock() < quantity) {
-                throw new IllegalArgumentException(
-                        "Insufficient stock for product: " + product.getTitle()
-                                + " (available: " + product.getStock() + ", requested: " + quantity + ")");
+
+            Product product = productDAO.findById(itemId);
+            if (product != null) {
+                if (product.getStock() < quantity) {
+                    throw new IllegalArgumentException(
+                            "Insufficient stock for product: " + product.getTitle()
+                                    + " (available: " + product.getStock() + ", requested: " + quantity + ")");
+                }
+                resolvedProducts.put(product, quantity);
+                continue;
             }
-            resolvedProducts.put(product, quantity);
+
+            Accessory accessory = accessoryDAO.findById(itemId);
+            if (accessory != null) {
+                if (accessory.getStock() < quantity) {
+                    throw new IllegalArgumentException(
+                            "Insufficient stock for accessory: " + accessory.getTitle()
+                                    + " (available: " + accessory.getStock() + ", requested: " + quantity + ")");
+                }
+                resolvedAccessories.put(accessory, quantity);
+                continue;
+            }
+
+            throw new IllegalArgumentException("Product or accessory not found: " + itemId);
         }
 
         // Second pass: everything is valid, so build the sale and commit the changes.
@@ -104,6 +128,17 @@ public class SaleService {
 
             product.reduceStock(quantity);
             productDAO.update(product);
+        }
+        for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
+            Accessory accessory = entry.getKey();
+            int quantity = entry.getValue();
+
+            for (int i = 0; i < quantity; i++) {
+                sale.addProduct(accessory);
+            }
+
+            accessory.reduceStock(quantity);
+            accessoryDAO.update(accessory);
         }
 
         saleDAO.save(sale);
