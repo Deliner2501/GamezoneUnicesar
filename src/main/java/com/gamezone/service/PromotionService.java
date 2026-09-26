@@ -8,6 +8,8 @@ import com.gamezone.persistence.PromotionDAO;
 import java.time.LocalDate;
 import java.util.List;
 
+import java.util.ArrayList;
+
 /**
  * Contains the business rules for managing promotions and selecting
  * the best applicable promotion for a given sale.
@@ -18,6 +20,8 @@ public class PromotionService {
 
     public PromotionService(PromotionDAO promotionDAO) {
         this.promotionDAO = promotionDAO;
+        
+        
     }
 
     /**
@@ -79,5 +83,31 @@ public class PromotionService {
         promotions.add(promotion);
         promotionDAO.saveAll(promotions);
         return promotion;
+    }
+    
+        /**
+     * Returns the list of all registered promotions.
+     *
+     * @return the list of all promotions
+     */
+    public List<Promotion> listAllPromotions() {
+        return promotionDAO.loadAll();
+    }
+
+    /**
+     * Returns the list of promotions that are currently active,
+     * based on today's date.
+     *
+     * @return the list of active promotions
+     */
+    public List<Promotion> listActivePromotions() {
+        List<Promotion> active = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        for (Promotion p : promotionDAO.loadAll()) {
+            if (p.isActive(today)) {
+                active.add(p);
+            }
+        }
+        return active;
     }
 }
