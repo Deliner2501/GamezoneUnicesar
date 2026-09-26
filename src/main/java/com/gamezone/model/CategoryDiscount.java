@@ -14,6 +14,12 @@ public class CategoryDiscount extends Promotion {
     public CategoryDiscount(String id, String name, LocalDate startDate, LocalDate endDate,
                              double percentage, String targetCategory) {
         super(id, name, startDate, endDate);
+        if (targetCategory == null
+                || !(targetCategory.equalsIgnoreCase("VIDEOGAME")
+                     || targetCategory.equalsIgnoreCase("CONSOLE"))) {
+            throw new IllegalArgumentException(
+                    "Target category must be either VIDEOGAME or CONSOLE");
+        }
         this.percentage = percentage;
         this.targetCategory = targetCategory;
     }
