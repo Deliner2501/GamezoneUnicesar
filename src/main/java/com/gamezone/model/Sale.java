@@ -131,8 +131,19 @@ public class Sale {
      * Returns the total amount of the sale.
      * @return the total
      */
-    public double getTotal() {
+        public double getTotal() {
         return total;
+    }
+
+    /**
+     * Checks whether this sale is still within the 30-calendar-day
+     * window during which a return can be registered.
+     *
+     * @return true if the current date is within 30 days of the sale's date
+     */
+    public boolean canBeReturned() {
+        long daysSinceSale = java.time.temporal.ChronoUnit.DAYS.between(date, LocalDate.now());
+        return daysSinceSale <= 30;
     }
     
      /**
