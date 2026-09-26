@@ -3,10 +3,12 @@ package com.gamezone;
 import com.gamezone.persistence.AccessoryDAO;
 import com.gamezone.persistence.PersonDAO;
 import com.gamezone.persistence.ProductDAO;
+import com.gamezone.persistence.PromotionDAO;
 import com.gamezone.persistence.SaleDAO;
 import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
+import com.gamezone.service.PromotionService;
 import com.gamezone.service.SaleService;
 import com.gamezone.ui.MainMenu;
 import java.io.IOException;
@@ -29,16 +31,18 @@ public class Main {
             PersonDAO personDAO = new PersonDAO();
             ProductDAO productDAO = new ProductDAO();
             AccessoryDAO accessoryDAO = new AccessoryDAO();
+            PromotionDAO promotionDAO = new PromotionDAO();
             SaleDAO saleDAO = new SaleDAO(personDAO, productDAO);
 
             // Service layer
             PersonService personService = new PersonService();
             ProductService productService = new ProductService(productDAO);
             AccessoryService accessoryService = new AccessoryService(accessoryDAO);
+            PromotionService promotionService = new PromotionService(promotionDAO);
             SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, personService);
 
             // UI layer
-            MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService);
+            MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService);
             mainMenu.start();
 
         } catch (IOException e) {
