@@ -3,6 +3,7 @@ package com.gamezone.service;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Accessory;
 import com.gamezone.model.Product;
+import com.gamezone.model.Promotion;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
 import com.gamezone.persistence.ProductDAO;
@@ -25,6 +26,7 @@ public class SaleService {
     private SaleDAO saleDAO;
     private ProductDAO productDAO;
     private AccessoryDAO accessoryDAO;
+    private PromotionService promotionService;
     private PersonService personService;
 
     /**
@@ -34,11 +36,14 @@ public class SaleService {
      * @param productDAO    the DAO used to look up and update product stock
      * @param personService the service used to resolve customers and sellers by id
      * @param accessoryDAO  the DAO used to look up and update accessory stock
+     * @param promotionService the service used to find and apply the best available promotion
      */
-    public SaleService(SaleDAO saleDAO, ProductDAO productDAO, AccessoryDAO accessoryDAO, PersonService personService) {
+    public SaleService(SaleDAO saleDAO, ProductDAO productDAO, AccessoryDAO accessoryDAO,
+                    PromotionService promotionService, PersonService personService) {
     this.saleDAO = saleDAO;
     this.productDAO = productDAO;
     this.accessoryDAO = accessoryDAO;
+    this.promotionService = promotionService;
     this.personService = personService;
 }
 
@@ -139,6 +144,12 @@ public class SaleService {
 
             accessory.reduceStock(quantity);
             accessoryDAO.update(accessory);
+        }
+
+        Promotion bestPromotion = promotionService.findBestPromotionFor(sale);
+        if (bestPromotion != null) {
+            double discount = bestPromotion.calculateDiscount(sale);
+            sale.applyPromotion(bestPromotion.getName(), discount);
         }
 
         saleDAO.save(sale);

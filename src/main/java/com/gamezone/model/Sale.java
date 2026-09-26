@@ -20,6 +20,8 @@ public class Sale {
     private Seller seller;
     private List<Product> products;
     private double total;
+    private String appliedPromotionName;
+    private double discountAmount;
 
     /**
      * Creates a new Sale with no products yet. Products must be
@@ -52,6 +54,8 @@ public class Sale {
         this.seller = seller;
         this.products = new ArrayList<>();
         this.total = 0.0;
+        this.appliedPromotionName = null;
+        this.discountAmount = 0.0;
     }
 
     /**
@@ -129,6 +133,72 @@ public class Sale {
      */
     public double getTotal() {
         return total;
+    }
+    
+     /**
+     * Applies a promotion's discount to this sale. A sale can have at
+     * most one applied promotion at a time; calling this again replaces
+     * the previously applied one.
+     *
+     * @param promotionName the name of the promotion being applied
+     * @param discountAmount the discount amount in currency granted by the promotion
+     * @throws IllegalArgumentException if the discount amount is negative
+     */
+    public void applyPromotion(String promotionName, double discountAmount) {
+        if (discountAmount < 0) {
+            throw new IllegalArgumentException("Discount amount cannot be negative");
+        }
+        this.appliedPromotionName = promotionName;
+        this.discountAmount = discountAmount;
+    }
+
+    /**
+     * Returns the name of the promotion applied to this sale, if any.
+     * @return the applied promotion's name, or null if no promotion was applied
+     */
+    public String getAppliedPromotionName() {
+        return appliedPromotionName;
+    }
+
+    /**
+     * Returns the discount amount granted by the applied promotion.
+     * @return the discount amount, or 0.0 if no promotion was applied
+     */
+    public double getDiscountAmount() {
+        return discountAmount;
+    }
+
+    /**
+     * Returns the final amount to charge for this sale, after subtracting
+     * the applied discount (if any) from the subtotal.
+     * @return the subtotal minus the discount amount
+     */
+    public double getFinalTotal() {
+        return total - discountAmount;
+    }
+
+    /**
+     * Builds a readable receipt for this sale, showing the subtotal,
+     * the discount applied (if any), and the final total.
+     *
+     * @return a formatted, multi-line receipt
+     */
+    public String generateReceipt() {
+        StringBuilder receipt = new StringBuilder();
+        receipt.append("Recibo de venta ").append(id).append("\n");
+        receipt.append("Fecha: ").append(date).append("\n");
+        receipt.append("Cliente: ").append(customer.getName()).append("\n");
+        receipt.append("Vendedor: ").append(seller.getName()).append("\n");
+        receipt.append("Productos: ").append(products.size()).append("\n");
+        receipt.append("Subtotal: ").append(total).append("\n");
+        if (appliedPromotionName != null) {
+            receipt.append("Descuento aplicado (").append(appliedPromotionName)
+                    .append("): -").append(discountAmount).append("\n");
+        } else {
+            receipt.append("Descuento aplicado: ninguno\n");
+        }
+        receipt.append("Total final: ").append(getFinalTotal());
+        return receipt.toString();
     }
 
     /**
