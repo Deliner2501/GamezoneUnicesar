@@ -5,6 +5,7 @@ import com.gamezone.model.Console;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Product;
 import com.gamezone.model.Promotion;
+import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
 import com.gamezone.model.VideoGame;
@@ -12,6 +13,7 @@ import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
+import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -33,6 +35,7 @@ public class MainMenu {
     private final ProductService productService;
     private final AccessoryService accessoryService;
     private final PromotionService promotionService;
+    private final ReturnService returnService;
     private final SaleService saleService;
     private final Scanner scanner;
 
@@ -44,15 +47,17 @@ public class MainMenu {
      * @param saleService    the service for registering and querying sales
      * @param accessoryService the service for managing accessories
      * @param promotionService the service for managing promotions
+     * @param returnService the service for managing returns
      */
     public MainMenu(PersonService personService, ProductService productService,
                  SaleService saleService, AccessoryService accessoryService,
-                 PromotionService promotionService) {
+                 PromotionService promotionService, ReturnService returnService) {
     this.personService = personService;
     this.productService = productService;
     this.saleService = saleService;
     this.accessoryService = accessoryService;
     this.promotionService = promotionService;
+    this.returnService = returnService;
     this.scanner = new Scanner(System.in);
 }
 
@@ -69,6 +74,7 @@ public class MainMenu {
             System.out.println("3. Gestionar ventas");
             System.out.println("4. Gestionar accesorios");
             System.out.println("5. Gestionar promociones");
+            System.out.println("6. Gestionar devoluciones");
             System.out.println("0. Salir");
             System.out.print("Seleccione una opción: ");
 
@@ -79,6 +85,7 @@ public class MainMenu {
                 case "3" -> saleMenu();
                 case "4" -> accessoryMenu();
                 case "5" -> promotionMenu();
+                case "6" -> returnMenu();
                 case "0" -> running = false;
                 default -> System.out.println("Opción inválida.");
             }
@@ -575,6 +582,114 @@ private void printPromotions(List<Promotion> promotions) {
     for (Promotion promotion : promotions) {
         System.out.println(promotion.getId() + " - " + promotion.getName()
                 + " (" + promotion.getStartDate() + " a " + promotion.getEndDate() + ")");
+    }
+}
+
+// ===================== RETURN MENU =====================
+
+private void returnMenu() {
+    System.out.println("\n--- Gestión de devoluciones ---");
+    System.out.println("1. Registrar una devolución");
+    System.out.println("2. Consultar todas las devoluciones");
+    System.out.println("3. Consultar devoluciones por cliente");
+    System.out.println("4. Consultar devoluciones por venta");
+    System.out.println("5. Consultar balance mensual");
+    System.out.println("0. Volver");
+    System.out.print("Seleccione una opción: ");
+
+    switch (scanner.nextLine()) {
+        case "1" -> registerReturn();
+        case "2" -> viewAllReturns();
+        case "3" -> viewReturnsByCustomer();
+        case "4" -> viewReturnsBySale();
+        case "5" -> consultMonthlyBalance();
+        case "0" -> { }
+        default -> System.out.println("Opción inválida.");
+    }
+}
+
+private void registerReturn() {
+    try {
+        System.out.print("Id de la venta original: ");
+        String saleId = scanner.nextLine();
+
+        List<String> productIds = new java.util.ArrayList<>();
+        boolean addingProducts = true;
+        while (addingProducts) {
+            System.out.print("Id de producto a devolver (deje vacío para terminar): ");
+            String productId = scanner.nextLine();
+            if (productId.isBlank()) {
+                addingProducts = false;
+            } else {
+                productIds.add(productId);
+            }
+        }
+
+        System.out.print("Motivo de la devolución: ");
+        String reason = scanner.nextLine();
+
+        Return processedReturn = returnService.registerReturn(saleId, productIds, reason);
+        System.out.println("Devolución registrada exitosamente.");
+        System.out.println(processedReturn.generateReturnReceipt());
+    } catch (IllegalArgumentException e) {
+        System.out.println("Error: " + e.getMessage());
+    } catch (java.io.IOException e) {
+        System.out.println("Error al procesar la devolución: " + e.getMessage());
+    }
+}
+
+private void viewAllReturns() {
+    try {
+        printReturns(returnService.viewAllReturns());
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+    }
+}
+
+private void viewReturnsByCustomer() {
+    try {
+        System.out.print("Id del cliente: ");
+        String customerId = scanner.nextLine();
+        printReturns(returnService.viewReturnsByCustomer(customerId));
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+    }
+}
+
+private void viewReturnsBySale() {
+    try {
+        System.out.print("Id de la venta: ");
+        String saleId = scanner.nextLine();
+        printReturns(returnService.viewReturnsBySale(saleId));
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+    }
+}
+
+private void printReturns(List<Return> returns) {
+    if (returns.isEmpty()) {
+        System.out.println("No se encontraron devoluciones.");
+        return;
+    }
+    for (Return r : returns) {
+        System.out.println(r.generateReturnReceipt());
+        System.out.println("---");
+    }
+}
+
+private void consultMonthlyBalance() {
+    try {
+        System.out.print("Mes (1-12): ");
+        int month = Integer.parseInt(scanner.nextLine());
+        System.out.print("Año (AAAA): ");
+        int year = Integer.parseInt(scanner.nextLine());
+
+        double balance = returnService.generateMonthlyBalance(month, year);
+        System.out.println("Balance neto para " + month + "/" + year + ": " + balance);
+    } catch (NumberFormatException e) {
+        System.out.println("Error: el mes y el año deben ser valores numéricos válidos.");
+    } catch (java.io.IOException e) {
+        System.out.println("Error al calcular el balance: " + e.getMessage());
     }
 }
 }

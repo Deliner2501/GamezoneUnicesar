@@ -189,4 +189,20 @@ public class SaleService {
     public List<Sale> listSalesBySeller(String sellerId) throws IOException {
         return saleDAO.findBySeller(sellerId);
     }
+    
+    /**
+ * Finds a sale by its id.
+ *
+ * @param saleId the id of the sale to find
+ * @return the sale with the given id, or null if none is found
+ * @throws IOException if the sales cannot be read from storage
+ */
+public Sale findSaleById(String saleId) throws IOException {
+    for (Sale sale : saleDAO.findAll()) {
+        if (sale.getId().equals(saleId)) {
+            return sale;
+        }
+    }
+    return null;
+}
 }

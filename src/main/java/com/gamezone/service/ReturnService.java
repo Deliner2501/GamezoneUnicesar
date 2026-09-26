@@ -86,4 +86,113 @@ public class ReturnService {
         List<Return> existingReturns = returnRepository.loadAll();
         String returnId = generateReturnId(existingReturns);
 
-        Return newReturn = new Return(returnId, LocalDate.now(), originalSale, returnedProducts,
+                Return newReturn = new Return(returnId, LocalDate.now(), originalSale, returnedProducts, reason);
+        newReturn.calculateRefundAmount();
+
+        for (Product product : returnedProducts) {
+            productService.restoreStock(product.getId(), 1);
+        }
+
+        existingReturns.add(newReturn);
+        returnRepository.saveAll(existingReturns);
+
+        return newReturn;
+    }
+
+    /**
+     * Finds the product with the given id within a sale's product list.
+     *
+     * @param sale      the sale to search
+     * @param productId the id of the product to find
+     * @return the matching product, or null if it does not belong to the sale
+     */
+    private Product findProductInSale(Sale sale, String productId) {
+        for (Product product : sale.getProducts()) {
+            if (product.getId().equals(productId)) {
+                return product;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Generates a sequential return id based on how many returns already exist.
+     *
+     * @param existingReturns the currently persisted returns
+     * @return a new, unique return id
+     */
+    private String generateReturnId(List<Return> existingReturns) {
+        int nextNumber = existingReturns.size() + 1;
+        return "RET" + String.format("%03d", nextNumber);
+    }
+
+    /**
+     * Returns every return registered in the system.
+     *
+     * @return the list of all returns
+     * @throws IOException if the returns cannot be read from storage
+     */
+    public List<Return> viewAllReturns() throws IOException {
+        return returnRepository.loadAll();
+    }
+
+    /**
+     * Returns every return whose original sale belongs to the given customer.
+     *
+     * @param customerId the id of the customer
+     * @return the list of returns associated with that customer
+     * @throws IOException if the returns cannot be read from storage
+     */
+    public List<Return> viewReturnsByCustomer(String customerId) throws IOException {
+        List<Return> result = new ArrayList<>();
+        for (Return r : returnRepository.loadAll()) {
+            if (r.getOriginalSale().getCustomer().getId().equals(customerId)) {
+                result.add(r);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns every return associated with the given original sale.
+     *
+     * @param saleId the id of the original sale
+     * @return the list of returns associated with that sale
+     * @throws IOException if the returns cannot be read from storage
+     */
+    public List<Return> viewReturnsBySale(String saleId) throws IOException {
+        List<Return> result = new ArrayList<>();
+        for (Return r : returnRepository.loadAll()) {
+            if (r.getOriginalSale().getId().equals(saleId)) {
+                result.add(r);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Calculates the net balance (sales minus returns) for a given month and year.
+     *
+     * @param month the month to calculate the balance for (1-12)
+     * @param year  the year to calculate the balance for
+     * @return the total sales minus the total returns for that period
+     * @throws IOException if sales or returns cannot be read from storage
+     */
+    public double generateMonthlyBalance(int month, int year) throws IOException {
+        double totalSales = 0.0;
+        for (Sale sale : saleService.listSales()) {
+            if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
+                totalSales += sale.getFinalTotal();
+            }
+        }
+
+        double totalReturns = 0.0;
+        for (Return r : returnRepository.loadAll()) {
+            if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
+                totalReturns += r.getRefundAmount();
+            }
+        }
+
+        return totalSales - totalReturns;
+    }
+}
