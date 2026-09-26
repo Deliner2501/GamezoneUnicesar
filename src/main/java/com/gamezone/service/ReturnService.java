@@ -59,6 +59,9 @@ public class ReturnService {
         if (productIds == null || productIds.isEmpty()) {
             throw new IllegalArgumentException("Debe indicar al menos un producto para devolver");
         }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Debe indicar el motivo de la devolución");
+        }
 
         Sale originalSale = saleService.findSaleById(saleId);
         if (originalSale == null) {
