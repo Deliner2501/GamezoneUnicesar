@@ -60,6 +60,7 @@ public class MainMenu {
             System.out.println("1. Gestionar productos");
             System.out.println("2. Gestionar clientes y vendedores");
             System.out.println("3. Gestionar ventas");
+            System.out.println("4. Gestionar accesorios");
             System.out.println("0. Salir");
             System.out.print("Seleccione una opción: ");
 
@@ -68,6 +69,7 @@ public class MainMenu {
                 case "1" -> productMenu();
                 case "2" -> personMenu();
                 case "3" -> saleMenu();
+                case "4" -> accessoryMenu();
                 case "0" -> running = false;
                 default -> System.out.println("Opción inválida.");
             }
@@ -303,4 +305,106 @@ public class MainMenu {
         }
         sales.forEach(sale -> System.out.println(sale.toString()));
     }
+    
+    private void accessoryMenu() {
+    System.out.println("\n--- Gestión de accesorios ---");
+    System.out.println("1. Registrar un control");
+    System.out.println("2. Registrar un cable");
+    System.out.println("3. Registrar una memoria");
+    System.out.println("0. Volver");
+    System.out.print("Seleccione una opción: ");
+
+    switch (scanner.nextLine()) {
+        case "1" -> registerController();
+        case "2" -> registerCable();
+        case "3" -> registerMemory();
+        case "0" -> { }
+        default -> System.out.println("Opción inválida.");
+    }
+}
+
+private void registerController() {
+    try {
+        System.out.print("Id: ");
+        String id = scanner.nextLine();
+        System.out.print("Título: ");
+        String title = scanner.nextLine();
+        System.out.print("Precio: ");
+        double price = Double.parseDouble(scanner.nextLine());
+        System.out.print("Cantidad en inventario: ");
+        int stock = Integer.parseInt(scanner.nextLine());
+        System.out.print("Tipo de conexión (inalámbrico/alámbrico): ");
+        String connectionType = scanner.nextLine();
+
+        accessoryService.registerController(id, title, price, stock, connectionType);
+        registerCompatibleConsoles(id);
+        System.out.println("Control registrado exitosamente.");
+    } catch (NumberFormatException e) {
+        System.out.println("Error: precio y cantidad deben ser valores numéricos válidos.");
+    } catch (IllegalArgumentException e) {
+        System.out.println("Error: " + e.getMessage());
+    }
+}
+
+private void registerCable() {
+    try {
+        System.out.print("Id: ");
+        String id = scanner.nextLine();
+        System.out.print("Título: ");
+        String title = scanner.nextLine();
+        System.out.print("Precio: ");
+        double price = Double.parseDouble(scanner.nextLine());
+        System.out.print("Cantidad en inventario: ");
+        int stock = Integer.parseInt(scanner.nextLine());
+        System.out.print("Longitud en metros: ");
+        double lengthInMeters = Double.parseDouble(scanner.nextLine());
+        System.out.print("Tipo de conector (HDMI/USB/óptico/otro): ");
+        String connectorType = scanner.nextLine();
+
+        accessoryService.registerCable(id, title, price, stock, lengthInMeters, connectorType);
+        System.out.println("Cable registrado exitosamente.");
+    } catch (NumberFormatException e) {
+        System.out.println("Error: precio, cantidad y longitud deben ser valores numéricos válidos.");
+    } catch (IllegalArgumentException e) {
+        System.out.println("Error: " + e.getMessage());
+    }
+}
+
+private void registerMemory() {
+    try {
+        System.out.print("Id: ");
+        String id = scanner.nextLine();
+        System.out.print("Título: ");
+        String title = scanner.nextLine();
+        System.out.print("Precio: ");
+        double price = Double.parseDouble(scanner.nextLine());
+        System.out.print("Cantidad en inventario: ");
+        int stock = Integer.parseInt(scanner.nextLine());
+        System.out.print("Capacidad en gigabytes: ");
+        int capacityInGigabytes = Integer.parseInt(scanner.nextLine());
+        System.out.print("Tipo de memoria (SD/microSD/tarjeta interna): ");
+        String memoryType = scanner.nextLine();
+
+        accessoryService.registerMemory(id, title, price, stock, capacityInGigabytes, memoryType);
+        registerCompatibleConsoles(id);
+        System.out.println("Memoria registrada exitosamente.");
+    } catch (NumberFormatException e) {
+        System.out.println("Error: precio, cantidad y capacidad deben ser valores numéricos válidos.");
+    } catch (IllegalArgumentException e) {
+        System.out.println("Error: " + e.getMessage());
+    }
+}
+
+private void registerCompatibleConsoles(String accessoryId) {
+    boolean addingConsoles = true;
+    while (addingConsoles) {
+        System.out.print("Id de consola compatible (deje vacío para terminar): ");
+        String consoleId = scanner.nextLine();
+        if (consoleId.isBlank()) {
+            addingConsoles = false;
+        } else {
+            accessoryService.registerCompatibility(accessoryId, consoleId);
+        }
+    }
+}
 }
