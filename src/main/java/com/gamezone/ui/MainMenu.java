@@ -271,7 +271,8 @@ public class MainMenu {
             }
 
             Sale sale = saleService.registerSale(saleId, LocalDate.now(), customerId, sellerId, productQuantities);
-            System.out.println("Venta registrada exitosamente. Total: " + sale.getTotal());
+            System.out.println("Venta registrada exitosamente.");
+            System.out.println(sale.generateReceipt());
         } catch (NumberFormatException e) {
             System.out.println("Error: la cantidad debe ser un valor numérico válido.");
         } catch (IllegalArgumentException | IOException e) {
@@ -308,12 +309,15 @@ public class MainMenu {
         }
     }
 
-    private void printSales(List<Sale> sales) {
+        private void printSales(List<Sale> sales) {
         if (sales.isEmpty()) {
             System.out.println("No se encontraron ventas.");
             return;
         }
-        sales.forEach(sale -> System.out.println(sale.toString()));
+        for (Sale sale : sales) {
+            System.out.println(sale.generateReceipt());
+            System.out.println("---");
+        }
     }
     
     private void accessoryMenu() {
