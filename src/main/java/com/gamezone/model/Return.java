@@ -62,11 +62,16 @@ public class Return {
     /**
      * Builds a readable receipt for this return, in Spanish, showing
      * the return id, date, reference to the original sale, returned
-     * products with their prices, reason, and refund amount.
+     * products with their prices, reason, and refund amount. If the
+     * refund amount has not been calculated yet, this method calculates
+     * it first so the receipt is always accurate.
      *
      * @return a formatted, multi-line receipt
      */
     public String generateReturnReceipt() {
+        if (refundAmount == 0.0) {
+            calculateRefundAmount();
+        }
         StringBuilder receipt = new StringBuilder();
         receipt.append("Recibo de devolución ").append(id).append("\n");
         receipt.append("Fecha: ").append(date).append("\n");
