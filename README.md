@@ -25,6 +25,16 @@ The system provides the following main functionalities:
 * List registered sellers.
 * Search customers and sellers by their ID when processing sales.
 
+### Accessory Management
+
+* Register controllers, cables, and memories, each with its own specific attributes.
+* Register console compatibility for controllers and memories.
+* List all registered accessories.
+* List accessories filtered by type.
+* Query accessories compatible with a specific console.
+* Sell accessories together with products (video games and consoles) in the same transaction.
+* Automatically update accessory stock after a sale.
+
 ### Sales Management
 
 * Register a sale associated with a customer and a seller.
@@ -69,6 +79,7 @@ The application follows a four-layer architecture:
 │        SERVICE          │
 │ PersonService           │
 │ ProductService          │
+│ AccessoryService        │
 │ SaleService             │
 └────────────┬────────────┘
              │
@@ -80,6 +91,10 @@ The application follows a four-layer architecture:
 │ Product    │ │ ProductDAO   │
 │ VideoGame  │ │ PersonDAO    │
 │ Console    │ │ SaleDAO      │
+│ Accessory  │ │ AccessoryDAO │
+│ Controller │ │              │
+│ Cable      │ │              │
+│ Memory     │ │              │
 │ Person     │ │              │
 │ Customer   │ └──────┬───────┘
 │ Seller     │        │
@@ -98,6 +113,10 @@ The `model` layer contains the main domain entities of the system.
 * `Customer` — represents a customer.
 * `Seller` — represents a seller.
 * `Sale` — represents a store transaction.
+* `Accessory` — abstract base class for video game accessories, extending `Product`.
+* `Controller` — represents a game controller.
+* `Cable` — represents a cable accessory.
+* `Memory` — represents a storage memory accessory.
 
 `Product` uses polymorphism through the `getFullDescription()` abstract method, which is implemented by its subclasses.
 
@@ -110,6 +129,7 @@ The `persistence` layer is responsible for saving and loading information from f
 * `ProductDAO` — manages product information.
 * `PersonDAO` — manages customers and sellers.
 * `SaleDAO` — manages sales.
+* `AccessoryDAO` — manages controllers, cables, and memories.
 
 The system uses files inside the `data` directory to maintain information between executions.
 
@@ -119,7 +139,8 @@ The `service` layer contains the application's business rules.
 
 * `ProductService` — handles product registration, listing, and stock validation.
 * `PersonService` — handles customer and seller information.
-* `SaleService` — handles sales, validations, total processing, and inventory updates.
+* `SaleService` — handles sales, validations, total processing, and inventory updates for both products and accessories.
+* `AccessoryService` — handles accessory registration, console compatibility, listing, and stock updates.
 
 The service layer prevents invalid operations before information is persisted.
 
@@ -139,7 +160,8 @@ The UI communicates with the service layer and does not access the persistence l
 GamezoneUnicesar/
 │
 ├── data/
-│   └── sellers.csv
+│   ├── sellers.csv
+│   └── accessories.csv
 │
 ├── docs/
 │   ├── ai-usage/
@@ -181,6 +203,7 @@ The main files are:
 * `data/customers.txt` — stores registered customers.
 * `data/sellers.csv` — stores sellers.
 * `data/sales.txt` — stores registered sales.
+* `data/accessories.csv` — stores controllers, cables, and memories.
 
 If some files do not exist when the application starts, the system creates the necessary data structures and generates the files when information is saved.
 
@@ -300,6 +323,7 @@ The application will display the main console menu:
 1. Gestionar productos
 2. Gestionar clientes y vendedores
 3. Gestionar ventas
+4. Gestionar accesorios
 0. Salir
 ```
 
