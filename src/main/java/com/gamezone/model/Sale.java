@@ -135,14 +135,26 @@ public class Sale {
         return total;
     }
 
-    /**
+       /**
      * Checks whether this sale is still within the 30-calendar-day
      * window during which a return can be registered.
      *
      * @return true if the current date is within 30 days of the sale's date
      */
     public boolean canBeReturned() {
-        long daysSinceSale = java.time.temporal.ChronoUnit.DAYS.between(date, LocalDate.now());
+        return canBeReturned(LocalDate.now());
+    }
+
+    /**
+     * Checks whether this sale would still be within the 30-calendar-day
+     * return window on the given reference date. Useful for testing
+     * without depending on the current system date.
+     *
+     * @param referenceDate the date to check against
+     * @return true if the reference date is within 30 days of the sale's date
+     */
+    public boolean canBeReturned(LocalDate referenceDate) {
+        long daysSinceSale = java.time.temporal.ChronoUnit.DAYS.between(date, referenceDate);
         return daysSinceSale <= 30;
     }
     
