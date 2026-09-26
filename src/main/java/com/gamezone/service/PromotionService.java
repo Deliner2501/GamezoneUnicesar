@@ -34,8 +34,9 @@ public class PromotionService {
      * @param percentage the discount percentage applied to the sale's total
      * @return the registered promotion
      */
-    public PercentageDiscount registerPercentageDiscount(String id, String name, LocalDate startDate,
+        public PercentageDiscount registerPercentageDiscount(String id, String name, LocalDate startDate,
                                                           LocalDate endDate, double percentage) {
+        validatePercentage(percentage);
         PercentageDiscount promotion = new PercentageDiscount(id, name, startDate, endDate, percentage);
         List<Promotion> promotions = promotionDAO.loadAll();
         promotions.add(promotion);
@@ -57,6 +58,7 @@ public class PromotionService {
     public CategoryDiscount registerCategoryDiscount(String id, String name, LocalDate startDate,
                                                       LocalDate endDate, double percentage,
                                                       String targetCategory) {
+        validatePercentage(percentage);
         CategoryDiscount promotion = new CategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
         List<Promotion> promotions = promotionDAO.loadAll();
         promotions.add(promotion);
@@ -78,6 +80,7 @@ public class PromotionService {
     public BulkPurchaseDiscount registerBulkPurchaseDiscount(String id, String name, LocalDate startDate,
                                                               LocalDate endDate, int minQuantity,
                                                               double percentage) {
+        validatePercentage(percentage);
         BulkPurchaseDiscount promotion = new BulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
         List<Promotion> promotions = promotionDAO.loadAll();
         promotions.add(promotion);
@@ -146,5 +149,12 @@ public class PromotionService {
         }
         return null;
     }
+    
+        private void validatePercentage(double percentage) {
+        if (percentage < 0 || percentage > 100) {
+            throw new IllegalArgumentException("Percentage must be between 0 and 100");
+        }
+    }
+        
     
 }
