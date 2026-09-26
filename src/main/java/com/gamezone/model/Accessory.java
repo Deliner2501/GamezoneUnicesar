@@ -25,6 +25,15 @@ public abstract class Accessory extends Product {
     public List<String> getCompatibleConsoleIds() {
         return compatibleConsoleIds;
     }
+        /**
+     * Replaces the entire list of compatible console ids.
+     * Useful when reconstructing an accessory from persisted data.
+     *
+     * @param compatibleConsoleIds the new list of compatible console ids
+     */
+    public void setCompatibleConsoleIds(List<String> compatibleConsoleIds) {
+        this.compatibleConsoleIds = compatibleConsoleIds;
+    }
 
     /**
      * Adds a console id to the list of compatible consoles.
