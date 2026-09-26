@@ -12,6 +12,7 @@ import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
+import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -33,6 +34,7 @@ public class MainMenu {
     private final ProductService productService;
     private final AccessoryService accessoryService;
     private final PromotionService promotionService;
+    private final ReturnService returnService;
     private final SaleService saleService;
     private final Scanner scanner;
 
@@ -44,15 +46,17 @@ public class MainMenu {
      * @param saleService    the service for registering and querying sales
      * @param accessoryService the service for managing accessories
      * @param promotionService the service for managing promotions
+     * @param returnService the service for managing returns
      */
     public MainMenu(PersonService personService, ProductService productService,
                  SaleService saleService, AccessoryService accessoryService,
-                 PromotionService promotionService) {
+                 PromotionService promotionService, ReturnService returnService) {
     this.personService = personService;
     this.productService = productService;
     this.saleService = saleService;
     this.accessoryService = accessoryService;
     this.promotionService = promotionService;
+    this.returnService = returnService;
     this.scanner = new Scanner(System.in);
 }
 

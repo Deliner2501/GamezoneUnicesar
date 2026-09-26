@@ -4,11 +4,13 @@ import com.gamezone.persistence.AccessoryDAO;
 import com.gamezone.persistence.PersonDAO;
 import com.gamezone.persistence.ProductDAO;
 import com.gamezone.persistence.PromotionDAO;
+import com.gamezone.persistence.ReturnRepository;
 import com.gamezone.persistence.SaleDAO;
 import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
+import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
 import com.gamezone.ui.MainMenu;
 import java.io.IOException;
@@ -40,9 +42,11 @@ public class Main {
             AccessoryService accessoryService = new AccessoryService(accessoryDAO);
             PromotionService promotionService = new PromotionService(promotionDAO);
             SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, promotionService, personService);
+            ReturnRepository returnRepository = new ReturnRepository(saleService, productService);
+            ReturnService returnService = new ReturnService(returnRepository, saleService, productService);
 
             // UI layer
-            MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService);
+            MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService);
             mainMenu.start();
 
         } catch (IOException e) {
