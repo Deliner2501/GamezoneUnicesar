@@ -221,7 +221,7 @@ public class MainMenu {
 
     private void saleMenu() {
         System.out.println("\n--- Gestión de ventas ---");
-        System.out.println("1. Registrar una venta");
+        System.out.println("1. Registrar una venta (productos y/o accesorios)");
         System.out.println("2. Listar todas las ventas");
         System.out.println("3. Consultar historial de compras de un cliente");
         System.out.println("4. Consultar ventas atendidas por un vendedor");
@@ -249,9 +249,10 @@ public class MainMenu {
 
             Map<String, Integer> productQuantities = new LinkedHashMap<>();
             boolean addingProducts = true;
+            System.out.println("Puede agregar productos (videojuegos, consolas) y accesorios (controles, cables, memorias) en la misma venta.");
             while (addingProducts) {
-                System.out.print("Id del producto (deje vacío para terminar): ");
-                String productId = scanner.nextLine();
+            System.out.print("Id del producto o accesorio (deje vacío para terminar): ");
+            String productId = scanner.nextLine();
                 if (productId.isBlank()) {
                     addingProducts = false;
                     continue;
