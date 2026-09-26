@@ -15,6 +15,15 @@ public abstract class Promotion {
     private LocalDate endDate;
 
     public Promotion(String id, String name, LocalDate startDate, LocalDate endDate) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("The promotion id cannot be empty");
+        }
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start date and end date cannot be null");
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
+        }
         this.id = id;
         this.name = name;
         this.startDate = startDate;
