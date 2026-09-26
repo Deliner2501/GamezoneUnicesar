@@ -22,6 +22,13 @@ public class ReturnService {
     private SaleService saleService;
     private ProductService productService;
 
+    /**
+     * Creates a ReturnService with its required collaborators.
+     *
+     * @param returnRepository the repository used to persist and load returns
+     * @param saleService      the service used to resolve the original sale
+     * @param productService   the service used to restore stock of returned products
+     */
     public ReturnService(ReturnRepository returnRepository, SaleService saleService,
                           ProductService productService) {
         this.returnRepository = returnRepository;
@@ -29,6 +36,22 @@ public class ReturnService {
         this.productService = productService;
     }
 
+    /**
+     * Registers a new return for the given original sale. The return is
+     * rejected if the sale does not exist, if it is outside the 30-day
+     * return window, or if any indicated product does not actually
+     * belong to the referenced sale. If accepted, the refund amount is
+     * calculated, the stock of every returned product is restored, and
+     * the return is persisted.
+     *
+     * @param saleId     the id of the original sale
+     * @param productIds the ids of the products being returned
+     * @param reason     the reason for the return
+     * @return the registered return, with its refund amount already calculated
+     * @throws IllegalArgumentException if the sale is not found, the 30-day
+     *         window has passed, or a product does not belong to the sale
+     * @throws IOException if the return cannot be persisted
+     */
     public Return registerReturn(String saleId, List<String> productIds, String reason) throws IOException {
         if (productIds == null || productIds.isEmpty()) {
             throw new IllegalArgumentException("Debe indicar al menos un producto para devolver");
@@ -57,71 +80,4 @@ public class ReturnService {
         List<Return> existingReturns = returnRepository.loadAll();
         String returnId = generateReturnId(existingReturns);
 
-        Return newReturn = new Return(returnId, LocalDate.now(), originalSale, returnedProducts, reason);
-        newReturn.calculateRefundAmount();
-
-        for (Product product : returnedProducts) {
-            productService.restoreStock(product.getId(), 1);
-        }
-
-        existingReturns.add(newReturn);
-        returnRepository.saveAll(existingReturns);
-
-        return newReturn;
-    }
-
-    public List<Return> viewAllReturns() throws IOException {
-        return returnRepository.loadAll();
-    }
-
-    public List<Return> viewReturnsByCustomer(String customerId) throws IOException {
-        List<Return> result = new ArrayList<>();
-        for (Return r : returnRepository.loadAll()) {
-            if (r.getOriginalSale().getCustomer().getId().equals(customerId)) {
-                result.add(r);
-            }
-        }
-        return result;
-    }
-
-    public List<Return> viewReturnsBySale(String saleId) throws IOException {
-        List<Return> result = new ArrayList<>();
-        for (Return r : returnRepository.loadAll()) {
-            if (r.getOriginalSale().getId().equals(saleId)) {
-                result.add(r);
-            }
-        }
-        return result;
-    }
-
-    public double generateMonthlyBalance(int month, int year) throws IOException {
-        double totalSales = 0.0;
-        for (Sale sale : saleService.listSales()) {
-            if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
-                totalSales += sale.getFinalTotal();
-            }
-        }
-
-        double totalReturns = 0.0;
-        for (Return r : returnRepository.loadAll()) {
-            if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
-                totalReturns += r.getRefundAmount();
-            }
-        }
-
-        return totalSales - totalReturns;
-    }
-
-    private Product findProductInSale(Sale sale, String productId) {
-        for (Product product : sale.getProducts()) {
-            if (product.getId().equals(productId)) {
-                return product;
-            }
-        }
-        return null;
-    }
-
-    private String generateReturnId(List<Return> existingReturns) {
-        return "DEV" + String.format("%03d", existingReturns.size() + 1);
-    }
-}
+        Return newReturn = new Return(returnId, LocalDate.now(), originalSale, returnedProducts,
