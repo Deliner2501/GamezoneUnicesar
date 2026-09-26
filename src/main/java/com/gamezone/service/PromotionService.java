@@ -1,0 +1,83 @@
+package com.gamezone.service;
+
+import com.gamezone.model.BulkPurchaseDiscount;
+import com.gamezone.model.CategoryDiscount;
+import com.gamezone.model.PercentageDiscount;
+import com.gamezone.model.Promotion;
+import com.gamezone.persistence.PromotionDAO;
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * Contains the business rules for managing promotions and selecting
+ * the best applicable promotion for a given sale.
+ */
+public class PromotionService {
+
+    private PromotionDAO promotionDAO;
+
+    public PromotionService(PromotionDAO promotionDAO) {
+        this.promotionDAO = promotionDAO;
+    }
+
+    /**
+     * Registers a new percentage-based promotion and persists it.
+     *
+     * @param id         the unique id of the promotion
+     * @param name       the display name of the promotion
+     * @param startDate  the date the promotion becomes active
+     * @param endDate    the date the promotion stops being active
+     * @param percentage the discount percentage applied to the sale's total
+     * @return the registered promotion
+     */
+    public PercentageDiscount registerPercentageDiscount(String id, String name, LocalDate startDate,
+                                                          LocalDate endDate, double percentage) {
+        PercentageDiscount promotion = new PercentageDiscount(id, name, startDate, endDate, percentage);
+        List<Promotion> promotions = promotionDAO.loadAll();
+        promotions.add(promotion);
+        promotionDAO.saveAll(promotions);
+        return promotion;
+    }
+
+    /**
+     * Registers a new category-based promotion and persists it.
+     *
+     * @param id             the unique id of the promotion
+     * @param name           the display name of the promotion
+     * @param startDate      the date the promotion becomes active
+     * @param endDate        the date the promotion stops being active
+     * @param percentage     the discount percentage applied to the target category
+     * @param targetCategory the category this promotion applies to ("VIDEOGAME" or "CONSOLE")
+     * @return the registered promotion
+     */
+    public CategoryDiscount registerCategoryDiscount(String id, String name, LocalDate startDate,
+                                                      LocalDate endDate, double percentage,
+                                                      String targetCategory) {
+        CategoryDiscount promotion = new CategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
+        List<Promotion> promotions = promotionDAO.loadAll();
+        promotions.add(promotion);
+        promotionDAO.saveAll(promotions);
+        return promotion;
+    }
+
+    /**
+     * Registers a new bulk-purchase promotion and persists it.
+     *
+     * @param id          the unique id of the promotion
+     * @param name        the display name of the promotion
+     * @param startDate   the date the promotion becomes active
+     * @param endDate     the date the promotion stops being active
+     * @param minQuantity the minimum number of products required for the promotion to apply
+     * @param percentage  the discount percentage applied to the sale's total
+     * @return the registered promotion
+     */
+    public BulkPurchaseDiscount registerBulkPurchaseDiscount(String id, String name, LocalDate startDate,
+                                                              LocalDate endDate, int minQuantity,
+                                                              double percentage) {
+        BulkPurchaseDiscount promotion = new BulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
+        List<Promotion> promotions = promotionDAO.loadAll();
+        promotions.add(promotion);
+        promotionDAO.saveAll(promotions);
+        return promotion;
+    }
+}
