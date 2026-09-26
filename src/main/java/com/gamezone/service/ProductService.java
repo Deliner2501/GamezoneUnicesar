@@ -65,4 +65,21 @@ public class ProductService {
 public Product findProductById(String productId) {
     return productDAO.findById(productId);
 }
+
+/**
+ * Restores stock for a product, typically after a return is processed.
+ * The change is persisted immediately.
+ *
+ * @param productId the id of the product whose stock is being restored
+ * @param quantity  the quantity to add back to the product's stock
+ * @throws IllegalArgumentException if the product does not exist or the quantity is negative
+ */
+public void restoreStock(String productId, int quantity) {
+    Product product = productDAO.findById(productId);
+    if (product == null) {
+        throw new IllegalArgumentException("Product not found: " + productId);
+    }
+    product.increaseStock(quantity);
+    productDAO.update(product);
+}
 }
