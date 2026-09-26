@@ -55,4 +55,14 @@ public class ProductService {
         }
         return product.getStock() >= quantity;
     }
+    
+    /**
+ * Finds a product by its id.
+ *
+ * @param productId the id of the product to find
+ * @return the product with the given id, or null if none is found
+ */
+public Product findProductById(String productId) {
+    return productDAO.findById(productId);
+}
 }
