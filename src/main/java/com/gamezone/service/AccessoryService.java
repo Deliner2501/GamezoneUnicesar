@@ -145,6 +145,39 @@ public class AccessoryService {
     public Accessory findById(String id) {
         return accessoryDAO.findById(id);
     }
+    
+        /**
+     * Checks whether there is enough stock of a given accessory.
+     *
+     * @param accessoryId the id of the accessory to check
+     * @param quantity    the quantity requested
+     * @return true if there is enough stock, false otherwise
+     */
+    public boolean checkStock(String accessoryId, int quantity) {
+        Accessory accessory = accessoryDAO.findById(accessoryId);
+        if (accessory == null) {
+            return false;
+        }
+        return accessory.getStock() >= quantity;
+    }
+
+    /**
+     * Reduces the stock of an accessory and persists the change.
+     *
+     * @param accessoryId the id of the accessory to update
+     * @param quantity    the quantity to subtract from the current stock
+     * @throws IllegalArgumentException if the accessory does not exist or
+     *         the quantity exceeds the current stock
+     */
+    public void updateStock(String accessoryId, int quantity) {
+        Accessory accessory = accessoryDAO.findById(accessoryId);
+        if (accessory == null) {
+            throw new IllegalArgumentException("Accessory not found: " + accessoryId);
+        }
+        accessory.reduceStock(quantity);
+        accessoryDAO.update(accessory);
+    }
+    
 
     private void validateAccessory(Accessory accessory) {
         if (accessory.getId() == null || accessory.getId().isEmpty()) {
