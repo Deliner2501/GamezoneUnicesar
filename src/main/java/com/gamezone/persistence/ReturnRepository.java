@@ -31,11 +31,26 @@ public class ReturnRepository {
     private SaleService saleService;
     private ProductService productService;
 
+    /**
+     * Creates a ReturnRepository that uses the given SaleService and
+     * ProductService to resolve sale and product references when
+     * loading returns.
+     *
+     * @param saleService    the service used to look up the original sale by id
+     * @param productService the service used to look up returned products by id
+     */
     public ReturnRepository(SaleService saleService, ProductService productService) {
         this.saleService = saleService;
         this.productService = productService;
     }
 
+    /**
+     * Persists the complete list of returns, replacing the previous
+     * content of the file.
+     *
+     * @param returns the full list of returns to persist
+     * @throws IOException if the returns cannot be written to disk
+     */
     public void saveAll(List<Return> returns) throws IOException {
         File file = new File(FILE_PATH);
         File parent = file.getParentFile();
@@ -51,6 +66,13 @@ public class ReturnRepository {
         }
     }
 
+    /**
+     * Loads and returns every return stored in the returns file.
+     *
+     * @return the list of all persisted returns, or an empty list
+     *         if the file does not exist yet
+     * @throws IOException if the file cannot be read
+     */
     public List<Return> loadAll() throws IOException {
         List<Return> returns = new ArrayList<>();
         File file = new File(FILE_PATH);
@@ -73,6 +95,10 @@ public class ReturnRepository {
         return returns;
     }
 
+    /**
+     * Converts a Return into a single line of text for storage.
+     * Format: id;date;saleId;productId1,productId2,...;reason;refundAmount
+     */
     private String toLine(Return r) {
         StringBuilder productIds = new StringBuilder();
         List<Product> products = r.getReturnedProducts();
@@ -91,6 +117,10 @@ public class ReturnRepository {
                 + r.getRefundAmount();
     }
 
+    /**
+     * Reconstructs a Return from a stored line of text, resolving the
+     * original sale and the returned products back into real objects.
+     */
     private Return fromLine(String line) throws IOException {
         String[] parts = line.split(FIELD_SEPARATOR, -1);
         String id = parts[0];
