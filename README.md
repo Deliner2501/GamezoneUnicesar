@@ -346,11 +346,19 @@ GameZone Unicesar
 │   ├── List Customers
 │   └── List Sellers
 │
-└── Sales Management
-    ├── Register Sale
-    ├── List Sales
-    ├── Customer Purchase History
-    └── Seller Sales History
+├── Sales Management
+│   ├── Register Sale (products and/or accessories)
+│   ├── List Sales
+│   ├── Customer Purchase History
+│   └── Seller Sales History
+│
+└── Accessory Management
+    ├── Register Controller
+    ├── Register Cable
+    ├── Register Memory
+    ├── List All Accessories
+    ├── List Accessories by Type
+    └── Query Accessories Compatible With a Console
 ```
 
 ---
