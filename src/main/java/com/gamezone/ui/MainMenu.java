@@ -5,6 +5,7 @@ import com.gamezone.model.Console;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Product;
 import com.gamezone.model.Promotion;
+import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
 import com.gamezone.model.VideoGame;
@@ -73,6 +74,7 @@ public class MainMenu {
             System.out.println("3. Gestionar ventas");
             System.out.println("4. Gestionar accesorios");
             System.out.println("5. Gestionar promociones");
+            System.out.println("6. Gestionar devoluciones");
             System.out.println("0. Salir");
             System.out.print("Seleccione una opción: ");
 
@@ -83,6 +85,7 @@ public class MainMenu {
                 case "3" -> saleMenu();
                 case "4" -> accessoryMenu();
                 case "5" -> promotionMenu();
+                case "6" -> returnMenu();
                 case "0" -> running = false;
                 default -> System.out.println("Opción inválida.");
             }
@@ -579,6 +582,96 @@ private void printPromotions(List<Promotion> promotions) {
     for (Promotion promotion : promotions) {
         System.out.println(promotion.getId() + " - " + promotion.getName()
                 + " (" + promotion.getStartDate() + " a " + promotion.getEndDate() + ")");
+    }
+}
+
+// ===================== RETURN MENU =====================
+
+private void returnMenu() {
+    System.out.println("\n--- Gestión de devoluciones ---");
+    System.out.println("1. Registrar una devolución");
+    System.out.println("2. Consultar todas las devoluciones");
+    System.out.println("3. Consultar devoluciones por cliente");
+    System.out.println("4. Consultar devoluciones por venta");
+    System.out.println("0. Volver");
+    System.out.print("Seleccione una opción: ");
+
+    switch (scanner.nextLine()) {
+        case "1" -> registerReturn();
+        case "2" -> viewAllReturns();
+        case "3" -> viewReturnsByCustomer();
+        case "4" -> viewReturnsBySale();
+        case "0" -> { }
+        default -> System.out.println("Opción inválida.");
+    }
+}
+
+private void registerReturn() {
+    try {
+        System.out.print("Id de la venta original: ");
+        String saleId = scanner.nextLine();
+
+        List<String> productIds = new java.util.ArrayList<>();
+        boolean addingProducts = true;
+        while (addingProducts) {
+            System.out.print("Id de producto a devolver (deje vacío para terminar): ");
+            String productId = scanner.nextLine();
+            if (productId.isBlank()) {
+                addingProducts = false;
+            } else {
+                productIds.add(productId);
+            }
+        }
+
+        System.out.print("Motivo de la devolución: ");
+        String reason = scanner.nextLine();
+
+        Return processedReturn = returnService.registerReturn(saleId, productIds, reason);
+        System.out.println("Devolución registrada exitosamente.");
+        System.out.println(processedReturn.generateReturnReceipt());
+    } catch (IllegalArgumentException e) {
+        System.out.println("Error: " + e.getMessage());
+    } catch (java.io.IOException e) {
+        System.out.println("Error al procesar la devolución: " + e.getMessage());
+    }
+}
+
+private void viewAllReturns() {
+    try {
+        printReturns(returnService.viewAllReturns());
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+    }
+}
+
+private void viewReturnsByCustomer() {
+    try {
+        System.out.print("Id del cliente: ");
+        String customerId = scanner.nextLine();
+        printReturns(returnService.viewReturnsByCustomer(customerId));
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+    }
+}
+
+private void viewReturnsBySale() {
+    try {
+        System.out.print("Id de la venta: ");
+        String saleId = scanner.nextLine();
+        printReturns(returnService.viewReturnsBySale(saleId));
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+    }
+}
+
+private void printReturns(List<Return> returns) {
+    if (returns.isEmpty()) {
+        System.out.println("No se encontraron devoluciones.");
+        return;
+    }
+    for (Return r : returns) {
+        System.out.println(r.generateReturnReceipt());
+        System.out.println("---");
     }
 }
 }
