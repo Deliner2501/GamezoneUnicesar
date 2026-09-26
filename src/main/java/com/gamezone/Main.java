@@ -1,8 +1,10 @@
 package com.gamezone;
 
+import com.gamezone.persistence.AccessoryDAO;
 import com.gamezone.persistence.PersonDAO;
 import com.gamezone.persistence.ProductDAO;
 import com.gamezone.persistence.SaleDAO;
+import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.SaleService;
@@ -26,15 +28,17 @@ public class Main {
             // Persistence layer
             PersonDAO personDAO = new PersonDAO();
             ProductDAO productDAO = new ProductDAO();
+            AccessoryDAO accessoryDAO = new AccessoryDAO();
             SaleDAO saleDAO = new SaleDAO(personDAO, productDAO);
 
             // Service layer
             PersonService personService = new PersonService();
             ProductService productService = new ProductService(productDAO);
-            SaleService saleService = new SaleService(saleDAO, productDAO, personService);
+            AccessoryService accessoryService = new AccessoryService(accessoryDAO);
+            SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, personService);
 
             // UI layer
-            MainMenu mainMenu = new MainMenu(personService, productService, saleService);
+            MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService);
             mainMenu.start();
 
         } catch (IOException e) {
