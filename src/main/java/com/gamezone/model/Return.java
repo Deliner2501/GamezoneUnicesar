@@ -7,7 +7,9 @@ import java.util.List;
  * Represents a return transaction, referencing an original sale and
  * the specific products being returned from it. The reference to the
  * original sale and the list of returned products are immutable once
- * the return is created.
+ * the return is created. The returned products are not necessarily
+ * the full set of products from the original sale — a customer may
+ * choose to return only some of them.
  */
 public class Return {
 
