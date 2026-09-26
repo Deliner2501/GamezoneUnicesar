@@ -593,6 +593,7 @@ private void returnMenu() {
     System.out.println("2. Consultar todas las devoluciones");
     System.out.println("3. Consultar devoluciones por cliente");
     System.out.println("4. Consultar devoluciones por venta");
+    System.out.println("5. Consultar balance mensual");
     System.out.println("0. Volver");
     System.out.print("Seleccione una opción: ");
 
@@ -601,6 +602,7 @@ private void returnMenu() {
         case "2" -> viewAllReturns();
         case "3" -> viewReturnsByCustomer();
         case "4" -> viewReturnsBySale();
+        case "5" -> consultMonthlyBalance();
         case "0" -> { }
         default -> System.out.println("Opción inválida.");
     }
@@ -672,6 +674,22 @@ private void printReturns(List<Return> returns) {
     for (Return r : returns) {
         System.out.println(r.generateReturnReceipt());
         System.out.println("---");
+    }
+}
+
+private void consultMonthlyBalance() {
+    try {
+        System.out.print("Mes (1-12): ");
+        int month = Integer.parseInt(scanner.nextLine());
+        System.out.print("Año (AAAA): ");
+        int year = Integer.parseInt(scanner.nextLine());
+
+        double balance = returnService.generateMonthlyBalance(month, year);
+        System.out.println("Balance neto para " + month + "/" + year + ": " + balance);
+    } catch (NumberFormatException e) {
+        System.out.println("Error: el mes y el año deben ser valores numéricos válidos.");
+    } catch (java.io.IOException e) {
+        System.out.println("Error al calcular el balance: " + e.getMessage());
     }
 }
 }
