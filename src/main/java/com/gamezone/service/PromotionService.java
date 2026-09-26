@@ -7,7 +7,7 @@ import com.gamezone.model.Promotion;
 import com.gamezone.persistence.PromotionDAO;
 import java.time.LocalDate;
 import java.util.List;
-
+import com.gamezone.model.Sale;
 import java.util.ArrayList;
 
 /**
@@ -110,4 +110,41 @@ public class PromotionService {
         }
         return active;
     }
+    
+        /**
+     * Finds, among the currently active promotions, the one that would
+     * grant the largest monetary discount to the given sale.
+     *
+     * @param sale the sale to evaluate
+     * @return the best applicable promotion, or null if no active
+     *         promotion applies or the maximum discount is zero
+     */
+    public Promotion findBestPromotionFor(Sale sale) {
+        Promotion best = null;
+        double bestDiscount = 0.0;
+
+        for (Promotion p : listActivePromotions()) {
+            double discount = p.calculateDiscount(sale);
+            if (discount > bestDiscount) {
+                bestDiscount = discount;
+                best = p;
+            }
+        }
+
+        return best;
+    }
+
+    /**
+     * Finds a promotion by its id.
+     *
+     * @param id the id of the promotion to find
+     * @return the matching promotion, or null if none is found
+     */
+    public Promotion findById(String id) {
+        for (Promotion p : promotionDAO.loadAll()) {
+            if (p.getId().equals(id)) return p;
+        }
+        return null;
+    }
+    
 }
