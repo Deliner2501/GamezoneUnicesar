@@ -39,7 +39,7 @@ public class Main {
             ProductService productService = new ProductService(productDAO);
             AccessoryService accessoryService = new AccessoryService(accessoryDAO);
             PromotionService promotionService = new PromotionService(promotionDAO);
-            SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, personService);
+            SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, promotionService, personService);
 
             // UI layer
             MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService);
