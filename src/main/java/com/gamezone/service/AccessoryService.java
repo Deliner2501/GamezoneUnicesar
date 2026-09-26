@@ -166,18 +166,23 @@ public class AccessoryService {
      *
      * @param accessoryId the id of the accessory to update
      * @param quantity    the quantity to subtract from the current stock
-     * @throws IllegalArgumentException if the accessory does not exist or
-     *         the quantity exceeds the current stock
+     * @throws IllegalArgumentException if the accessory does not exist,
+     *         the quantity is not positive, or it exceeds the current stock
      */
     public void updateStock(String accessoryId, int quantity) {
         Accessory accessory = accessoryDAO.findById(accessoryId);
         if (accessory == null) {
             throw new IllegalArgumentException("Accessory not found: " + accessoryId);
         }
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be greater than zero");
+        }
+        if (accessory.getStock() < quantity) {
+            throw new IllegalArgumentException("Not enough stock for accessory: " + accessoryId);
+        }
         accessory.reduceStock(quantity);
         accessoryDAO.update(accessory);
     }
-    
 
     private void validateAccessory(Accessory accessory) {
         if (accessory.getId() == null || accessory.getId().isEmpty()) {
