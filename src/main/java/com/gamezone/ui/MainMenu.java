@@ -6,6 +6,7 @@ import com.gamezone.model.Product;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
 import com.gamezone.model.VideoGame;
+import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.SaleService;
@@ -27,6 +28,7 @@ public class MainMenu {
 
     private final PersonService personService;
     private final ProductService productService;
+    private final AccessoryService accessoryService;
     private final SaleService saleService;
     private final Scanner scanner;
 
@@ -36,13 +38,16 @@ public class MainMenu {
      * @param personService  the service for managing customers and sellers
      * @param productService the service for managing products
      * @param saleService    the service for registering and querying sales
+     * @param accessoryService the service for managing accessories
      */
-    public MainMenu(PersonService personService, ProductService productService, SaleService saleService) {
-        this.personService = personService;
-        this.productService = productService;
-        this.saleService = saleService;
-        this.scanner = new Scanner(System.in);
-    }
+    public MainMenu(PersonService personService, ProductService productService,
+                 SaleService saleService, AccessoryService accessoryService) {
+    this.personService = personService;
+    this.productService = productService;
+    this.saleService = saleService;
+    this.accessoryService = accessoryService;
+    this.scanner = new Scanner(System.in);
+}
 
     /**
      * Starts the main application loop, showing the menu until
