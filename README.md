@@ -60,6 +60,18 @@ The system provides the following main functionalities:
 * List promotions currently active.
 * Automatically select the promotion that grants the largest discount for a given sale.
 
+### Return Management
+
+* Register a return for one or more products from a previous sale (partial returns allowed).
+* Validate that the return is requested within 30 calendar days of the original sale.
+* Validate that the returned products actually belong to the referenced sale.
+* Automatically calculate the refund amount.
+* Automatically restore the stock of returned products.
+* List all registered returns.
+* Consult returns associated with a specific customer.
+* Consult returns associated with a specific sale.
+* Generate a monthly balance report (sales minus returns) for a given month and year.
+
 ---
 
 ## Technologies Used
@@ -93,6 +105,8 @@ The application follows a four-layer architecture:
 │ AccessoryService        │
 │ PromotionService        │
 │ SaleService             │
+│ ReturnService           │
+└────────────┬────────────┘
 └────────────┬────────────┘
              │
        ┌─────┴─────┐
@@ -107,7 +121,8 @@ The application follows a four-layer architecture:
 │ Controller │ │ PromotionDAO │
 │ Cable      │ │              │
 │ Memory     │ │              │
-│ Promotion  │ │              │
+│ Promotion  │ │ ReturnRepository│
+│ Return     │ │              │
 │ Person     │ │              │
 │ Customer   │ └──────┬───────┘
 │ Seller     │        │
@@ -134,6 +149,7 @@ The `model` layer contains the main domain entities of the system.
 * `PercentageDiscount` — applies a flat percentage discount to a sale's total.
 * `CategoryDiscount` — applies a percentage discount only to products of a specific category.
 * `BulkPurchaseDiscount` — applies a percentage discount when a sale reaches a minimum product quantity.
+* `Return` — represents a return transaction, referencing an original sale and the specific products returned from it.
 
 `Product` uses polymorphism through the `getFullDescription()` abstract method, which is implemented by its subclasses.
 
@@ -148,6 +164,7 @@ The `persistence` layer is responsible for saving and loading information from f
 * `SaleDAO` — manages sales.
 * `AccessoryDAO` — manages controllers, cables, and memories.
 * `PromotionDAO` — manages promotional discount campaigns.
+* `ReturnRepository` — manages returns, resolving references to the original sale and returned products.
 
 The system uses files inside the `data` directory to maintain information between executions.
 
@@ -160,6 +177,7 @@ The `service` layer contains the application's business rules.
 * `SaleService` — handles sales, validations, total processing, and inventory updates for both products and accessories.
 * `AccessoryService` — handles accessory registration, console compatibility, listing, and stock updates.
 * `PromotionService` — handles promotion registration, validity checks, and selecting the best applicable promotion for a sale.
+* `ReturnService` — handles return registration with 30-day and ownership validation, stock restoration, and the monthly balance report.
 
 The service layer prevents invalid operations before information is persisted.
 
@@ -181,7 +199,8 @@ GamezoneUnicesar/
 ├── data/
 │   ├── sellers.csv
 │   ├── accessories.csv
-│   └── promotions.csv
+│   ├── promotions.csv
+│   └── returns.csv
 │
 ├── docs/
 │   ├── ai-usage/
@@ -195,7 +214,9 @@ GamezoneUnicesar/
 │   ├── accessory-analysis.md
 │   ├── accessory-class-diagram.md
 │   ├── promotion-analysis.md
-│   └── promotion-class-diagram.md
+│   ├── promotion-class-diagram.md
+│   ├── return-analysis.md
+│   └── return-class-diagram.md
 │
 ├── src/
 │   └── main/
@@ -229,6 +250,7 @@ The main files are:
 * `data/sales.txt` — stores registered sales.
 * `data/accessories.csv` — stores controllers, cables, and memories.
 * `data/promotions.csv` — stores promotional discount campaigns.
+* `data/returns.csv` — stores registered returns.
 
 If some files do not exist when the application starts, the system creates the necessary data structures and generates the files when information is saved.
 
@@ -350,6 +372,7 @@ The application will display the main console menu:
 3. Gestionar ventas
 4. Gestionar accesorios
 5. Gestionar promociones
+6. Gestionar devoluciones
 0. Salir
 ```
 
@@ -386,12 +409,19 @@ GameZone Unicesar
 │   ├── List Accessories by Type
 │   └── Query Accessories Compatible With a Console
 │
-└── Promotion Management
-    ├── Register Percentage Discount
-    ├── Register Category Discount
-    ├── Register Bulk Purchase Discount
-    ├── List All Promotions
-    └── List Active Promotions
+├── Promotion Management
+│   ├── Register Percentage Discount
+│   ├── Register Category Discount
+│   ├── Register Bulk Purchase Discount
+│   ├── List All Promotions
+│   └── List Active Promotions
+│
+└── Return Management
+    ├── Register Return
+    ├── View All Returns
+    ├── View Returns by Customer
+    ├── View Returns by Sale
+    └── Consult Monthly Balance
 ```
 
 ---
@@ -451,6 +481,8 @@ Additional project documentation is available in the `docs` directory:
 * [`accessory-class-diagram.md`](docs/accessory-class-diagram.md) — class diagram for the accessory module.
 * [`promotion-analysis.md`](docs/promotion-analysis.md) — analysis questions and answers for the promotion module.
 * [`promotion-class-diagram.md`](docs/promotion-class-diagram.md) — class diagram for the promotion module.
+* [`return-analysis.md`](docs/return-analysis.md) — analysis questions and answers for the return module.
+* [`return-class-diagram.md`](docs/return-class-diagram.md) — class diagram for the return module.
 * [`ai-usage/`](docs/ai-usage/) — individual AI usage logs for each team member.
 
 ---
