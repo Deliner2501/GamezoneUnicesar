@@ -15,6 +15,7 @@ import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
 import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
+import com.gamezone.service.WarrantyService;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -35,6 +36,7 @@ public class MainMenu {
     private final ProductService productService;
     private final AccessoryService accessoryService;
     private final PromotionService promotionService;
+    private final WarrantyService warrantyService;
     private final ReturnService returnService;
     private final SaleService saleService;
     private final Scanner scanner;
@@ -48,16 +50,19 @@ public class MainMenu {
      * @param accessoryService the service for managing accessories
      * @param promotionService the service for managing promotions
      * @param returnService the service for managing returns
+     * @param warrantyService the service for managing warranties
      */
     public MainMenu(PersonService personService, ProductService productService,
                  SaleService saleService, AccessoryService accessoryService,
-                 PromotionService promotionService, ReturnService returnService) {
+                 PromotionService promotionService, ReturnService returnService,
+                 WarrantyService warrantyService) {
     this.personService = personService;
     this.productService = productService;
     this.saleService = saleService;
     this.accessoryService = accessoryService;
     this.promotionService = promotionService;
     this.returnService = returnService;
+    this.warrantyService = warrantyService;
     this.scanner = new Scanner(System.in);
 }
 
