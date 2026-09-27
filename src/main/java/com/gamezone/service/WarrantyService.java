@@ -37,6 +37,7 @@ public class WarrantyService {
      * @param sale      the sale the warranty is associated with
      * @param startDate the date the warranty coverage starts
      * @return the newly created basic warranty
+     * @throws IllegalArgumentException if product, sale, or startDate is null
      * @throws IOException if the warranty cannot be persisted
      */
     public BasicWarranty assignBasicWarranty(Product product, Sale sale, LocalDate startDate) throws IOException {
@@ -65,9 +66,11 @@ public class WarrantyService {
      * @param sale      the sale the warranty is associated with
      * @param startDate the date the warranty coverage starts
      * @return the newly created extended warranty
+     * @throws IllegalArgumentException if product, sale, or startDate is null
      * @throws IOException if the warranty cannot be persisted
      */
-    public ExtendedWarranty assignExtendedWarranty(Product product, Sale sale, LocalDate startDate) throws IOException {        if (product == null || sale == null) {
+    public ExtendedWarranty assignExtendedWarranty(Product product, Sale sale, LocalDate startDate) throws IOException {
+        if (product == null || sale == null) {
             throw new IllegalArgumentException("Debe indicar el producto y la venta para asignar la garantía");
         }
         if (startDate == null) {
