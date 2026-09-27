@@ -199,7 +199,7 @@ public class Sale {
      * @return the subtotal minus the discount amount
      */
     public double getFinalTotal() {
-        return total - discountAmount;
+        return total - discountAmount + additionalCost;
     }
     
     /**
@@ -216,7 +216,6 @@ public void addAdditionalCost(double amount) {
         throw new IllegalArgumentException("Additional cost cannot be negative");
     }
     this.additionalCost += amount;
-    this.total += amount;
 }
 
 /**
