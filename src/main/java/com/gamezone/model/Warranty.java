@@ -102,4 +102,16 @@ public abstract class Warranty {
         certificate.append("Costo adicional: ").append(getAdditionalCost());
         return certificate.toString();
     }
+        /**
+     * Returns a readable representation of this warranty.
+     *
+     * @return a formatted string with the warranty's basic data
+     */
+    @Override
+    public String toString() {
+        return getWarrantyType() + "{" + "id=" + id
+                + ", product=" + product.getTitle()
+                + ", startDate=" + startDate
+                + ", endDate=" + endDate + "}";
+    }
 }
