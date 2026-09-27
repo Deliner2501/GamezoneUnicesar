@@ -43,6 +43,9 @@ public class WarrantyService {
         if (product == null || sale == null) {
             throw new IllegalArgumentException("Debe indicar el producto y la venta para asignar la garantía");
         }
+        if (startDate == null) {
+            throw new IllegalArgumentException("Debe indicar la fecha de inicio de la garantía");
+        }
 
         List<Warranty> existingWarranties = warrantyRepository.loadAll();
         String warrantyId = generateWarrantyId(existingWarranties);
@@ -64,9 +67,11 @@ public class WarrantyService {
      * @return the newly created extended warranty
      * @throws IOException if the warranty cannot be persisted
      */
-    public ExtendedWarranty assignExtendedWarranty(Product product, Sale sale, LocalDate startDate) throws IOException {
-        if (product == null || sale == null) {
+    public ExtendedWarranty assignExtendedWarranty(Product product, Sale sale, LocalDate startDate) throws IOException {        if (product == null || sale == null) {
             throw new IllegalArgumentException("Debe indicar el producto y la venta para asignar la garantía");
+        }
+        if (startDate == null) {
+            throw new IllegalArgumentException("Debe indicar la fecha de inicio de la garantía");
         }
 
         List<Warranty> existingWarranties = warrantyRepository.loadAll();
@@ -136,6 +141,10 @@ public class WarrantyService {
      * @throws IOException if the warranties file cannot be read
      */
     public List<Warranty> listWarrantiesExpiringSoon(int daysAhead) throws IOException {
+        if (daysAhead < 0) {
+            throw new IllegalArgumentException("El número de días de anticipación no puede ser negativo");
+        }
+
         List<Warranty> result = new ArrayList<>();
         LocalDate today = LocalDate.now();
         LocalDate limit = today.plusDays(daysAhead);
