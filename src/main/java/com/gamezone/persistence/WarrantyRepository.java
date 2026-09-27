@@ -1,12 +1,7 @@
 package com.gamezone.persistence;
 
-import com.gamezone.model.BasicWarranty;
 import com.gamezone.model.ExtendedWarranty;
-import com.gamezone.model.Product;
-import com.gamezone.model.Sale;
 import com.gamezone.model.Warranty;
-import com.gamezone.service.ProductService;
-import com.gamezone.service.SaleService;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -19,33 +14,66 @@ import java.util.List;
 
 /**
  * Handles saving and loading Warranty data to and from a text file.
- * Since a warranty references an associated product and sale, this
- * class relies on SaleService and ProductService to resolve those
- * references back into real objects when a warranty is loaded from
- * disk. A discriminator field is stored per line to tell BasicWarranty
- * and ExtendedWarranty records apart when reconstructing them.
+ * To avoid a circular dependency with SaleService (which needs to use
+ * WarrantyService when registering a sale), this repository does not
+ * resolve product or sale references on its own: it only reads and
+ * writes raw identifiers. Turning a stored record back into a real
+ * Warranty object is the responsibility of WarrantyService.
  */
 public class WarrantyRepository {
 
     private static final String FILE_PATH = "data/warranties.csv";
     private static final String FIELD_SEPARATOR = ";";
-    private static final String BASIC_TYPE = "BASIC";
     private static final String EXTENDED_TYPE = "EXTENDED";
-
-    private SaleService saleService;
-    private ProductService productService;
+    private static final String BASIC_TYPE = "BASIC";
 
     /**
-     * Creates a WarrantyRepository that uses the given SaleService and
-     * ProductService to resolve sale and product references when
-     * loading warranties.
-     *
-     * @param saleService    the service used to look up the associated sale by id
-     * @param productService the service used to look up the associated product by id
+     * A raw, unresolved warranty record as stored on disk: just ids
+     * and dates, with no references to actual Product or Sale objects.
      */
-    public WarrantyRepository(SaleService saleService, ProductService productService) {
-        this.saleService = saleService;
-        this.productService = productService;
+    public static class WarrantyRecord {
+        private String type;
+        private String id;
+        private String productId;
+        private String saleId;
+        private LocalDate startDate;
+
+        /**
+         * Creates a raw warranty record.
+         *
+         * @param type      the discriminator ("BASIC" or "EXTENDED")
+         * @param id        the warranty id
+         * @param productId the id of the covered product
+         * @param saleId    the id of the associated sale
+         * @param startDate the date the warranty coverage starts
+         */
+        public WarrantyRecord(String type, String id, String productId, String saleId, LocalDate startDate) {
+            this.type = type;
+            this.id = id;
+            this.productId = productId;
+            this.saleId = saleId;
+            this.startDate = startDate;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getProductId() {
+            return productId;
+        }
+
+        public String getSaleId() {
+            return saleId;
+        }
+
+        public LocalDate getStartDate() {
+            return startDate;
+        }
     }
 
     /**
@@ -71,17 +99,18 @@ public class WarrantyRepository {
     }
 
     /**
-     * Loads and returns every warranty stored in the warranties file.
+     * Loads and returns every warranty record stored in the warranties
+     * file, without resolving product or sale references.
      *
-     * @return the list of all persisted warranties, or an empty list
-     *         if the file does not exist yet
+     * @return the list of all persisted warranty records, or an empty
+     *         list if the file does not exist yet
      * @throws IOException if the file cannot be read
      */
-    public List<Warranty> loadAll() throws IOException {
-        List<Warranty> warranties = new ArrayList<>();
+    public List<WarrantyRecord> loadAll() throws IOException {
+        List<WarrantyRecord> records = new ArrayList<>();
         File file = new File(FILE_PATH);
         if (!file.exists()) {
-            return warranties;
+            return records;
         }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -90,13 +119,10 @@ public class WarrantyRepository {
                 if (line.isBlank()) {
                     continue;
                 }
-                Warranty warranty = fromLine(line);
-                if (warranty != null) {
-                    warranties.add(warranty);
-                }
+                records.add(fromLine(line));
             }
         }
-        return warranties;
+        return records;
     }
 
     /**
@@ -113,33 +139,15 @@ public class WarrantyRepository {
     }
 
     /**
-     * Reconstructs a Warranty from a stored line of text, resolving the
-     * associated product and sale back into real objects and creating
-     * the correct concrete subclass based on the stored discriminator.
+     * Parses a stored line of text into a raw warranty record.
      */
-    private Warranty fromLine(String line) throws IOException {
+    private WarrantyRecord fromLine(String line) {
         String[] parts = line.split(FIELD_SEPARATOR, -1);
         String type = parts[0];
         String id = parts[1];
         String productId = parts[2];
         String saleId = parts[3];
         LocalDate startDate = LocalDate.parse(parts[4]);
-
-        Product product = productService.findProductById(productId);
-        if (product == null) {
-            System.out.println("Skipping warranty " + id + ": product not found");
-            return null;
-        }
-
-        Sale sale = saleService.findSaleById(saleId);
-        if (sale == null) {
-            System.out.println("Skipping warranty " + id + ": sale not found");
-            return null;
-        }
-
-        if (EXTENDED_TYPE.equals(type)) {
-            return new ExtendedWarranty(id, product, sale, startDate);
-        }
-        return new BasicWarranty(id, product, sale, startDate);
+        return new WarrantyRecord(type, id, productId, saleId, startDate);
     }
 }
