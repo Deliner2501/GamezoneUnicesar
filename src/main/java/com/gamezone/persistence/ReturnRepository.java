@@ -3,6 +3,7 @@ package com.gamezone.persistence;
 import com.gamezone.model.Product;
 import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
+import com.gamezone.service.AccessoryService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.SaleService;
 import java.io.BufferedReader;
@@ -30,19 +31,24 @@ public class ReturnRepository {
 
     private SaleService saleService;
     private ProductService productService;
+    private AccessoryService accessoryService;
 
     /**
-     * Creates a ReturnRepository that uses the given SaleService and
-     * ProductService to resolve sale and product references when
-     * loading returns.
+     * Creates a ReturnRepository that uses the given SaleService,
+     * ProductService and AccessoryService to resolve sale, product
+     * and accessory references when loading returns.
      *
-     * @param saleService    the service used to look up the original sale by id
-     * @param productService the service used to look up returned products by id
+     * @param saleService      the service used to look up the original sale by id
+     * @param productService   the service used to look up returned products by id
+     * @param accessoryService the service used to look up returned accessories by id
      */
-    public ReturnRepository(SaleService saleService, ProductService productService) {
+    public ReturnRepository(SaleService saleService, ProductService productService,
+                             AccessoryService accessoryService) {
         this.saleService = saleService;
         this.productService = productService;
+        this.accessoryService = accessoryService;
     }
+    
 
     /**
      * Persists the complete list of returns, replacing the previous
@@ -138,6 +144,9 @@ public class ReturnRepository {
             String[] productIds = parts[3].split(PRODUCT_SEPARATOR);
             for (String productId : productIds) {
                 Product product = productService.findProductById(productId);
+                if (product == null) {
+                    product = accessoryService.findById(productId);
+                }
                 if (product != null) {
                     returnedProducts.add(product);
                 }

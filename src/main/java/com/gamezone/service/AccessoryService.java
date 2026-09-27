@@ -184,6 +184,25 @@ public class AccessoryService {
         accessoryDAO.update(accessory);
     }
 
+    
+    /**
+     * Increases the stock of an accessory, used when a returned
+     * accessory becomes available for sale again. Persists the
+     * updated stock.
+     *
+     * @param accessoryId the id of the accessory whose stock is restored
+     * @param quantity    the quantity to add back to stock
+     * @throws IllegalArgumentException if the accessory does not exist
+     */
+    public void restoreStock(String accessoryId, int quantity) {
+        Accessory accessory = accessoryDAO.findById(accessoryId);
+        if (accessory == null) {
+            throw new IllegalArgumentException("Accessory not found: " + accessoryId);
+        }
+        accessory.increaseStock(quantity);
+        accessoryDAO.update(accessory);
+    }
+    
     private void validateAccessory(Accessory accessory) {
         if (accessory.getId() == null || accessory.getId().isEmpty()) {
             throw new IllegalArgumentException("Accessory must have a valid id");
