@@ -69,8 +69,20 @@ public abstract class Warranty {
      * @param date the date to check
      * @return true if the date falls within the warranty's coverage range
      */
-    public boolean isActive(LocalDate date) {
+       public boolean isActive(LocalDate date) {
         return !date.isBefore(startDate) && !date.isAfter(endDate);
+    }
+
+    /**
+     * Calculates how many days remain until this warranty expires,
+     * counting from the given reference date.
+     *
+     * @param referenceDate the date to calculate from
+     * @return the number of days remaining, or a negative number if
+     *         the warranty has already expired
+     */
+    public long getRemainingDays(LocalDate referenceDate) {
+        return java.time.temporal.ChronoUnit.DAYS.between(referenceDate, endDate);
     }
 
     /**
