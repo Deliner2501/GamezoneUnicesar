@@ -2,10 +2,12 @@ package com.gamezone.service;
 
 import com.gamezone.model.Customer;
 import com.gamezone.model.Accessory;
+import com.gamezone.model.Console;
 import com.gamezone.model.Product;
 import com.gamezone.model.Promotion;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
+import com.gamezone.model.Warranty;
 import com.gamezone.persistence.ProductDAO;
 import com.gamezone.persistence.AccessoryDAO;
 import com.gamezone.persistence.SaleDAO;
@@ -27,6 +29,7 @@ public class SaleService {
     private ProductDAO productDAO;
     private AccessoryDAO accessoryDAO;
     private PromotionService promotionService;
+    private WarrantyService warrantyService;
     private PersonService personService;
 
     /**
@@ -38,13 +41,26 @@ public class SaleService {
      * @param accessoryDAO  the DAO used to look up and update accessory stock
      * @param promotionService the service used to find and apply the best available promotion
      */
-    public SaleService(SaleDAO saleDAO, ProductDAO productDAO, AccessoryDAO accessoryDAO,
+        public SaleService(SaleDAO saleDAO, ProductDAO productDAO, AccessoryDAO accessoryDAO,
                     PromotionService promotionService, PersonService personService) {
     this.saleDAO = saleDAO;
     this.productDAO = productDAO;
     this.accessoryDAO = accessoryDAO;
     this.promotionService = promotionService;
     this.personService = personService;
+}
+
+/**
+ * Sets the warranty service used to automatically assign basic and
+ * extended warranties when a sale is registered. Injected separately
+ * from the constructor to break the circular dependency between
+ * SaleService and WarrantyRepository (which itself depends on
+ * SaleService to resolve sale references when loading warranties).
+ *
+ * @param warrantyService the service used to assign warranties
+ */
+public void setWarrantyService(WarrantyService warrantyService) {
+    this.warrantyService = warrantyService;
 }
 
     /**
@@ -60,13 +76,16 @@ public class SaleService {
      * @param customerId        the id of the customer making the purchase
      * @param sellerId          the id of the seller attending the sale
      * @param productQuantities a map of product id to quantity purchased
+     * @param productIdsWithExtendedWarranty ids of the console products that should
+     *        additionally receive an extended warranty (can be null or empty)
      * @return the registered sale, with its total already calculated
      * @throws IllegalArgumentException if the product list is empty, a
      *         customer/seller/product is not found, or stock is insufficient
      * @throws IOException if the sale cannot be persisted
      */
-    public Sale registerSale(String saleId, LocalDate date, String customerId,
-                              String sellerId, Map<String, Integer> productQuantities) throws IOException {
+        public Sale registerSale(String saleId, LocalDate date, String customerId, String sellerId,
+                              Map<String, Integer> productQuantities,
+                              List<String> productIdsWithExtendedWarranty) throws IOException {
 
         if (productQuantities == null || productQuantities.isEmpty()) {
             throw new IllegalArgumentException("A sale must contain at least one product");
@@ -123,6 +142,7 @@ public class SaleService {
 
         // Second pass: everything is valid, so build the sale and commit the changes.
         Sale sale = new Sale(saleId, date, customer, seller);
+        double warrantyCost = 0.0;
         for (Map.Entry<Product, Integer> entry : resolvedProducts.entrySet()) {
             Product product = entry.getKey();
             int quantity = entry.getValue();
@@ -133,6 +153,17 @@ public class SaleService {
 
             product.reduceStock(quantity);
             productDAO.update(product);
+
+            if (product instanceof Console) {
+                warrantyService.assignBasicWarranty(product, sale, sale.getDate());
+
+                boolean wantsExtendedWarranty = productIdsWithExtendedWarranty != null
+                        && productIdsWithExtendedWarranty.contains(product.getId());
+                if (wantsExtendedWarranty) {
+                    Warranty extendedWarranty = warrantyService.assignExtendedWarranty(product, sale, sale.getDate());
+                    warrantyCost += extendedWarranty.getAdditionalCost();
+                }
+            }
         }
         for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
             Accessory accessory = entry.getKey();
@@ -150,6 +181,10 @@ public class SaleService {
         if (bestPromotion != null) {
             double discount = bestPromotion.calculateDiscount(sale);
             sale.applyPromotion(bestPromotion.getName(), discount);
+        }
+
+        if (warrantyCost > 0) {
+            sale.addAdditionalCost(warrantyCost);
         }
 
         saleDAO.save(sale);

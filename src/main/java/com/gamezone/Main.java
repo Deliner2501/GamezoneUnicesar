@@ -6,12 +6,14 @@ import com.gamezone.persistence.ProductDAO;
 import com.gamezone.persistence.PromotionDAO;
 import com.gamezone.persistence.ReturnRepository;
 import com.gamezone.persistence.SaleDAO;
+import com.gamezone.persistence.WarrantyRepository;
 import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
 import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
+import com.gamezone.service.WarrantyService;
 import com.gamezone.ui.MainMenu;
 import java.io.IOException;
 
@@ -37,6 +39,7 @@ public class Main {
             SaleDAO saleDAO = new SaleDAO(personDAO, productDAO);
 
             // Service layer
+            // Service layer
             PersonService personService = new PersonService();
             ProductService productService = new ProductService(productDAO);
             AccessoryService accessoryService = new AccessoryService(accessoryDAO);
@@ -44,9 +47,12 @@ public class Main {
             SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, promotionService, personService);
             ReturnRepository returnRepository = new ReturnRepository(saleService, productService);
             ReturnService returnService = new ReturnService(returnRepository, saleService, productService);
+            WarrantyRepository warrantyRepository = new WarrantyRepository(saleService, productService);
+            WarrantyService warrantyService = new WarrantyService(warrantyRepository);
+            saleService.setWarrantyService(warrantyService);
 
             // UI layer
-            MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService);
+            MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService);
             mainMenu.start();
 
         } catch (IOException e) {
