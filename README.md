@@ -54,7 +54,7 @@ The system provides the following main functionalities:
 ### Promotion Management
 
 * Register percentage-based promotions.
-* Register category-based promotions (videogames or consoles).
+* Register category-based promotions (videogames, consoles, or accessories).
 * Register bulk-purchase promotions.
 * List all registered promotions.
 * List promotions currently active.
@@ -504,6 +504,8 @@ Additional project documentation is available in the `docs` directory:
 * [`class-diagram.md`](docs/class-diagram.md) — class diagram.
 * [`hierarchy-diagram.md`](docs/hierarchy-diagram.md) — class hierarchy.
 * [`layers-diagram.md`](docs/layers-diagram.md) — layered architecture diagram.
+* [`integration-analysis.md`](docs/integration-analysis.md) — description, cause, and applied solution for each integration adjustment (A1-A7).
+* [`integrated-class-diagram.md`](docs/integrated-class-diagram.md) — single class diagram covering all four layers and all four integrated modules.
 * [`accessory-analysis.md`](docs/accessory-analysis.md) — analysis questions and answers for the accessory module.
 * [`accessory-class-diagram.md`](docs/accessory-class-diagram.md) — class diagram for the accessory module.
 * [`promotion-analysis.md`](docs/promotion-analysis.md) — analysis questions and answers for the promotion module.
