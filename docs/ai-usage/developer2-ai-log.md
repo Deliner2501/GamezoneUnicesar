@@ -100,3 +100,40 @@ That error appears the first time you push a new branch to GitHub, because there
 | Decision | Accepted the clarification and placed the code in ReturnService.java as indicated, without creating additional files. |
 | Related commit | fix: split monthly sales and returns totals in ReturnService |
 
+
+
+## Requirement 5 - Phase 4 (A7 - Return warranty cancellation)
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, feature/return-warranty-cancellation |
+| Objective | Add the method to cancel the warranties of a returned console and calculate the reimbursable amount, per adjustment A7 of Requirement 5. |
+| Query | Asked how to implement cancelWarranties(String productId, String saleId): double in WarrantyService, removing a product's warranties for a given sale and returning the reimbursable cost. |
+| Response | Identified that Warranty.getAdditionalCost() already returns 0.0 for BasicWarranty and 10% of the price for ExtendedWarranty, so cancelWarranties only needed to load all warranties, filter the ones matching productId and saleId, sum their additional cost, save the rest with WarrantyRepository.saveAll (which replaces the whole file), and return the sum. |
+| Decision | Accepted as proposed, reusing getAdditionalCost() instead of duplicating the warranty-type logic. |
+| Related commit | feat: add cancelWarranties to remove warranties on console return |
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, feature/return-warranty-cancellation |
+| Objective | Inject WarrantyService as a dependency of ReturnService so it can invoke cancelWarranties from returns. |
+| Query | Asked how to add WarrantyService to ReturnService's constructor without breaking the rest of the wiring in Main. |
+| Response | Proposed adding the field and constructor parameter to ReturnService, and reordering Main.java so WarrantyService is built before ReturnService, since WarrantyService does not depend on ReturnService and therefore does not create a circular dependency. |
+| Decision | Accepted, and the construction order in Main.java was updated accordingly. |
+| Related commit | feat: inject WarrantyService into ReturnService |
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, feature/return-warranty-cancellation |
+| Objective | Include the warranty refund amount in Return's calculation and receipt, and invoke cancelWarranties for each returned console in ReturnService. |
+| Query | Asked how to modify Return and ReturnService.registerReturn to add the warranty refund to the total amount, and whether ReturnRepository needed any change. |
+| Response | Proposed adding warrantyRefund to Return's constructor and including it in calculateRefundAmount and generateReturnReceipt; in ReturnService, calculating the warranty refund before creating the Return, only for products instanceof Console. While cross-checking references to the modified constructor, found that ReturnRepository.fromLine still used the old Return constructor and that the CSV file did not persist warrantyRefund, which would have lost that value on reload (the warranties would already be deleted and could not be recalculated); fixed by adding the field to the file format. |
+| Decision | All proposed changes were accepted, including the ReturnRepository fix found during the cross-check of the modified constructor's references. |
+| Related commit | feat: refund canceled warranties on console return and persist them |
+
