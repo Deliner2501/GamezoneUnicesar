@@ -9,6 +9,7 @@ import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
 import com.gamezone.model.VideoGame;
+import com.gamezone.model.Warranty;
 import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
@@ -80,6 +81,7 @@ public class MainMenu {
             System.out.println("4. Gestionar accesorios");
             System.out.println("5. Gestionar promociones");
             System.out.println("6. Gestionar devoluciones");
+            System.out.println("7. Gestionar garantías");
             System.out.println("0. Salir");
             System.out.print("Seleccione una opción: ");
 
@@ -91,6 +93,7 @@ public class MainMenu {
                 case "4" -> accessoryMenu();
                 case "5" -> promotionMenu();
                 case "6" -> returnMenu();
+                case "7" -> warrantyMenu();
                 case "0" -> running = false;
                 default -> System.out.println("Opción inválida.");
             }
@@ -706,6 +709,86 @@ private void consultMonthlyBalance() {
         System.out.println("Error: el mes y el año deben ser valores numéricos válidos.");
     } catch (java.io.IOException e) {
         System.out.println("Error al calcular el balance: " + e.getMessage());
+    }
+}
+
+// ===================== WARRANTY MENU =====================
+
+private void warrantyMenu() {
+    System.out.println("\n--- Gestión de garantías ---");
+    System.out.println("1. Consultar garantía por producto y venta");
+    System.out.println("2. Listar todas las garantías");
+    System.out.println("3. Listar garantías vigentes");
+    System.out.println("4. Listar garantías próximas a vencer");
+    System.out.println("0. Volver");
+    System.out.print("Seleccione una opción: ");
+
+    switch (scanner.nextLine()) {
+        case "1" -> consultWarrantyByProduct();
+        case "2" -> listAllWarranties();
+        case "3" -> listActiveWarranties();
+        case "4" -> listWarrantiesExpiringSoon();
+        case "0" -> { }
+        default -> System.out.println("Opción inválida.");
+    }
+}
+
+private void consultWarrantyByProduct() {
+    try {
+        System.out.print("Id del producto: ");
+        String productId = scanner.nextLine();
+        System.out.print("Id de la venta: ");
+        String saleId = scanner.nextLine();
+
+        Warranty warranty = warrantyService.findWarrantyByProduct(productId, saleId);
+        if (warranty == null) {
+            System.out.println("No se encontró una garantía para ese producto en esa venta.");
+        } else {
+            System.out.println(warranty.generateWarrantyCertificate());
+        }
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar la garantía: " + e.getMessage());
+    }
+}
+
+private void listAllWarranties() {
+    try {
+        printWarranties(warrantyService.listAllWarranties());
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar las garantías: " + e.getMessage());
+    }
+}
+
+private void listActiveWarranties() {
+    try {
+        printWarranties(warrantyService.listActiveWarranties());
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar las garantías: " + e.getMessage());
+    }
+}
+
+private void listWarrantiesExpiringSoon() {
+    try {
+        System.out.print("¿Con cuántos días de anticipación desea consultar? ");
+        int daysAhead = Integer.parseInt(scanner.nextLine());
+        printWarranties(warrantyService.listWarrantiesExpiringSoon(daysAhead));
+    } catch (NumberFormatException e) {
+        System.out.println("Error: los días deben ser un valor numérico válido.");
+    } catch (IllegalArgumentException e) {
+        System.out.println("Error: " + e.getMessage());
+    } catch (java.io.IOException e) {
+        System.out.println("Error al consultar las garantías: " + e.getMessage());
+    }
+}
+
+private void printWarranties(List<Warranty> warranties) {
+    if (warranties.isEmpty()) {
+        System.out.println("No se encontraron garantías.");
+        return;
+    }
+    for (Warranty warranty : warranties) {
+        System.out.println(warranty.generateWarrantyCertificate());
+        System.out.println("---");
     }
 }
 }
