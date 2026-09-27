@@ -1,37 +1,73 @@
-# AI Usage Log — Developer 1 (Product Module)
-
-**Student:** Ronald
+# AI Usage Log — Developer 1
 
 ---
 
-1. **"What exactly do I get as Developer 1 of the product module, according to the workshop document?" **
+## Entry 1
+- **Date:** 2026-09-25
+- **Tool:** Claude
+- **Phase and branch:** Accessory module, feature/accessory-module
+- **Objective:** Implement the Accessory hierarchy (Accessory abstract class, Controller, Cable, Memory) extending Product.
+- **Query:** Requested the model-layer classes for the accessory module, following the team's class diagram (console compatibility list, getFullDescription per subtype).
+- **Response summary:** Provided the four classes with console-compatibility tracking in the abstract class and type-specific attributes in each subclass.
+- **Decision:** Accepted as provided; added a setter for the compatible console list and validation improvements afterward to reach the minimum commit count.
+- **Related commit:** multiple (Accessory/Controller/Cable/Memory implementation)
 
-The AI explained to me that my responsibility is 5 classes through the 3 layers (model, persistence, service): the abstract class of products, their two derivatives, persistence and service - and that the rest (people, sales, the interface and the Main) is the responsibility of my colleagues.
+## Entry 2
+- **Date:** 2026-09-25
+- **Tool:** Claude
+- **Phase and branch:** Promotion module, feature/promotion-module
+- **Objective:** Implement the Promotion hierarchy (Promotion abstract class, PercentageDiscount, CategoryDiscount, BulkPurchaseDiscount).
+- **Query:** Requested the model-layer classes following the team's class diagram, including calculateDiscount() logic specific to each promotion type.
+- **Response summary:** Provided the four classes; CategoryDiscount was implemented to sum only the prices of products matching the target category (VIDEOGAME or CONSOLE) using instanceof checks.
+- **Decision:** Accepted as provided; added constructor validation afterward as a separate improvement commit.
+- **Related commit:** multiple (Promotion/PercentageDiscount/CategoryDiscount/BulkPurchaseDiscount implementation)
 
-2. **"How do I clone the repository and create my own branch without touching main or develop directly?" **
+## Entry 3
+- **Date:** 2026-09-26
+- **Tool:** Claude
+- **Phase and branch:** Return module, feature/return-module
+- **Objective:** Implement the Return class and the additive canBeReturned() method in Sale.
+- **Query:** Requested the Return class (referencing an original sale, a subset of returned products, refund calculation, Spanish receipt) and the 30-day validation method in Sale.
+- **Response summary:** Provided Return with no setters for immutable relationships, and canBeReturned() using ChronoUnit.DAYS between the sale date and the current date.
+- **Decision:** Accepted as provided; later added constructor validation and an overload of canBeReturned() accepting a reference date, for testability.
+- **Related commit:** multiple (Return implementation, Sale.canBeReturned)
 
-I was guided step by step in PowerShell: git clone, git checkout develop, git pull origin develop, and then git checkout -b feature/product-module to create my work branch following the Git Flow model required by the workshop.
+## Entry 4
+- **Date:** 2026-09-26
+- **Tool:** Claude
+- **Phase and branch:** Warranty module, feature/warranty-module
+- **Objective:** Implement the Warranty hierarchy (Warranty abstract class, BasicWarranty, ExtendedWarranty).
+- **Query:** Requested the model-layer classes, where the end date is calculated inside the constructor by calling the abstract getDurationInMonths() method.
+- **Response summary:** Provided the three classes; discussed how calling an abstract method from the base constructor resolves polymorphically to the concrete subclass being built.
+- **Decision:** Accepted as provided; added constructor validation and a getRemainingDays() helper method afterward.
+- **Related commit:** multiple (Warranty/BasicWarranty/ExtendedWarranty implementation)
 
-3. **"I made git commit but the code on GitHub appears empty, with only the template that generates NetBeans. What happened?" **
+## Entry 5
+- **Date:** 2026-09-27
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/accessory-category-discount (A1)
+- **Objective:** Understand what changes A1 required across layers, since the responsibility table assigned the full branch to Developer 1, not just the model layer.
+- **Query:** Asked whether A1 was only a model-layer change (CategoryDiscount) or required touching PromotionService and MainMenu as well.
+- **Response summary:** Confirmed that per the team's responsibility table, A1 was assigned entirely to Developer 1 across all layers, unlike the module requirements which were split strictly by layer.
+- **Decision:** Accepted that A1 required changes in CategoryDiscount, PromotionService, MainMenu, and data/promotions.csv.
+- **Related commit:** e97aeec
 
-We identified that he had done git add/commit before actually saving the file in NetBeans (Ctrl+S). I learned to always check with cat archivo.java in PowerShell before commiting, to confirm that the content on the disk matched what I saw in the editor.
+## Entry 6
+- **Date:** 2026-09-27
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/accessory-category-discount (A1)
+- **Objective:** Add "ACCESSORY" as a valid target category in CategoryDiscount, PromotionService, and the console menu, plus a preloaded promotion in data/promotions.csv.
+- **Query:** Requested the updated CategoryDiscount code, a validateTargetCategory method in PromotionService, the updated menu prompt, and the CSV line for a promotion valid during the current work week.
+- **Response summary:** Provided the updated CategoryDiscount (matchesCategory using instanceof Accessory), the PromotionService validation method, the updated MainMenu prompt, and a CSV line with a date range (2026-09-27 to 2026-10-04) covering the current week, since the exact defense date was unknown.
+- **Decision:** Accepted all as provided.
+- **Related commit:** e97aeec, 53f06d4, bae5473
 
-4. **"When I push my new branch, it didn't appear on GitHub. Why?" **
-
-The branch existed only locally because the first push had never been made. I used git push -u origin feature/product-module to create it on the remote and link it with my local branch.
-
-5. **"The class diagram sent by the leader does not have setters in Product, but my code does. Should I leave them?" **
-
-We compared the official diagram against my code and confirmed that the diagram only defined getters (plus reduceStock() to modify the stock), so I removed the four setters to keep the class faithful to the design agreed by the team.
-
-6. **"When compiling the complete project I get error: release version 26 not supported. Is it my mistake?" **
-
-The AI explained to me that this error comes from the maven.compiler.release configuration in the pom.xml, a general configuration file of the project that it is not up to me to modify - I warned the leader to adjust it.
-
-7. **"A colleague suggested that the leader work on a separate project and copy the code later to avoid Git conflicts. Is that necessary?" **
-
-I asked the AI if that made technical sense. He explained to me that Git merges files, not folders, so two modules with folders of the same name (persistence, for example) do not generate conflict if they have different files - the team decided to continue working directly on the real repo.
-
-9. **"What do the prefixes feat:, fix:, refactor: mean in the commits, and when is each one used?" **
-
-He explained to me the Conventional Commits convention that the workshop requires: feat: for new functionality, fix: to correct errors, refactor: to reorganize without changing behavior, and docs:/chore: for documentation and maintenance.
+## Entry 7
+- **Date:** 2026-09-27
+- **Tool:** Claude
+- **Phase and branch:** Phase 4, fix/return-discounted-refund (A5)
+- **Objective:** Fix Return.calculateRefundAmount so it does not over-refund when the original sale had a promotion discount.
+- **Query:** Requested the full updated Return class implementing a proportional refund based on the original sale's discount rate.
+- **Response summary:** Provided the full class: calculateRefundAmount now computes a discountRate from Sale.getDiscountAmount()/Sale.getTotal() and applies it to each returned item's price; generateReturnReceipt updated to show list price, proportional discount, and refunded amount per item.
+- **Decision:** Accepted as provided.
+- **Related commit:** 90a2ea7
