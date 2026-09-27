@@ -531,31 +531,31 @@ private void registerPercentageDiscount() {
     }
 }
 
-private void registerCategoryDiscount() {
-    try {
-        System.out.print("Id: ");
-        String id = scanner.nextLine();
-        System.out.print("Nombre: ");
-        String name = scanner.nextLine();
-        System.out.print("Fecha de inicio (AAAA-MM-DD): ");
-        LocalDate startDate = LocalDate.parse(scanner.nextLine());
-        System.out.print("Fecha de fin (AAAA-MM-DD): ");
-        LocalDate endDate = LocalDate.parse(scanner.nextLine());
-        System.out.print("Porcentaje de descuento (0-100): ");
-        double percentage = Double.parseDouble(scanner.nextLine());
-        System.out.print("Categoría objetivo (VIDEOGAME/CONSOLE): ");
-        String targetCategory = scanner.nextLine();
+    private void registerCategoryDiscount() {
+        try {
+            System.out.print("Id: ");
+            String id = scanner.nextLine();
+            System.out.print("Nombre: ");
+            String name = scanner.nextLine();
+            System.out.print("Fecha de inicio (AAAA-MM-DD): ");
+            LocalDate startDate = LocalDate.parse(scanner.nextLine());
+            System.out.print("Fecha de fin (AAAA-MM-DD): ");
+            LocalDate endDate = LocalDate.parse(scanner.nextLine());
+            System.out.print("Porcentaje de descuento (0-100): ");
+            double percentage = Double.parseDouble(scanner.nextLine());
+            System.out.print("Categoría objetivo (VIDEOGAME/CONSOLE/ACCESSORY): ");
+            String targetCategory = scanner.nextLine();
 
-        promotionService.registerCategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
-        System.out.println("Promoción por categoría registrada exitosamente.");
-    } catch (NumberFormatException e) {
-        System.out.println("Error: el porcentaje debe ser un valor numérico válido.");
-    } catch (java.time.format.DateTimeParseException e) {
-        System.out.println("Error: la fecha debe tener el formato AAAA-MM-DD.");
-    } catch (IllegalArgumentException e) {
-        System.out.println("Error: " + e.getMessage());
+            promotionService.registerCategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
+            System.out.println("Promoción por categoría registrada exitosamente.");
+        } catch (NumberFormatException e) {
+            System.out.println("Error: el porcentaje debe ser un valor numérico válido.");
+        } catch (java.time.format.DateTimeParseException e) {
+            System.out.println("Error: la fecha debe tener el formato AAAA-MM-DD.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
-}
 
 private void registerBulkPurchaseDiscount() {
     try {

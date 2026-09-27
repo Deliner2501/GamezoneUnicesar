@@ -20,8 +20,6 @@ public class PromotionService {
 
     public PromotionService(PromotionDAO promotionDAO) {
         this.promotionDAO = promotionDAO;
-        
-        
     }
 
     /**
@@ -34,8 +32,8 @@ public class PromotionService {
      * @param percentage the discount percentage applied to the sale's total
      * @return the registered promotion
      */
-        public PercentageDiscount registerPercentageDiscount(String id, String name, LocalDate startDate,
-                                                          LocalDate endDate, double percentage) {
+    public PercentageDiscount registerPercentageDiscount(String id, String name, LocalDate startDate,
+                                                      LocalDate endDate, double percentage) {
         validatePercentage(percentage);
         PercentageDiscount promotion = new PercentageDiscount(id, name, startDate, endDate, percentage);
         List<Promotion> promotions = promotionDAO.loadAll();
@@ -52,13 +50,14 @@ public class PromotionService {
      * @param startDate      the date the promotion becomes active
      * @param endDate        the date the promotion stops being active
      * @param percentage     the discount percentage applied to the target category
-     * @param targetCategory the category this promotion applies to ("VIDEOGAME" or "CONSOLE")
+     * @param targetCategory the category this promotion applies to ("VIDEOGAME", "CONSOLE" or "ACCESSORY")
      * @return the registered promotion
      */
     public CategoryDiscount registerCategoryDiscount(String id, String name, LocalDate startDate,
                                                       LocalDate endDate, double percentage,
                                                       String targetCategory) {
         validatePercentage(percentage);
+        validateTargetCategory(targetCategory);
         CategoryDiscount promotion = new CategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
         List<Promotion> promotions = promotionDAO.loadAll();
         promotions.add(promotion);
@@ -87,8 +86,8 @@ public class PromotionService {
         promotionDAO.saveAll(promotions);
         return promotion;
     }
-    
-        /**
+
+    /**
      * Returns the list of all registered promotions.
      *
      * @return the list of all promotions
@@ -113,8 +112,8 @@ public class PromotionService {
         }
         return active;
     }
-    
-        /**
+
+    /**
      * Finds, among the currently active promotions, the one that would
      * grant the largest monetary discount to the given sale.
      *
@@ -149,12 +148,20 @@ public class PromotionService {
         }
         return null;
     }
-    
-        private void validatePercentage(double percentage) {
+
+    private void validatePercentage(double percentage) {
         if (percentage < 0 || percentage > 100) {
             throw new IllegalArgumentException("Percentage must be between 0 and 100");
         }
     }
-        
-    
+
+    private void validateTargetCategory(String targetCategory) {
+        if (targetCategory == null
+                || !(targetCategory.equalsIgnoreCase("VIDEOGAME")
+                     || targetCategory.equalsIgnoreCase("CONSOLE")
+                     || targetCategory.equalsIgnoreCase("ACCESSORY"))) {
+            throw new IllegalArgumentException(
+                    "Target category must be VIDEOGAME, CONSOLE or ACCESSORY");
+        }
+    }
 }

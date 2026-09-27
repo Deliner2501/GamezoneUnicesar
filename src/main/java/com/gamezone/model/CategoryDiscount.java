@@ -16,9 +16,10 @@ public class CategoryDiscount extends Promotion {
         super(id, name, startDate, endDate);
         if (targetCategory == null
                 || !(targetCategory.equalsIgnoreCase("VIDEOGAME")
-                     || targetCategory.equalsIgnoreCase("CONSOLE"))) {
+                     || targetCategory.equalsIgnoreCase("CONSOLE")
+                     || targetCategory.equalsIgnoreCase("ACCESSORY"))) {
             throw new IllegalArgumentException(
-                    "Target category must be either VIDEOGAME or CONSOLE");
+                    "Target category must be VIDEOGAME, CONSOLE or ACCESSORY");
         }
         this.percentage = percentage;
         this.targetCategory = targetCategory;
@@ -41,7 +42,7 @@ public class CategoryDiscount extends Promotion {
     /**
      * Returns the category this promotion applies to.
      *
-     * @return the target category ("VIDEOGAME" or "CONSOLE")
+     * @return the target category ("VIDEOGAME", "CONSOLE" or "ACCESSORY")
      */
     public String getTargetCategory() { return targetCategory; }
 
@@ -76,6 +77,8 @@ public class CategoryDiscount extends Promotion {
             return product instanceof VideoGame;
         } else if (targetCategory.equalsIgnoreCase("CONSOLE")) {
             return product instanceof Console;
+        } else if (targetCategory.equalsIgnoreCase("ACCESSORY")) {
+            return product instanceof Accessory;
         }
         return false;
     }
