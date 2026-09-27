@@ -21,6 +21,7 @@ public class Sale {
     private List<Product> products;
     private double total;
     private String appliedPromotionName;
+    private double additionalCost;
     private double discountAmount;
 
     /**
@@ -55,6 +56,7 @@ public class Sale {
         this.products = new ArrayList<>();
         this.total = 0.0;
         this.appliedPromotionName = null;
+        this.additionalCost = 0.0;
         this.discountAmount = 0.0;
     }
 
@@ -199,6 +201,32 @@ public class Sale {
     public double getFinalTotal() {
         return total - discountAmount;
     }
+    
+    /**
+ * Adds an extra charge to this sale's total that is independent of
+ * its products — such as the cost of an extended warranty. Unlike
+ * {@link #calculateTotal()}, which only sums product prices, this
+ * amount is tracked separately and is never overwritten by it.
+ *
+ * @param amount the extra amount to add to the total
+ * @throws IllegalArgumentException if the amount is negative
+ */
+public void addAdditionalCost(double amount) {
+    if (amount < 0) {
+        throw new IllegalArgumentException("Additional cost cannot be negative");
+    }
+    this.additionalCost += amount;
+    this.total += amount;
+}
+
+/**
+ * Returns the total extra charges (e.g. extended warranties) added
+ * to this sale, independent of its products' prices.
+ * @return the accumulated additional cost
+ */
+public double getAdditionalCost() {
+    return additionalCost;
+}
 
     /**
      * Builds a readable receipt for this sale, showing the subtotal,
@@ -214,6 +242,9 @@ public class Sale {
         receipt.append("Vendedor: ").append(seller.getName()).append("\n");
         receipt.append("Productos: ").append(products.size()).append("\n");
         receipt.append("Subtotal: ").append(total).append("\n");
+        if (additionalCost > 0) {
+            receipt.append("Cargos adicionales (garantías extendidas): ").append(additionalCost).append("\n");
+        }
         if (appliedPromotionName != null) {
             receipt.append("Descuento aplicado (").append(appliedPromotionName)
                     .append("): -").append(discountAmount).append("\n");
