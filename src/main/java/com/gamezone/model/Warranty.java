@@ -16,6 +16,18 @@ public abstract class Warranty {
     private LocalDate endDate;
 
     public Warranty(String id, Product product, Sale sale, LocalDate startDate) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("The warranty id cannot be empty");
+        }
+        if (product == null) {
+            throw new IllegalArgumentException("A warranty must reference a product");
+        }
+        if (sale == null) {
+            throw new IllegalArgumentException("A warranty must reference a sale");
+        }
+        if (startDate == null) {
+            throw new IllegalArgumentException("The start date cannot be null");
+        }
         this.id = id;
         this.product = product;
         this.sale = sale;
