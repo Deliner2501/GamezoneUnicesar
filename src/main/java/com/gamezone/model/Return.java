@@ -47,15 +47,22 @@ public class Return {
     public double getRefundAmount() { return refundAmount; }
 
     /**
-     * Calculates the refund amount by summing the prices of the
-     * returned products, and stores it in this return's state.
+     * Calculates the refund amount by summing, for each returned
+     * product, the price proportionally reduced by the discount rate
+     * applied to the original sale. This ensures a customer is never
+     * refunded more than what was actually paid.
      *
      * @return the calculated refund amount
      */
     public double calculateRefundAmount() {
+        double subtotal = originalSale.getTotal();
+        double discountRate = 0.0;
+        if (subtotal > 0) {
+            discountRate = originalSale.getDiscountAmount() / subtotal;
+        }
         double sum = 0.0;
         for (Product product : returnedProducts) {
-            sum += product.getPrice();
+            sum += product.getPrice() * (1 - discountRate);
         }
         this.refundAmount = sum;
         return refundAmount;
@@ -63,10 +70,11 @@ public class Return {
 
     /**
      * Builds a readable receipt for this return, in Spanish, showing
-     * the return id, date, reference to the original sale, returned
-     * products with their prices, reason, and refund amount. If the
-     * refund amount has not been calculated yet, this method calculates
-     * it first so the receipt is always accurate.
+     * the return id, date, reference to the original sale, each
+     * returned product with its list price and proportional discount,
+     * reason, and refund amount. If the refund amount has not been
+     * calculated yet, this method calculates it first so the receipt
+     * is always accurate.
      *
      * @return a formatted, multi-line receipt
      */
@@ -74,14 +82,24 @@ public class Return {
         if (refundAmount == 0.0) {
             calculateRefundAmount();
         }
+        double subtotal = originalSale.getTotal();
+        double discountRate = 0.0;
+        if (subtotal > 0) {
+            discountRate = originalSale.getDiscountAmount() / subtotal;
+        }
         StringBuilder receipt = new StringBuilder();
         receipt.append("Recibo de devolución ").append(id).append("\n");
         receipt.append("Fecha: ").append(date).append("\n");
         receipt.append("Venta original: ").append(originalSale.getId()).append("\n");
         receipt.append("Productos devueltos:\n");
         for (Product product : returnedProducts) {
+            double listPrice = product.getPrice();
+            double proportionalDiscount = listPrice * discountRate;
+            double refundedForItem = listPrice - proportionalDiscount;
             receipt.append("  - ").append(product.getTitle())
-                    .append(": ").append(product.getPrice()).append("\n");
+                    .append(": precio de lista ").append(listPrice)
+                    .append(", descuento proporcional ").append(proportionalDiscount)
+                    .append(", reembolsado ").append(refundedForItem).append("\n");
         }
         receipt.append("Motivo: ").append(reason).append("\n");
         receipt.append("Monto reembolsado: ").append(refundAmount);
