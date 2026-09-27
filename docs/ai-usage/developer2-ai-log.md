@@ -65,37 +65,38 @@ That file needs to be plain text with a .md extension, not a Word document. You 
 That error appears the first time you push a new branch to GitHub, because there is not yet an established connection between your local branch and the remote one. Use the command the terminal itself suggests, git push --set-upstream origin branch-name, to establish that connection, which is only needed the first time.
 
 
-## Requerimiento 5 - Fase 4 (A6 - Monthly balance report)
+## Requirement 5 - Phase 4 (A6 - Monthly balance report)
 
-| Campo | Contenido |
+| Field | Content |
 |---|---|
-| Fecha | 2026-09-27 |
-| Herramienta | Claude |
-| Fase y rama | Fase 4, fix/monthly-balance-report |
-| Objetivo | Dividir el cálculo del balance mensual en dos métodos separados (ventas y devoluciones) según el ajuste A6 del Requerimiento 5. |
-| Consulta | Se pidió cómo modificar ReturnService para agregar calculateMonthlySales(int, int) y calculateMonthlyReturns(int, int), y dejar generateMonthlyBalance como la diferencia entre ambos, sin cambiar su firma. |
-| Respuesta | Se propuso extraer la lógica que ya existía dentro de generateMonthlyBalance en dos métodos nuevos, reutilizando sale.getFinalTotal() y return.getRefundAmount(), y reescribir generateMonthlyBalance como calculateMonthlySales(month, year) - calculateMonthlyReturns(month, year). |
-| Decisión | Se aceptó tal cual, porque getFinalTotal() ya incluía descuentos y garantías extendidas (efecto de A3, ya fusionado), así que no hacía falta tocar el cálculo del total, solo reorganizarlo. |
-| Commit relacionado | fix: split monthly sales and returns totals in ReturnService |
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, fix/monthly-balance-report |
+| Objective | Split the monthly balance calculation into two separate methods (sales and returns) per adjustment A6 of Requirement 5. |
+| Query | Asked how to modify ReturnService to add calculateMonthlySales(int, int) and calculateMonthlyReturns(int, int), and leave generateMonthlyBalance as the difference between both, without changing its signature. |
+| Response | Proposed extracting the logic already inside generateMonthlyBalance into two new methods, reusing sale.getFinalTotal() and return.getRefundAmount(), and rewriting generateMonthlyBalance as calculateMonthlySales(month, year) - calculateMonthlyReturns(month, year). |
+| Decision | Accepted as is, since getFinalTotal() already included discounts and extended warranty costs (effect of A3, already merged), so the total calculation itself did not need changes, only reorganizing it. |
+| Related commit | fix: split monthly sales and returns totals in ReturnService |
 
-| Campo | Contenido |
+| Field | Content |
 |---|---|
-| Fecha | 2026-09-27 |
-| Herramienta | Claude |
-| Fase y rama | Fase 4, fix/monthly-balance-report |
-| Objetivo | Actualizar la opción de balance mensual del menú para mostrar ventas, devoluciones y balance neto, no solo el balance neto. |
-| Consulta | Se pidió cómo modificar consultMonthlyBalance en MainMenu para llamar a los dos métodos nuevos de ReturnService y mostrar los tres valores al usuario. |
-| Respuesta | Se propuso llamar a calculateMonthlySales, calculateMonthlyReturns y generateMonthlyBalance dentro del mismo try, e imprimir los tres resultados con System.out.println, manteniendo el manejo de excepciones existente. |
-| Decisión | Se aceptó sin cambios, ya que respeta el manejo de errores ya implementado y solo agrega las dos líneas de salida que pide el enunciado. |
-| Commit relacionado | feat: show sales, returns and net balance in monthly balance option |
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, fix/monthly-balance-report |
+| Objective | Update the monthly balance menu option to show sales, returns, and net balance, not only the net balance. |
+| Query | Asked how to modify consultMonthlyBalance in MainMenu to call the two new ReturnService methods and show all three values to the user. |
+| Response | Proposed calling calculateMonthlySales, calculateMonthlyReturns, and generateMonthlyBalance within the same try block, printing the three results with System.out.println, keeping the existing exception handling. |
+| Decision | Accepted without changes, since it respects the already-implemented error handling and only adds the two extra output lines required by the assignment. |
+| Related commit | feat: show sales, returns and net balance in monthly balance option |
 
-| Campo | Contenido |
+| Field | Content |
 |---|---|
-| Fecha | 2026-09-27 |
-| Herramienta | Claude |
-| Fase y rama | Fase 4, fix/monthly-balance-report |
-| Objetivo | Aclarar dónde ubicar el código de los métodos nuevos dentro del proyecto (dudas sobre si requería una clase nueva). |
-| Consulta | Se preguntó si calculateMonthlySales y calculateMonthlyReturns debían ir en una clase nueva o en un archivo ya existente. |
-| Respuesta | Se aclaró que no se requería ninguna clase nueva: ambos métodos debían agregarse dentro de la clase ReturnService ya existente, reemplazando el método generateMonthlyBalance anterior en el mismo archivo. |
-| Decisión | Se aceptó la aclaración y se ubicó el código en ReturnService.java como se indicó, sin crear archivos adicionales. |
-| Commit relacionado | fix: split monthly sales and returns totals in ReturnService |
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, fix/monthly-balance-report |
+| Objective | Clarify where to place the new methods' code within the project (doubt about whether a new class was required). |
+| Query | Asked whether calculateMonthlySales and calculateMonthlyReturns should go in a new class or in an already existing file. |
+| Response | Clarified that no new class was required: both methods needed to be added inside the already existing ReturnService class, replacing the previous generateMonthlyBalance method in the same file. |
+| Decision | Accepted the clarification and placed the code in ReturnService.java as indicated, without creating additional files. |
+| Related commit | fix: split monthly sales and returns totals in ReturnService |
+
