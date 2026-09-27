@@ -268,6 +268,7 @@ public class MainMenu {
             String sellerId = scanner.nextLine();
 
             Map<String, Integer> productQuantities = new LinkedHashMap<>();
+            List<String> productIdsWithExtendedWarranty = new java.util.ArrayList<>();
             boolean addingProducts = true;
             System.out.println("Puede agregar productos (videojuegos, consolas) y accesorios (controles, cables, memorias) en la misma venta.");
             while (addingProducts) {
@@ -280,9 +281,19 @@ public class MainMenu {
                 System.out.print("Cantidad: ");
                 int quantity = Integer.parseInt(scanner.nextLine());
                 productQuantities.merge(productId, quantity, Integer::sum);
+
+                Product product = productService.findProductById(productId);
+                if (product instanceof Console) {
+                    System.out.print("¿Agregar garantía extendida a este producto? (S/N): ");
+                    String answer = scanner.nextLine();
+                    if (answer.equalsIgnoreCase("S")) {
+                        productIdsWithExtendedWarranty.add(productId);
+                    }
+                }
             }
 
-            Sale sale = saleService.registerSale(saleId, LocalDate.now(), customerId, sellerId, productQuantities);
+            Sale sale = saleService.registerSale(saleId, LocalDate.now(), customerId, sellerId,
+                    productQuantities, productIdsWithExtendedWarranty);
             System.out.println("Venta registrada exitosamente.");
             System.out.println(sale.generateReceipt());
         } catch (NumberFormatException e) {
