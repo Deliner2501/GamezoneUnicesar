@@ -99,3 +99,33 @@ That error appears the first time you push a new branch to GitHub, because there
 | Respuesta | Se aclaró que no se requería ninguna clase nueva: ambos métodos debían agregarse dentro de la clase ReturnService ya existente, reemplazando el método generateMonthlyBalance anterior en el mismo archivo. |
 | Decisión | Se aceptó la aclaración y se ubicó el código en ReturnService.java como se indicó, sin crear archivos adicionales. |
 | Commit relacionado | fix: split monthly sales and returns totals in ReturnService |
+
+
+
+
+## Requirement 5 - Phase 3 (A2 - Warranty circular dependency)
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 3, fix/warranty-circular-dependency |
+| Objective | Break the circular dependency SaleService → WarrantyService → WarrantyRepository → SaleService that prevented building the objects in Main via constructor injection. |
+| Query | Asked how to remove WarrantyRepository's dependency on SaleService while still being able to resolve the Sale and Product referenced by each warranty. |
+| Response | Proposed that WarrantyRepository only persist and load raw identifiers (productId, saleId) instead of full objects, and that WarrantyService be responsible for resolving those identifiers into real Sale and Product objects, receiving WarrantyRepository, SaleDAO (or SaleRepository) and ProductService by constructor. Also proposed adjusting the construction order in Main so WarrantyService is built with its resolved dependencies already available. |
+| Decision | Accepted as proposed: the cycle was broken by moving object resolution from the repository to the service layer, which also matches the ui → service → persistence → model dependency direction required by the workshop. |
+| Related commit | fix: resolve warranty circular dependency between SaleService and WarrantyRepository |
+
+## Requirement 5 - Phase 4 (A4 - Return accessory stock)
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, fix/return-accessory-stock |
+| Objective | Fix stock not being restored when an accessory is returned, since ReturnService only called ProductService.restoreStock. |
+| Query | Asked how to make ReturnService restore stock correctly for both products and accessories when registering a return. |
+| Response | Proposed adding restoreStock(String accessoryId, int quantity) to AccessoryService, equivalent to the one already in ProductService, and branching in ReturnService.registerReturn based on whether the returned item is an instance of Accessory or a regular Product. Also proposed resolving accessory references inside ReturnRepository when loading persisted returns, since accessories were not being looked up there either. |
+| Decision | Accepted as proposed, keeping the same instanceof-based branching pattern already used elsewhere in the module for consistency. |
+| Related commit | fix: restore accessory stock on return |
+
