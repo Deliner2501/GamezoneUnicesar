@@ -45,11 +45,11 @@ public class Main {
             AccessoryService accessoryService = new AccessoryService(accessoryDAO);
             PromotionService promotionService = new PromotionService(promotionDAO);
             SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, promotionService, personService);
-            ReturnRepository returnRepository = new ReturnRepository(saleService, productService, accessoryService);
-            ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService);
             WarrantyRepository warrantyRepository = new WarrantyRepository();
             WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
             saleService.setWarrantyService(warrantyService);
+            ReturnRepository returnRepository = new ReturnRepository(saleService, productService, accessoryService);
+            ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService);
 
             // UI layer
             MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService);
