@@ -83,10 +83,31 @@ public void setWarrantyService(WarrantyService warrantyService) {
      *         customer/seller/product is not found, or stock is insufficient
      * @throws IOException if the sale cannot be persisted
      */
-        public Sale registerSale(String saleId, LocalDate date, String customerId, String sellerId,
+            /**
+     * Registers a new sale for the given customer and seller, buying the
+     * requested quantity of each product. The registration follows a
+     * fixed, unified sequence: validate the request, resolve every item
+     * and check its stock, build the sale and its subtotal, apply the
+     * best available promotion, generate warranties, calculate the final
+     * total, update the inventory, and finally persist everything.
+     *
+     * @param saleId            the unique identifier for the new sale
+     * @param date              the date of the sale
+     * @param customerId        the id of the customer making the purchase
+     * @param sellerId          the id of the seller attending the sale
+     * @param productQuantities a map of product id to quantity purchased
+     * @param productIdsWithExtendedWarranty ids of the console products that should
+     *        additionally receive an extended warranty (can be null or empty)
+     * @return the registered sale, with its total already calculated
+     * @throws IllegalArgumentException if the product list is empty, a
+     *         customer/seller/product is not found, or stock is insufficient
+     * @throws IOException if the sale cannot be persisted
+     */
+    public Sale registerSale(String saleId, LocalDate date, String customerId, String sellerId,
                               Map<String, Integer> productQuantities,
                               List<String> productIdsWithExtendedWarranty) throws IOException {
 
+        // Step 1: validate that the sale has at least one item.
         if (productQuantities == null || productQuantities.isEmpty()) {
             throw new IllegalArgumentException("A sale must contain at least one product");
         }
@@ -101,11 +122,9 @@ public void setWarrantyService(WarrantyService warrantyService) {
             throw new IllegalArgumentException("Seller not found: " + sellerId);
         }
 
-                // First pass: validate everything BEFORE touching any stock,
-        // so a failure halfway through never leaves inventory in a bad state.
-        // Each item can be either a product or an accessory, so both DAOs
-        // are checked, and each match is kept in its own map so the second
-        // pass knows which DAO to use for the stock update.
+        // Step 2: resolve each item as a product or an accessory, validating
+        // stock BEFORE touching any inventory, so a failure halfway through
+        // never leaves the system in an inconsistent state.
         Map<Product, Integer> resolvedProducts = new LinkedHashMap<>();
         Map<Accessory, Integer> resolvedAccessories = new LinkedHashMap<>();
         for (Map.Entry<String, Integer> entry : productQuantities.entrySet()) {
@@ -140,20 +159,38 @@ public void setWarrantyService(WarrantyService warrantyService) {
             throw new IllegalArgumentException("Product or accessory not found: " + itemId);
         }
 
-        // Second pass: everything is valid, so build the sale and commit the changes.
+        // Step 3: create the sale and add every resolved item, which
+        // calculates the subtotal automatically as each one is added.
         Sale sale = new Sale(saleId, date, customer, seller);
-        double warrantyCost = 0.0;
         for (Map.Entry<Product, Integer> entry : resolvedProducts.entrySet()) {
             Product product = entry.getKey();
             int quantity = entry.getValue();
-
             for (int i = 0; i < quantity; i++) {
                 sale.addProduct(product);
             }
+        }
+        for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
+            Accessory accessory = entry.getKey();
+            int quantity = entry.getValue();
+            for (int i = 0; i < quantity; i++) {
+                sale.addProduct(accessory);
+            }
+        }
 
-            product.reduceStock(quantity);
-            productDAO.update(product);
+        // Step 4: find and register the best applicable promotion. This is
+        // calculated strictly over the items' subtotal, before any warranty
+        // cost is added, so warranties are never discounted.
+        Promotion bestPromotion = promotionService.findBestPromotionFor(sale);
+        if (bestPromotion != null) {
+            double discount = bestPromotion.calculateDiscount(sale);
+            sale.applyPromotion(bestPromotion.getName(), discount);
+        }
 
+        // Step 5: generate the automatic basic warranty for every console in
+        // the sale, plus any extended warranty explicitly requested for a
+        // console, summing the extended warranties' additional cost.
+        double warrantyCost = 0.0;
+        for (Product product : resolvedProducts.keySet()) {
             if (product instanceof Console) {
                 warrantyService.assignBasicWarranty(product, sale, sale.getDate());
 
@@ -165,28 +202,30 @@ public void setWarrantyService(WarrantyService warrantyService) {
                 }
             }
         }
-        for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
-            Accessory accessory = entry.getKey();
-            int quantity = entry.getValue();
 
-            for (int i = 0; i < quantity; i++) {
-                sale.addProduct(accessory);
-            }
-
-            accessory.reduceStock(quantity);
-            accessoryDAO.update(accessory);
-        }
-
-        Promotion bestPromotion = promotionService.findBestPromotionFor(sale);
-        if (bestPromotion != null) {
-            double discount = bestPromotion.calculateDiscount(sale);
-            sale.applyPromotion(bestPromotion.getName(), discount);
-        }
-
+        // Step 6: register the warranty cost so the final total reflects it
+        // (Sale.getFinalTotal() = subtotal - discount + additional cost).
         if (warrantyCost > 0) {
             sale.addAdditionalCost(warrantyCost);
         }
 
+        // Step 7: update the inventory, delegating to the DAO that owns
+        // each item's stock according to its type.
+        for (Map.Entry<Product, Integer> entry : resolvedProducts.entrySet()) {
+            Product product = entry.getKey();
+            int quantity = entry.getValue();
+            product.reduceStock(quantity);
+            productDAO.update(product);
+        }
+        for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
+            Accessory accessory = entry.getKey();
+            int quantity = entry.getValue();
+            accessory.reduceStock(quantity);
+            accessoryDAO.update(accessory);
+        }
+
+        // Step 8: persist the sale. Warranties were already persisted
+        // individually as they were assigned in step 5.
         saleDAO.save(sale);
         customer.addPurchase(sale);
 
