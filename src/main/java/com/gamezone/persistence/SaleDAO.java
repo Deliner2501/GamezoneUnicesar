@@ -122,7 +122,7 @@ public class SaleDAO {
      * Converts a Sale into a single line of text for storage.
      * Format: id;date;customerId;sellerId;productId1,productId2,...
      */
-    private String toLine(Sale sale) {
+        private String toLine(Sale sale) {
         StringBuilder productIds = new StringBuilder();
         List<Product> products = sale.getProducts();
         for (int i = 0; i < products.size(); i++) {
@@ -132,11 +132,15 @@ public class SaleDAO {
             }
         }
 
+        String promotionName = sale.getAppliedPromotionName() == null ? "" : sale.getAppliedPromotionName();
+
         return sale.getId() + FIELD_SEPARATOR
                 + sale.getDate() + FIELD_SEPARATOR
                 + sale.getCustomer().getId() + FIELD_SEPARATOR
                 + sale.getSeller().getId() + FIELD_SEPARATOR
-                + productIds;
+                + productIds + FIELD_SEPARATOR
+                + promotionName + FIELD_SEPARATOR
+                + sale.getDiscountAmount();
     }
 
     /**
@@ -157,7 +161,7 @@ public class SaleDAO {
             return null;
         }
 
-        Sale sale = new Sale(id, date, customer, seller);
+                Sale sale = new Sale(id, date, customer, seller);
 
         if (parts.length > 4 && !parts[4].isBlank()) {
             String[] productIds = parts[4].split(PRODUCT_SEPARATOR);
@@ -167,6 +171,12 @@ public class SaleDAO {
                     sale.addProduct(product);
                 }
             }
+        }
+
+        if (parts.length > 6 && !parts[5].isBlank()) {
+            String promotionName = parts[5];
+            double discountAmount = Double.parseDouble(parts[6]);
+            sale.applyPromotion(promotionName, discountAmount);
         }
 
         return sale;

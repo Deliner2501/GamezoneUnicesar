@@ -1,11 +1,19 @@
 package com.gamezone;
 
+import com.gamezone.persistence.AccessoryDAO;
 import com.gamezone.persistence.PersonDAO;
 import com.gamezone.persistence.ProductDAO;
+import com.gamezone.persistence.PromotionDAO;
+import com.gamezone.persistence.ReturnRepository;
 import com.gamezone.persistence.SaleDAO;
+import com.gamezone.persistence.WarrantyRepository;
+import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
+import com.gamezone.service.PromotionService;
+import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
+import com.gamezone.service.WarrantyService;
 import com.gamezone.ui.MainMenu;
 import java.io.IOException;
 
@@ -26,15 +34,25 @@ public class Main {
             // Persistence layer
             PersonDAO personDAO = new PersonDAO();
             ProductDAO productDAO = new ProductDAO();
+            AccessoryDAO accessoryDAO = new AccessoryDAO();
+            PromotionDAO promotionDAO = new PromotionDAO();
             SaleDAO saleDAO = new SaleDAO(personDAO, productDAO);
 
             // Service layer
+            // Service layer
             PersonService personService = new PersonService();
             ProductService productService = new ProductService(productDAO);
-            SaleService saleService = new SaleService(saleDAO, productDAO, personService);
+            AccessoryService accessoryService = new AccessoryService(accessoryDAO);
+            PromotionService promotionService = new PromotionService(promotionDAO);
+            SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, promotionService, personService);
+            ReturnRepository returnRepository = new ReturnRepository(saleService, productService, accessoryService);
+            ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService);
+            WarrantyRepository warrantyRepository = new WarrantyRepository();
+            WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
+            saleService.setWarrantyService(warrantyService);
 
             // UI layer
-            MainMenu mainMenu = new MainMenu(personService, productService, saleService);
+            MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService);
             mainMenu.start();
 
         } catch (IOException e) {

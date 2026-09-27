@@ -34,6 +34,20 @@ public abstract class Product {
         }
         this.stock -= quantity;
     }
+    
+    /**
+ * Increases the stock by the given quantity. Used when a previously
+ * sold product is returned and becomes available for sale again.
+ *
+ * @param quantity the amount to add to the current stock
+ * @throws IllegalArgumentException if the quantity is negative
+ */
+public void increaseStock(int quantity) {
+    if (quantity < 0) {
+        throw new IllegalArgumentException("Quantity to restore cannot be negative");
+    }
+    this.stock += quantity;
+}
 
     /**
      * Returns a full description integrating this product's specific
