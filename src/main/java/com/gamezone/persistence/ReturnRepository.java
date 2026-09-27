@@ -103,7 +103,7 @@ public class ReturnRepository {
 
     /**
      * Converts a Return into a single line of text for storage.
-     * Format: id;date;saleId;productId1,productId2,...;reason;refundAmount
+     * Format: id;date;saleId;productId1,productId2,...;reason;refundAmount;warrantyRefund
      */
     private String toLine(Return r) {
         StringBuilder productIds = new StringBuilder();
@@ -120,7 +120,8 @@ public class ReturnRepository {
                 + r.getOriginalSale().getId() + FIELD_SEPARATOR
                 + productIds + FIELD_SEPARATOR
                 + r.getReason() + FIELD_SEPARATOR
-                + r.getRefundAmount();
+                + r.getRefundAmount() + FIELD_SEPARATOR
+                + r.getWarrantyRefund();
     }
 
     /**
@@ -158,8 +159,10 @@ public class ReturnRepository {
         }
 
         String reason = parts.length > 4 ? parts[4] : "";
+        double warrantyRefund = (parts.length > 6 && !parts[6].isBlank())
+                ? Double.parseDouble(parts[6]) : 0.0;
 
-        Return r = new Return(id, date, originalSale, returnedProducts, reason);
+        Return r = new Return(id, date, originalSale, returnedProducts, reason, warrantyRefund);
         if (parts.length > 5 && !parts[5].isBlank()) {
             r.calculateRefundAmount();
         }

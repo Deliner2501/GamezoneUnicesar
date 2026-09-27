@@ -19,9 +19,10 @@ public class Return {
     private List<Product> returnedProducts;
     private String reason;
     private double refundAmount;
+    private double warrantyRefund;
 
     public Return(String id, LocalDate date, Sale originalSale,
-                  List<Product> returnedProducts, String reason) {
+                  List<Product> returnedProducts, String reason, double warrantyRefund) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("The return id cannot be empty");
         }
@@ -36,6 +37,7 @@ public class Return {
         this.originalSale = originalSale;
         this.returnedProducts = returnedProducts;
         this.reason = reason;
+        this.warrantyRefund = warrantyRefund;
         this.refundAmount = 0.0;
     }
 
@@ -45,12 +47,14 @@ public class Return {
     public List<Product> getReturnedProducts() { return returnedProducts; }
     public String getReason() { return reason; }
     public double getRefundAmount() { return refundAmount; }
+    public double getWarrantyRefund() { return warrantyRefund; }
 
     /**
      * Calculates the refund amount by summing, for each returned
      * product, the price proportionally reduced by the discount rate
-     * applied to the original sale. This ensures a customer is never
-     * refunded more than what was actually paid.
+     * applied to the original sale, plus the reimbursable cost of any
+     * canceled warranties. This ensures a customer is never refunded
+     * more than what was actually paid.
      *
      * @return the calculated refund amount
      */
@@ -64,7 +68,7 @@ public class Return {
         for (Product product : returnedProducts) {
             sum += product.getPrice() * (1 - discountRate);
         }
-        this.refundAmount = sum;
+        this.refundAmount = sum + warrantyRefund;
         return refundAmount;
     }
 
@@ -102,6 +106,7 @@ public class Return {
                     .append(", reembolsado ").append(refundedForItem).append("\n");
         }
         receipt.append("Motivo: ").append(reason).append("\n");
+        receipt.append("Reembolso por garantías canceladas: ").append(warrantyRefund).append("\n");
         receipt.append("Monto reembolsado: ").append(refundAmount);
         return receipt.toString();
     }
