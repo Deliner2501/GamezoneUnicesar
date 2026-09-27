@@ -173,6 +173,38 @@ public class WarrantyService {
         }
         return result;
     }
+    
+        /**
+     * Cancels every warranty associated with the given product within
+     * the given sale, removing them permanently, and returns the total
+     * reimbursable cost of the canceled warranties (zero for a basic
+     * warranty, the additional cost for an extended one). Used when a
+     * console is returned, since a returned console cannot keep an
+     * active warranty.
+     *
+     * @param productId the id of the product whose warranties are canceled
+     * @param saleId    the id of the sale the warranties belong to
+     * @return the sum of the additional cost of every canceled warranty
+     * @throws IOException if the warranties cannot be read or persisted
+     */
+    public double cancelWarranties(String productId, String saleId) throws IOException {
+        List<Warranty> allWarranties = loadAllWarranties();
+        List<Warranty> remainingWarranties = new ArrayList<>();
+        double reimbursableCost = 0.0;
+
+        for (Warranty warranty : allWarranties) {
+            boolean matches = warranty.getProduct().getId().equals(productId)
+                    && warranty.getSale().getId().equals(saleId);
+            if (matches) {
+                reimbursableCost += warranty.getAdditionalCost();
+            } else {
+                remainingWarranties.add(warranty);
+            }
+        }
+
+        warrantyRepository.saveAll(remainingWarranties);
+        return reimbursableCost;
+    }
 
     /**
      * Loads every raw warranty record from the repository and resolves
