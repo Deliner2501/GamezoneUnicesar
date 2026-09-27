@@ -65,6 +65,10 @@ public class WarrantyService {
      * @throws IOException if the warranty cannot be persisted
      */
     public ExtendedWarranty assignExtendedWarranty(Product product, Sale sale, LocalDate startDate) throws IOException {
+        if (product == null || sale == null) {
+            throw new IllegalArgumentException("Debe indicar el producto y la venta para asignar la garantía");
+        }
+
         List<Warranty> existingWarranties = warrantyRepository.loadAll();
         String warrantyId = generateWarrantyId(existingWarranties);
 
