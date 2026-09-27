@@ -39,6 +39,7 @@ public class Main {
             SaleDAO saleDAO = new SaleDAO(personDAO, productDAO);
 
             // Service layer
+            // Service layer
             PersonService personService = new PersonService();
             ProductService productService = new ProductService(productDAO);
             AccessoryService accessoryService = new AccessoryService(accessoryDAO);
@@ -48,6 +49,7 @@ public class Main {
             ReturnService returnService = new ReturnService(returnRepository, saleService, productService);
             WarrantyRepository warrantyRepository = new WarrantyRepository(saleService, productService);
             WarrantyService warrantyService = new WarrantyService(warrantyRepository);
+            saleService.setWarrantyService(warrantyService);
 
             // UI layer
             MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService);
