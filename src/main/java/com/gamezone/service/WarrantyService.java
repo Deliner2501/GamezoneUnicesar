@@ -5,7 +5,9 @@ import com.gamezone.model.ExtendedWarranty;
 import com.gamezone.model.Product;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Warranty;
+import com.gamezone.persistence.SaleDAO;
 import com.gamezone.persistence.WarrantyRepository;
+import com.gamezone.persistence.WarrantyRepository.WarrantyRecord;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -15,19 +17,30 @@ import java.util.List;
  * Contains the business logic for assigning and consulting warranties.
  * A basic warranty is generated automatically for consoles at the
  * time of sale, while an extended warranty can be optionally assigned
- * and adds a cost to the sale.
+ * and adds a cost to the sale. Since WarrantyRepository only reads and
+ * writes raw records, this service is responsible for resolving those
+ * records back into real Warranty objects using SaleDAO and
+ * ProductService.
  */
 public class WarrantyService {
 
+    private static final String EXTENDED_TYPE = "EXTENDED";
+
     private WarrantyRepository warrantyRepository;
+    private SaleDAO saleDAO;
+    private ProductService productService;
 
     /**
-     * Creates a WarrantyService with its required collaborator.
+     * Creates a WarrantyService with its required collaborators.
      *
-     * @param warrantyRepository the repository used to persist and load warranties
+     * @param warrantyRepository the repository used to persist and load raw warranty records
+     * @param saleDAO            the DAO used to resolve the associated sale by id
+     * @param productService     the service used to resolve the associated product by id
      */
-    public WarrantyService(WarrantyRepository warrantyRepository) {
+    public WarrantyService(WarrantyRepository warrantyRepository, SaleDAO saleDAO, ProductService productService) {
         this.warrantyRepository = warrantyRepository;
+        this.saleDAO = saleDAO;
+        this.productService = productService;
     }
 
     /**
@@ -48,7 +61,7 @@ public class WarrantyService {
             throw new IllegalArgumentException("Debe indicar la fecha de inicio de la garantía");
         }
 
-        List<Warranty> existingWarranties = warrantyRepository.loadAll();
+        List<Warranty> existingWarranties = loadAllWarranties();
         String warrantyId = generateWarrantyId(existingWarranties);
 
         BasicWarranty warranty = new BasicWarranty(warrantyId, product, sale, startDate);
@@ -77,7 +90,7 @@ public class WarrantyService {
             throw new IllegalArgumentException("Debe indicar la fecha de inicio de la garantía");
         }
 
-        List<Warranty> existingWarranties = warrantyRepository.loadAll();
+        List<Warranty> existingWarranties = loadAllWarranties();
         String warrantyId = generateWarrantyId(existingWarranties);
 
         ExtendedWarranty warranty = new ExtendedWarranty(warrantyId, product, sale, startDate);
@@ -98,7 +111,7 @@ public class WarrantyService {
      * @throws IOException if the warranties file cannot be read
      */
     public Warranty findWarrantyByProduct(String productId, String saleId) throws IOException {
-        for (Warranty warranty : warrantyRepository.loadAll()) {
+        for (Warranty warranty : loadAllWarranties()) {
             if (warranty.getProduct().getId().equals(productId)
                     && warranty.getSale().getId().equals(saleId)) {
                 return warranty;
@@ -114,7 +127,7 @@ public class WarrantyService {
      * @throws IOException if the warranties file cannot be read
      */
     public List<Warranty> listAllWarranties() throws IOException {
-        return warrantyRepository.loadAll();
+        return loadAllWarranties();
     }
 
     /**
@@ -127,7 +140,7 @@ public class WarrantyService {
     public List<Warranty> listActiveWarranties() throws IOException {
         List<Warranty> result = new ArrayList<>();
         LocalDate today = LocalDate.now();
-        for (Warranty warranty : warrantyRepository.loadAll()) {
+        for (Warranty warranty : loadAllWarranties()) {
             if (warranty.isActive(today)) {
                 result.add(warranty);
             }
@@ -152,13 +165,62 @@ public class WarrantyService {
         LocalDate today = LocalDate.now();
         LocalDate limit = today.plusDays(daysAhead);
 
-        for (Warranty warranty : warrantyRepository.loadAll()) {
+        for (Warranty warranty : loadAllWarranties()) {
             LocalDate endDate = warranty.getEndDate();
             if (!endDate.isBefore(today) && !endDate.isAfter(limit)) {
                 result.add(warranty);
             }
         }
         return result;
+    }
+
+    /**
+     * Loads every raw warranty record from the repository and resolves
+     * each one into a real Warranty object, skipping any record whose
+     * product or sale can no longer be found.
+     */
+    private List<Warranty> loadAllWarranties() throws IOException {
+        List<Warranty> warranties = new ArrayList<>();
+        for (WarrantyRecord record : warrantyRepository.loadAll()) {
+            Warranty warranty = resolveWarranty(record);
+            if (warranty != null) {
+                warranties.add(warranty);
+            }
+        }
+        return warranties;
+    }
+
+    /**
+     * Resolves a raw warranty record back into a real Warranty object,
+     * looking up its product and sale. Returns null if either
+     * reference can no longer be resolved.
+     */
+    private Warranty resolveWarranty(WarrantyRecord record) throws IOException {
+        Product product = productService.findProductById(record.getProductId());
+        if (product == null) {
+            System.out.println("Skipping warranty " + record.getId() + ": product not found");
+            return null;
+        }
+
+        Sale sale = findSaleById(record.getSaleId());
+        if (sale == null) {
+            System.out.println("Skipping warranty " + record.getId() + ": sale not found");
+            return null;
+        }
+
+        if (EXTENDED_TYPE.equals(record.getType())) {
+            return new ExtendedWarranty(record.getId(), product, sale, record.getStartDate());
+        }
+        return new BasicWarranty(record.getId(), product, sale, record.getStartDate());
+    }
+
+    private Sale findSaleById(String saleId) throws IOException {
+        for (Sale sale : saleDAO.findAll()) {
+            if (sale.getId().equals(saleId)) {
+                return sale;
+            }
+        }
+        return null;
     }
 
     private String generateWarrantyId(List<Warranty> existingWarranties) {
