@@ -1,5 +1,6 @@
 package com.gamezone.service;
 
+import com.gamezone.model.Accessory;
 import com.gamezone.model.Product;
 import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
@@ -21,6 +22,7 @@ public class ReturnService {
     private ReturnRepository returnRepository;
     private SaleService saleService;
     private ProductService productService;
+    private AccessoryService accessoryService;
 
     /**
      * Creates a ReturnService with its required collaborators.
@@ -28,12 +30,14 @@ public class ReturnService {
      * @param returnRepository the repository used to persist and load returns
      * @param saleService      the service used to resolve the original sale
      * @param productService   the service used to restore stock of returned products
+     * @param accessoryService the service used to restore stock of returned accessories
      */
     public ReturnService(ReturnRepository returnRepository, SaleService saleService,
-                          ProductService productService) {
+                          ProductService productService, AccessoryService accessoryService) {
         this.returnRepository = returnRepository;
         this.saleService = saleService;
         this.productService = productService;
+        this.accessoryService = accessoryService;
     }
 
     /**
@@ -90,7 +94,11 @@ public class ReturnService {
         newReturn.calculateRefundAmount();
 
         for (Product product : returnedProducts) {
-            productService.restoreStock(product.getId(), 1);
+            if (product instanceof Accessory) {
+                accessoryService.restoreStock(product.getId(), 1);
+            } else {
+                productService.restoreStock(product.getId(), 1);
+            }
         }
 
         existingReturns.add(newReturn);
