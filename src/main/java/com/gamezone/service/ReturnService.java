@@ -186,21 +186,27 @@ public class ReturnService {
      * @return the total sales minus the total returns for that period
      * @throws IOException if sales or returns cannot be read from storage
      */
-    public double generateMonthlyBalance(int month, int year) throws IOException {
+    public double calculateMonthlySales(int month, int year) throws IOException {
         double totalSales = 0.0;
         for (Sale sale : saleService.listSales()) {
             if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
                 totalSales += sale.getFinalTotal();
             }
         }
+        return totalSales;
+    }
 
+    public double calculateMonthlyReturns(int month, int year) throws IOException {
         double totalReturns = 0.0;
         for (Return r : returnRepository.loadAll()) {
             if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
                 totalReturns += r.getRefundAmount();
             }
         }
+        return totalReturns;
+    }
 
-        return totalSales - totalReturns;
+    public double generateMonthlyBalance(int month, int year) throws IOException {
+        return calculateMonthlySales(month, year) - calculateMonthlyReturns(month, year);
     }
 }
