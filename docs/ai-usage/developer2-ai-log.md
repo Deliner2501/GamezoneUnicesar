@@ -102,6 +102,32 @@ That error appears the first time you push a new branch to GitHub, because there
 
 
 
+## Requirement 5 - Phase 3 (A2 - Warranty circular dependency)
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 3, fix/warranty-circular-dependency |
+| Objective | Break the circular dependency SaleService → WarrantyService → WarrantyRepository → SaleService that prevented building the objects in Main via constructor injection. |
+| Query | Asked how to remove WarrantyRepository's dependency on SaleService while still being able to resolve the Sale and Product referenced by each warranty. |
+| Response | Proposed that WarrantyRepository only persist and load raw identifiers (productId, saleId) instead of full objects, and that WarrantyService be responsible for resolving those identifiers into real Sale and Product objects, receiving WarrantyRepository, SaleDAO (or SaleRepository) and ProductService by constructor. Also proposed adjusting the construction order in Main so WarrantyService is built with its resolved dependencies already available. |
+| Decision | Accepted as proposed: the cycle was broken by moving object resolution from the repository to the service layer, which also matches the ui → service → persistence → model dependency direction required by the workshop. |
+| Related commit | fix: resolve warranty circular dependency between SaleService and WarrantyRepository |
+
+## Requirement 5 - Phase 4 (A4 - Return accessory stock)
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, fix/return-accessory-stock |
+| Objective | Fix stock not being restored when an accessory is returned, since ReturnService only called ProductService.restoreStock. |
+| Query | Asked how to make ReturnService restore stock correctly for both products and accessories when registering a return. |
+| Response | Proposed adding restoreStock(String accessoryId, int quantity) to AccessoryService, equivalent to the one already in ProductService, and branching in ReturnService.registerReturn based on whether the returned item is an instance of Accessory or a regular Product. Also proposed resolving accessory references inside ReturnRepository when loading persisted returns, since accessories were not being looked up there either. |
+| Decision | Accepted as proposed, keeping the same instanceof-based branching pattern already used elsewhere in the module for consistency. |
+| Related commit | fix: restore accessory stock on return |
+
 ## Requirement 5 - Phase 4 (A7 - Return warranty cancellation)
 
 | Field | Content |
@@ -136,4 +162,3 @@ That error appears the first time you push a new branch to GitHub, because there
 | Response | Proposed adding warrantyRefund to Return's constructor and including it in calculateRefundAmount and generateReturnReceipt; in ReturnService, calculating the warranty refund before creating the Return, only for products instanceof Console. While cross-checking references to the modified constructor, found that ReturnRepository.fromLine still used the old Return constructor and that the CSV file did not persist warrantyRefund, which would have lost that value on reload (the warranties would already be deleted and could not be recalculated); fixed by adding the field to the file format. |
 | Decision | All proposed changes were accepted, including the ReturnRepository fix found during the cross-check of the modified constructor's references. |
 | Related commit | feat: refund canceled warranties on console return and persist them |
-
