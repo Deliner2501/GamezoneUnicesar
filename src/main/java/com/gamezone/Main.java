@@ -45,8 +45,8 @@ public class Main {
             AccessoryService accessoryService = new AccessoryService(accessoryDAO);
             PromotionService promotionService = new PromotionService(promotionDAO);
             SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, promotionService, personService);
-            ReturnRepository returnRepository = new ReturnRepository(saleService, productService);
-            ReturnService returnService = new ReturnService(returnRepository, saleService, productService);
+            ReturnRepository returnRepository = new ReturnRepository(saleService, productService, accessoryService);
+            ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService);
             WarrantyRepository warrantyRepository = new WarrantyRepository();
             WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
             saleService.setWarrantyService(warrantyService);
