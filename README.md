@@ -72,6 +72,15 @@ The system provides the following main functionalities:
 * Consult returns associated with a specific sale.
 * Generate a monthly balance report (sales minus returns) for a given month and year.
 
+### Warranty Management
+
+* Automatically generate a basic warranty (6 months) for every console included in a sale.
+* Optionally assign an extended warranty (12 months) to a console at the time of sale, adding 10% of its price to the sale's total.
+* Consult the warranty associated with a specific product within a specific sale.
+* List all registered warranties.
+* List warranties currently active.
+* List warranties expiring within a given number of days.
+
 ---
 
 ## Technologies Used
@@ -104,9 +113,8 @@ The application follows a four-layer architecture:
 │ ProductService          │
 │ AccessoryService        │
 │ PromotionService        │
-│ SaleService             │
 │ ReturnService           │
-└────────────┬────────────┘
+│ WarrantyService         │
 └────────────┬────────────┘
              │
        ┌─────┴─────┐
@@ -123,6 +131,9 @@ The application follows a four-layer architecture:
 │ Memory     │ │              │
 │ Promotion  │ │ ReturnRepository│
 │ Return     │ │              │
+│ Warranty   │ │ WarrantyRepository│
+│ BasicWarranty│ │            │
+│ ExtendedWarranty│ │         │
 │ Person     │ │              │
 │ Customer   │ └──────┬───────┘
 │ Seller     │        │
@@ -150,6 +161,9 @@ The `model` layer contains the main domain entities of the system.
 * `CategoryDiscount` — applies a percentage discount only to products of a specific category.
 * `BulkPurchaseDiscount` — applies a percentage discount when a sale reaches a minimum product quantity.
 * `Return` — represents a return transaction, referencing an original sale and the specific products returned from it.
+* `Warranty` — abstract base class for warranties associated with a purchased product and sale.
+* `BasicWarranty` — 6-month warranty automatically assigned to consoles at no additional cost.
+* `ExtendedWarranty` — 12-month optional warranty, adding 10% of the product's price to the sale.
 
 `Product` uses polymorphism through the `getFullDescription()` abstract method, which is implemented by its subclasses.
 
@@ -165,6 +179,7 @@ The `persistence` layer is responsible for saving and loading information from f
 * `AccessoryDAO` — manages controllers, cables, and memories.
 * `PromotionDAO` — manages promotional discount campaigns.
 * `ReturnRepository` — manages returns, resolving references to the original sale and returned products.
+* `WarrantyRepository` — manages warranties, resolving references to the associated product and sale.
 
 The system uses files inside the `data` directory to maintain information between executions.
 
@@ -178,6 +193,7 @@ The `service` layer contains the application's business rules.
 * `AccessoryService` — handles accessory registration, console compatibility, listing, and stock updates.
 * `PromotionService` — handles promotion registration, validity checks, and selecting the best applicable promotion for a sale.
 * `ReturnService` — handles return registration with 30-day and ownership validation, stock restoration, and the monthly balance report.
+* `WarrantyService` — handles warranty assignment, validity checks, and queries for active or soon-to-expire warranties.
 
 The service layer prevents invalid operations before information is persisted.
 
@@ -200,7 +216,8 @@ GamezoneUnicesar/
 │   ├── sellers.csv
 │   ├── accessories.csv
 │   ├── promotions.csv
-│   └── returns.csv
+│   ├── returns.csv
+│   └── warranties.csv
 │
 ├── docs/
 │   ├── ai-usage/
@@ -216,7 +233,9 @@ GamezoneUnicesar/
 │   ├── promotion-analysis.md
 │   ├── promotion-class-diagram.md
 │   ├── return-analysis.md
-│   └── return-class-diagram.md
+│   ├── return-class-diagram.md
+│   ├── warranty-analysis.md
+│   └── warranty-class-diagram.md
 │
 ├── src/
 │   └── main/
@@ -251,6 +270,7 @@ The main files are:
 * `data/accessories.csv` — stores controllers, cables, and memories.
 * `data/promotions.csv` — stores promotional discount campaigns.
 * `data/returns.csv` — stores registered returns.
+* `data/warranties.csv` — stores registered warranties.
 
 If some files do not exist when the application starts, the system creates the necessary data structures and generates the files when information is saved.
 
@@ -373,6 +393,7 @@ The application will display the main console menu:
 4. Gestionar accesorios
 5. Gestionar promociones
 6. Gestionar devoluciones
+7. Gestionar garantías
 0. Salir
 ```
 
@@ -416,12 +437,18 @@ GameZone Unicesar
 │   ├── List All Promotions
 │   └── List Active Promotions
 │
-└── Return Management
-    ├── Register Return
-    ├── View All Returns
-    ├── View Returns by Customer
-    ├── View Returns by Sale
-    └── Consult Monthly Balance
+├── Return Management
+│   ├── Register Return
+│   ├── View All Returns
+│   ├── View Returns by Customer
+│   ├── View Returns by Sale
+│   └── Consult Monthly Balance
+│
+└── Warranty Management
+    ├── Consult Warranty by Product and Sale
+    ├── List All Warranties
+    ├── List Active Warranties
+    └── List Warranties Expiring Soon
 ```
 
 ---
@@ -483,6 +510,8 @@ Additional project documentation is available in the `docs` directory:
 * [`promotion-class-diagram.md`](docs/promotion-class-diagram.md) — class diagram for the promotion module.
 * [`return-analysis.md`](docs/return-analysis.md) — analysis questions and answers for the return module.
 * [`return-class-diagram.md`](docs/return-class-diagram.md) — class diagram for the return module.
+* [`warranty-analysis.md`](docs/warranty-analysis.md) — analysis questions and answers for the warranty module.
+* [`warranty-class-diagram.md`](docs/warranty-class-diagram.md) — class diagram for the warranty module.
 * [`ai-usage/`](docs/ai-usage/) — individual AI usage logs for each team member.
 
 ---
