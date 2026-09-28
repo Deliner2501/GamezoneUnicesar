@@ -64,3 +64,101 @@ That file needs to be plain text with a .md extension, not a Word document. You 
 
 That error appears the first time you push a new branch to GitHub, because there is not yet an established connection between your local branch and the remote one. Use the command the terminal itself suggests, git push --set-upstream origin branch-name, to establish that connection, which is only needed the first time.
 
+
+## Requirement 5 - Phase 4 (A6 - Monthly balance report)
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, fix/monthly-balance-report |
+| Objective | Split the monthly balance calculation into two separate methods (sales and returns) per adjustment A6 of Requirement 5. |
+| Query | Asked how to modify ReturnService to add calculateMonthlySales(int, int) and calculateMonthlyReturns(int, int), and leave generateMonthlyBalance as the difference between both, without changing its signature. |
+| Response | Proposed extracting the logic already inside generateMonthlyBalance into two new methods, reusing sale.getFinalTotal() and return.getRefundAmount(), and rewriting generateMonthlyBalance as calculateMonthlySales(month, year) - calculateMonthlyReturns(month, year). |
+| Decision | Accepted as is, since getFinalTotal() already included discounts and extended warranty costs (effect of A3, already merged), so the total calculation itself did not need changes, only reorganizing it. |
+| Related commit | fix: split monthly sales and returns totals in ReturnService |
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, fix/monthly-balance-report |
+| Objective | Update the monthly balance menu option to show sales, returns, and net balance, not only the net balance. |
+| Query | Asked how to modify consultMonthlyBalance in MainMenu to call the two new ReturnService methods and show all three values to the user. |
+| Response | Proposed calling calculateMonthlySales, calculateMonthlyReturns, and generateMonthlyBalance within the same try block, printing the three results with System.out.println, keeping the existing exception handling. |
+| Decision | Accepted without changes, since it respects the already-implemented error handling and only adds the two extra output lines required by the assignment. |
+| Related commit | feat: show sales, returns and net balance in monthly balance option |
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, fix/monthly-balance-report |
+| Objective | Clarify where to place the new methods' code within the project (doubt about whether a new class was required). |
+| Query | Asked whether calculateMonthlySales and calculateMonthlyReturns should go in a new class or in an already existing file. |
+| Response | Clarified that no new class was required: both methods needed to be added inside the already existing ReturnService class, replacing the previous generateMonthlyBalance method in the same file. |
+| Decision | Accepted the clarification and placed the code in ReturnService.java as indicated, without creating additional files. |
+| Related commit | fix: split monthly sales and returns totals in ReturnService |
+
+
+
+## Requirement 5 - Phase 3 (A2 - Warranty circular dependency)
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 3, fix/warranty-circular-dependency |
+| Objective | Break the circular dependency SaleService → WarrantyService → WarrantyRepository → SaleService that prevented building the objects in Main via constructor injection. |
+| Query | Asked how to remove WarrantyRepository's dependency on SaleService while still being able to resolve the Sale and Product referenced by each warranty. |
+| Response | Proposed that WarrantyRepository only persist and load raw identifiers (productId, saleId) instead of full objects, and that WarrantyService be responsible for resolving those identifiers into real Sale and Product objects, receiving WarrantyRepository, SaleDAO (or SaleRepository) and ProductService by constructor. Also proposed adjusting the construction order in Main so WarrantyService is built with its resolved dependencies already available. |
+| Decision | Accepted as proposed: the cycle was broken by moving object resolution from the repository to the service layer, which also matches the ui → service → persistence → model dependency direction required by the workshop. |
+| Related commit | fix: resolve warranty circular dependency between SaleService and WarrantyRepository |
+
+## Requirement 5 - Phase 4 (A4 - Return accessory stock)
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, fix/return-accessory-stock |
+| Objective | Fix stock not being restored when an accessory is returned, since ReturnService only called ProductService.restoreStock. |
+| Query | Asked how to make ReturnService restore stock correctly for both products and accessories when registering a return. |
+| Response | Proposed adding restoreStock(String accessoryId, int quantity) to AccessoryService, equivalent to the one already in ProductService, and branching in ReturnService.registerReturn based on whether the returned item is an instance of Accessory or a regular Product. Also proposed resolving accessory references inside ReturnRepository when loading persisted returns, since accessories were not being looked up there either. |
+| Decision | Accepted as proposed, keeping the same instanceof-based branching pattern already used elsewhere in the module for consistency. |
+| Related commit | fix: restore accessory stock on return |
+
+## Requirement 5 - Phase 4 (A7 - Return warranty cancellation)
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, feature/return-warranty-cancellation |
+| Objective | Add the method to cancel the warranties of a returned console and calculate the reimbursable amount, per adjustment A7 of Requirement 5. |
+| Query | Asked how to implement cancelWarranties(String productId, String saleId): double in WarrantyService, removing a product's warranties for a given sale and returning the reimbursable cost. |
+| Response | Identified that Warranty.getAdditionalCost() already returns 0.0 for BasicWarranty and 10% of the price for ExtendedWarranty, so cancelWarranties only needed to load all warranties, filter the ones matching productId and saleId, sum their additional cost, save the rest with WarrantyRepository.saveAll (which replaces the whole file), and return the sum. |
+| Decision | Accepted as proposed, reusing getAdditionalCost() instead of duplicating the warranty-type logic. |
+| Related commit | feat: add cancelWarranties to remove warranties on console return |
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, feature/return-warranty-cancellation |
+| Objective | Inject WarrantyService as a dependency of ReturnService so it can invoke cancelWarranties from returns. |
+| Query | Asked how to add WarrantyService to ReturnService's constructor without breaking the rest of the wiring in Main. |
+| Response | Proposed adding the field and constructor parameter to ReturnService, and reordering Main.java so WarrantyService is built before ReturnService, since WarrantyService does not depend on ReturnService and therefore does not create a circular dependency. |
+| Decision | Accepted, and the construction order in Main.java was updated accordingly. |
+| Related commit | feat: inject WarrantyService into ReturnService |
+
+| Field | Content |
+|---|---|
+| Date | 2026-09-27 |
+| Tool | Claude |
+| Phase and branch | Phase 4, feature/return-warranty-cancellation |
+| Objective | Include the warranty refund amount in Return's calculation and receipt, and invoke cancelWarranties for each returned console in ReturnService. |
+| Query | Asked how to modify Return and ReturnService.registerReturn to add the warranty refund to the total amount, and whether ReturnRepository needed any change. |
+| Response | Proposed adding warrantyRefund to Return's constructor and including it in calculateRefundAmount and generateReturnReceipt; in ReturnService, calculating the warranty refund before creating the Return, only for products instanceof Console. While cross-checking references to the modified constructor, found that ReturnRepository.fromLine still used the old Return constructor and that the CSV file did not persist warrantyRefund, which would have lost that value on reload (the warranties would already be deleted and could not be recalculated); fixed by adding the field to the file format. |
+| Decision | All proposed changes were accepted, including the ReturnRepository fix found during the cross-check of the modified constructor's references. |
+| Related commit | feat: refund canceled warranties on console return and persist them |

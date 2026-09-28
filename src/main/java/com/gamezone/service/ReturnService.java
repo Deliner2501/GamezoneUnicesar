@@ -4,6 +4,7 @@ import com.gamezone.model.Accessory;
 import com.gamezone.model.Product;
 import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
+import com.gamezone.model.Console;
 import com.gamezone.persistence.ReturnRepository;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ public class ReturnService {
     private SaleService saleService;
     private ProductService productService;
     private AccessoryService accessoryService;
+    private WarrantyService warrantyService;
 
     /**
      * Creates a ReturnService with its required collaborators.
@@ -31,13 +33,16 @@ public class ReturnService {
      * @param saleService      the service used to resolve the original sale
      * @param productService   the service used to restore stock of returned products
      * @param accessoryService the service used to restore stock of returned accessories
+     * @param warrantyService  the service used to cancel warranties of returned consoles
      */
     public ReturnService(ReturnRepository returnRepository, SaleService saleService,
-                          ProductService productService, AccessoryService accessoryService) {
+                          ProductService productService, AccessoryService accessoryService,
+                          WarrantyService warrantyService) {
         this.returnRepository = returnRepository;
         this.saleService = saleService;
         this.productService = productService;
         this.accessoryService = accessoryService;
+        this.warrantyService = warrantyService;
     }
 
     /**
@@ -90,7 +95,14 @@ public class ReturnService {
         List<Return> existingReturns = returnRepository.loadAll();
         String returnId = generateReturnId(existingReturns);
 
-                Return newReturn = new Return(returnId, LocalDate.now(), originalSale, returnedProducts, reason);
+        double warrantyRefund = 0.0;
+        for (Product product : returnedProducts) {
+            if (product instanceof Console) {
+                warrantyRefund += warrantyService.cancelWarranties(product.getId(), saleId);
+            }
+        }
+
+        Return newReturn = new Return(returnId, LocalDate.now(), originalSale, returnedProducts, reason, warrantyRefund);
         newReturn.calculateRefundAmount();
 
         for (Product product : returnedProducts) {
@@ -186,21 +198,27 @@ public class ReturnService {
      * @return the total sales minus the total returns for that period
      * @throws IOException if sales or returns cannot be read from storage
      */
-    public double generateMonthlyBalance(int month, int year) throws IOException {
+    public double calculateMonthlySales(int month, int year) throws IOException {
         double totalSales = 0.0;
         for (Sale sale : saleService.listSales()) {
             if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
                 totalSales += sale.getFinalTotal();
             }
         }
+        return totalSales;
+    }
 
+    public double calculateMonthlyReturns(int month, int year) throws IOException {
         double totalReturns = 0.0;
         for (Return r : returnRepository.loadAll()) {
             if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
                 totalReturns += r.getRefundAmount();
             }
         }
+        return totalReturns;
+    }
 
-        return totalSales - totalReturns;
+    public double generateMonthlyBalance(int month, int year) throws IOException {
+        return calculateMonthlySales(month, year) - calculateMonthlyReturns(month, year);
     }
 }
