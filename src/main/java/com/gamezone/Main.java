@@ -4,6 +4,7 @@ import com.gamezone.persistence.AccessoryDAO;
 import com.gamezone.persistence.PersonDAO;
 import com.gamezone.persistence.ProductDAO;
 import com.gamezone.persistence.PromotionDAO;
+import com.gamezone.persistence.PromotionUsageLogger;
 import com.gamezone.persistence.ReturnRepository;
 import com.gamezone.persistence.SaleDAO;
 import com.gamezone.persistence.WarrantyRepository;
@@ -43,7 +44,8 @@ public class Main {
             PersonService personService = new PersonService();
             ProductService productService = new ProductService(productDAO);
             AccessoryService accessoryService = new AccessoryService(accessoryDAO);
-            PromotionService promotionService = new PromotionService(promotionDAO);
+            PromotionUsageLogger promotionUsageLogger = new PromotionUsageLogger();
+            PromotionService promotionService = new PromotionService(promotionDAO, promotionUsageLogger);
             SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, promotionService, personService);
             WarrantyRepository warrantyRepository = new WarrantyRepository();
             WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);

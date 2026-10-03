@@ -5,6 +5,7 @@ import com.gamezone.model.CategoryDiscount;
 import com.gamezone.model.PercentageDiscount;
 import com.gamezone.model.Promotion;
 import com.gamezone.persistence.PromotionDAO;
+import com.gamezone.persistence.PromotionUsageLogger;
 import java.time.LocalDate;
 import java.util.List;
 import com.gamezone.model.Sale;
@@ -17,9 +18,11 @@ import java.util.ArrayList;
 public class PromotionService {
 
     private PromotionDAO promotionDAO;
+    private PromotionUsageLogger promotionUsageLogger;
 
-    public PromotionService(PromotionDAO promotionDAO) {
+    public PromotionService(PromotionDAO promotionDAO, PromotionUsageLogger promotionUsageLogger) {
         this.promotionDAO = promotionDAO;
+        this.promotionUsageLogger = promotionUsageLogger;
     }
 
     /**
@@ -131,6 +134,10 @@ public class PromotionService {
                 bestDiscount = discount;
                 best = p;
             }
+        }
+
+        if (best != null) {
+            promotionUsageLogger.log(sale, best, bestDiscount);
         }
 
         return best;
