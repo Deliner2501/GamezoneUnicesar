@@ -65,4 +65,10 @@ public class BulkPurchaseDiscount extends Promotion {
         }
         return sale.calculateTotal() * (percentage / 100.0);
     }
+    
+    
+    @Override
+    public String getPromotionDetail() {
+        return "descuento por volumen a partir de " + getMinQuantity() + " productos";
+    }
 }

@@ -61,4 +61,15 @@ public abstract class Promotion {
      * @return the discount amount in currency
      */
     public abstract double calculateDiscount(Sale sale);
+    
+    /**
+     * Returns a short, type-specific description of this promotion's
+     * discount rule (e.g. "15% de descuento"). Declaring it here, as
+     * part of Promotion's stable interface, protects every caller from
+     * ever needing to know which concrete subtype it is dealing with —
+     * even when a new Promotion subtype is added later.
+     *
+     * @return a short description of the discount rule
+     */
+    public abstract String getPromotionDetail();
 }

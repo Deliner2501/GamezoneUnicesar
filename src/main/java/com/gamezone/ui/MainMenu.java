@@ -608,7 +608,8 @@ private void printPromotions(List<Promotion> promotions) {
     }
     for (Promotion promotion : promotions) {
         System.out.println(promotion.getId() + " - " + promotion.getName()
-                + " (" + promotion.getStartDate() + " a " + promotion.getEndDate() + ")");
+                + " (" + promotion.getStartDate() + " a " + promotion.getEndDate() + ") - "
+                + promotion.getPromotionDetail());
     }
 }
 

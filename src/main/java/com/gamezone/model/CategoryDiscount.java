@@ -71,6 +71,12 @@ public class CategoryDiscount extends Promotion {
         }
         return categorySubtotal * (percentage / 100.0);
     }
+    
+    
+    @Override
+    public String getPromotionDetail() {
+        return getPercentage() + "% de descuento en " + getTargetCategory();
+    }
 
     private boolean matchesCategory(Product product) {
         if (targetCategory.equalsIgnoreCase("VIDEOGAME")) {
