@@ -17,6 +17,7 @@ import com.gamezone.service.PromotionService;
 import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
 import com.gamezone.service.WarrantyService;
+import com.gamezone.persistence.ProductDAO;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -41,6 +42,7 @@ public class MainMenu {
     private final ReturnService returnService;
     private final SaleService saleService;
     private final Scanner scanner;
+    private final ProductDAO productDAO = new ProductDAO();
 
     /**
      * Creates the main menu with the services it depends on.
@@ -295,7 +297,7 @@ public class MainMenu {
                 int quantity = Integer.parseInt(scanner.nextLine());
                 productQuantities.merge(productId, quantity, Integer::sum);
 
-                Product product = productService.findProductById(productId);
+                Product product = productDAO.findById(productId);
                 if (product instanceof Console) {
                     System.out.print("¿Agregar garantía extendida a este producto? (S/N): ");
                     String answer = scanner.nextLine();
