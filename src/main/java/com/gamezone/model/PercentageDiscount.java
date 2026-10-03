@@ -1,6 +1,8 @@
 package com.gamezone.model;
 
 import java.time.LocalDate;
+import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * Represents a promotion that applies a flat percentage discount
@@ -39,6 +41,16 @@ public class PercentageDiscount extends Promotion {
      */
     @Override
     public double calculateDiscount(Sale sale) {
-        return sale.calculateTotal() * (percentage / 100.0);
+        double discount = sale.calculateTotal() * (percentage / 100.0);
+        logUsage(sale, discount);
+        return discount;
+    }
+
+    private void logUsage(Sale sale, double discount) {
+        try (FileWriter writer = new FileWriter("data/promotion-usage.log", true)) {
+            writer.write(sale.getDate() + "," + getId() + "," + getName() + "," + discount + "\n");
+        } catch (IOException e) {
+            System.out.println("No se pudo registrar el uso de la promoción: " + e.getMessage());
+        }
     }
 }
