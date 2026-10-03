@@ -174,6 +174,11 @@ public class MainMenu {
         }
     }
 
+        /**
+     * Lists every available product, letting each Product subtype
+     * describe itself via getFullDescription() (Polymorphism), instead
+     * of asking "what type is this?" from outside the class.
+     */
     private void listProducts() {
         List<Product> products = productService.listAvailableProducts();
         if (products.isEmpty()) {
