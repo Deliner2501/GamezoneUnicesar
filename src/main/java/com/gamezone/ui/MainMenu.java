@@ -290,6 +290,9 @@ public class MainMenu {
                 int quantity = Integer.parseInt(scanner.nextLine());
                 productQuantities.merge(productId, quantity, Integer::sum);
 
+                // Goes through ProductService (Indirection) instead of talking
+                // to ProductDAO directly, so the UI stays decoupled from how
+                // products are actually persisted.
                 Product product = productService.findProductById(productId);
                 if (product instanceof Console) {
                     System.out.print("¿Agregar garantía extendida a este producto? (S/N): ");
