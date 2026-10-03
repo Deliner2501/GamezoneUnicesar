@@ -10,6 +10,9 @@ import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
 import com.gamezone.model.VideoGame;
 import com.gamezone.model.Warranty;
+import com.gamezone.model.PercentageDiscount;
+import com.gamezone.model.CategoryDiscount;
+import com.gamezone.model.BulkPurchaseDiscount;
 import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
@@ -611,8 +614,17 @@ private void printPromotions(List<Promotion> promotions) {
         return;
     }
     for (Promotion promotion : promotions) {
-        System.out.println(promotion.getId() + " - " + promotion.getName()
-                + " (" + promotion.getStartDate() + " a " + promotion.getEndDate() + ")");
+        String detail;
+        if (promotion instanceof PercentageDiscount percentageDiscount) {
+            detail = percentageDiscount.getPercentage() + "% de descuento";
+        } else if (promotion instanceof CategoryDiscount categoryDiscount) {
+            detail = categoryDiscount.getPercentage() + "% de descuento en " + categoryDiscount.getTargetCategory();
+        } else if (promotion instanceof BulkPurchaseDiscount bulkPurchaseDiscount) {
+            detail = "descuento por volumen a partir de " + bulkPurchaseDiscount.getMinQuantity() + " productos";
+        } else {
+            detail = "";
+        }
+        System.out.println(promotion.getId() + " - " + promotion.getName() + " (" + detail + ")");
     }
 }
 
