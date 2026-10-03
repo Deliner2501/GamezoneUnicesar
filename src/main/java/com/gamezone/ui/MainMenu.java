@@ -174,14 +174,24 @@ public class MainMenu {
         }
     }
 
-    private void listProducts() {
+        private void listProducts() {
         List<Product> products = productService.listAvailableProducts();
         if (products.isEmpty()) {
             System.out.println("Aún no hay productos registrados.");
             return;
         }
         for (Product product : products) {
-            System.out.println(product.getFullDescription());
+            String label;
+            if (product instanceof VideoGame) {
+                label = "[JUEGO] " + product.getTitle() + " - $" + product.getPrice();
+            } else if (product instanceof Console) {
+                label = "[CONSOLA] " + product.getTitle() + " - $" + product.getPrice();
+            } else if (product instanceof Accessory) {
+                label = "[ACCESORIO] " + product.getTitle() + " - $" + product.getPrice();
+            } else {
+                label = product.getTitle();
+            }
+            System.out.println(label);
         }
     }
 
