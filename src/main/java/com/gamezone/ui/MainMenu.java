@@ -816,7 +816,7 @@ private void consultWarrantyByProduct() {
             System.out.println(warranty.generateWarrantyCertificate());
         }
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar la garantía: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -824,7 +824,7 @@ private void listAllWarranties() {
     try {
         printWarranties(warrantyService.listAllWarranties());
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las garantías: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -832,7 +832,7 @@ private void listActiveWarranties() {
     try {
         printWarranties(warrantyService.listActiveWarranties());
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las garantías: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -846,7 +846,7 @@ private void listWarrantiesExpiringSoon() {
     } catch (IllegalArgumentException e) {
         System.out.println("Error: " + e.getMessage());
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las garantías: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
