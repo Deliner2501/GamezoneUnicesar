@@ -90,17 +90,31 @@ public class MainMenu {
             System.out.println("0. Salir");
             System.out.print("Seleccione una opción: ");
 
-            String option = scanner.nextLine();
-            switch (option) {
-                case "1" -> productMenu();
-                case "2" -> personMenu();
-                case "3" -> saleMenu();
-                case "4" -> accessoryMenu();
-                case "5" -> promotionMenu();
-                case "6" -> returnMenu();
-                case "7" -> warrantyMenu();
-                case "0" -> running = false;
-                default -> System.out.println("Opción inválida.");
+                        String option = scanner.nextLine();
+            try {
+                switch (option) {
+                    case "1" -> productMenu();
+                    case "2" -> personMenu();
+                    case "3" -> saleMenu();
+                    case "4" -> accessoryMenu();
+                    case "5" -> promotionMenu();
+                    case "6" -> returnMenu();
+                    case "7" -> warrantyMenu();
+                    case "0" -> running = false;
+                    default -> System.out.println("Opción inválida.");
+                }
+            } catch (ResourceNotFoundException e) {
+                showResourceNotFound(e);
+            } catch (BusinessRuleException e) {
+                showBusinessRuleViolation(e);
+            } catch (InvalidDataException e) {
+                showInvalidData(e);
+            } catch (PersistenceException e) {
+                showPersistenceError();
+            } catch (GameZoneException e) {
+                showGenericError(e);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
             }
         }
         System.out.println("Cerrando GameZone Unicesar. ¡Hasta pronto!");
