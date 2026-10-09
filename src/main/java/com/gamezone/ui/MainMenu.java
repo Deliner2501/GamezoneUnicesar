@@ -210,8 +210,6 @@ public class MainMenu {
             System.out.println("Videojuego registrado exitosamente.");
         } catch (NumberFormatException e) {
             System.out.println("Error: el precio y la cantidad deben ser valores numéricos válidos.");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
         }
     }
 
@@ -237,8 +235,6 @@ public class MainMenu {
             System.out.println("Consola registrada exitosamente.");
         } catch (NumberFormatException e) {
             System.out.println("Error: el precio y la cantidad deben ser valores numéricos válidos.");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
         }
     }
 
