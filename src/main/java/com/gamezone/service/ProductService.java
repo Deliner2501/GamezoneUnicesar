@@ -1,7 +1,9 @@
 package com.gamezone.service;
 
+import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.model.Product;
 import com.gamezone.persistence.ProductDAO;
+import com.gamezone.validation.ProductValidator;
 import java.util.List;
 
 /**
@@ -15,20 +17,19 @@ public class ProductService {
         this.productDAO = productDAO;
     }
 
-        /**
+    /**
      * Registers a new product and persists it.
      *
      * @param product the product to register
-     * @throws IllegalArgumentException if the product is null, has an empty id,
-     *         or has a negative price
+     * @throws InvalidDataException if the product is null, has an empty id
+     *         or title, a non-positive price, or a negative stock
      */
     public void registerProduct(Product product) {
-        if (product == null || product.getId() == null || product.getId().isEmpty()) {
-            throw new IllegalArgumentException("Product must have a valid id");
+        if (product == null) {
+            throw new InvalidDataException("producto", "no puede ser nulo");
         }
-        if (product.getPrice() < 0) {
-            throw new IllegalArgumentException("Product price cannot be negative");
-        }
+        ProductValidator.validateProductData(product.getId(), product.getTitle(),
+                product.getPrice(), product.getStock());
         productDAO.save(product);
     }
 
@@ -55,31 +56,29 @@ public class ProductService {
         }
         return product.getStock() >= quantity;
     }
-    
-    /**
- * Finds a product by its id.
- *
- * @param productId the id of the product to find
- * @return the product with the given id, or null if none is found
- */
-public Product findProductById(String productId) {
-    return productDAO.findById(productId);
-}
 
-/**
- * Restores stock for a product, typically after a return is processed.
- * The change is persisted immediately.
- *
- * @param productId the id of the product whose stock is being restored
- * @param quantity  the quantity to add back to the product's stock
- * @throws IllegalArgumentException if the product does not exist or the quantity is negative
- */
-public void restoreStock(String productId, int quantity) {
-    Product product = productDAO.findById(productId);
-    if (product == null) {
-        throw new IllegalArgumentException("Product not found: " + productId);
+    /**
+     * Finds a product by its id.
+     *
+     * @param productId the id of the product to find
+     * @return the product with the given id, or null if none is found
+     */
+    public Product findProductById(String productId) {
+        return productDAO.findById(productId);
     }
-    product.increaseStock(quantity);
-    productDAO.update(product);
-}
+
+    /**
+     * Restores stock for a product, typically after a return is processed.
+     * The change is persisted immediately.
+     *
+     * @param productId the id of the product whose stock is being restored
+     * @param quantity  the quantity to add back to the product's stock
+     * @throws com.gamezone.exceptions.ResourceNotFoundException if the product does not exist
+     */
+    public void restoreStock(String productId, int quantity) {
+        Product product = productDAO.findById(productId);
+        ProductValidator.validateProductExists(product, productId);
+        product.increaseStock(quantity);
+        productDAO.update(product);
+    }
 }

@@ -1,5 +1,6 @@
 package com.gamezone.persistence;
 
+import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.model.Console;
 import com.gamezone.model.Product;
 import com.gamezone.model.VideoGame;
@@ -19,6 +20,7 @@ public class ProductDAO {
      * Saves a single product by appending it to the file.
      *
      * @param product the product to persist
+     * @throws PersistenceException if the file cannot be read or written
      */
     public void save(Product product) {
         List<Product> products = findAll();
@@ -31,6 +33,7 @@ public class ProductDAO {
      *
      * @return the list of all persisted products, or an empty list
      *         if the file does not exist yet
+     * @throws PersistenceException if the file cannot be read
      */
     public List<Product> findAll() {
         List<Product> products = new ArrayList<>();
@@ -48,7 +51,8 @@ public class ProductDAO {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error reading products: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error al leer el archivo " + FILE_PATH + " (operación de lectura)", e);
         }
         return products;
     }
@@ -58,6 +62,7 @@ public class ProductDAO {
      *
      * @param id the id of the product to find
      * @return the matching product, or null if none is found
+     * @throws PersistenceException if the file cannot be read
      */
     public Product findById(String id) {
         for (Product p : findAll()) {
@@ -70,6 +75,7 @@ public class ProductDAO {
      * Updates an existing product, replacing it by matching id.
      *
      * @param product the product with updated data
+     * @throws PersistenceException if the file cannot be read or written
      */
     public void update(Product product) {
         List<Product> products = findAll();
@@ -101,7 +107,8 @@ public class ProductDAO {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error saving products: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error al escribir el archivo " + FILE_PATH + " (operación de escritura)", e);
         }
     }
 

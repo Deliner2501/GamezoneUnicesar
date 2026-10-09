@@ -1,9 +1,12 @@
 package com.gamezone.service;
 
 import com.gamezone.model.Customer;
+import com.gamezone.model.Person;
 import com.gamezone.model.Seller;
 import com.gamezone.persistence.PersonDAO;
+import com.gamezone.validation.PersonValidator;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,22 +34,21 @@ public class PersonService {
     }
 
     /**
-     * Registers a new customer, validating that the id is not already used,
-     * and persists the updated list immediately.
+     * Registers a new customer, validating the data and that the id is
+     * not already used, and persists the updated list immediately.
      *
      * @param name  the customer's full name
      * @param id    the customer's identification number
      * @param phone the customer's contact phone number
      * @param email the customer's email address
-     * @throws IllegalArgumentException if a customer with the same id already exists
-     * @throws IOException              if the data cannot be saved
+     * @throws com.gamezone.exceptions.InvalidDataException if any field is invalid
+     * @throws com.gamezone.exceptions.BusinessRuleException if a customer with the same id already exists
+     * @throws IOException if the data cannot be saved
      */
-    
     public void registerCustomer(String name, String id, String phone, String email) throws IOException {
-        // Reutilizamos findCustomerById en vez de repetir el ciclo de búsqueda
-        if (findCustomerById(id) != null) {
-            throw new IllegalArgumentException("Ya existe un cliente con el id: " + id);
-        }
+        PersonValidator.validatePersonData(id, name, email, phone);
+        PersonValidator.validateUniquePerson(new ArrayList<Person>(customers), id);
+
         Customer newCustomer = new Customer(name, id, phone, email);
         customers.add(newCustomer);
         personDAO.saveCustomers(customers);
