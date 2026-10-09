@@ -1,5 +1,10 @@
 package com.gamezone.ui;
 
+import com.gamezone.exceptions.BusinessRuleException;
+import com.gamezone.exceptions.GameZoneException;
+import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.exceptions.PersistenceException;
+import com.gamezone.exceptions.ResourceNotFoundException;
 import com.gamezone.model.Accessory;
 import com.gamezone.model.Console;
 import com.gamezone.model.Customer;
@@ -101,6 +106,55 @@ public class MainMenu {
         System.out.println("Cerrando GameZone Unicesar. ¡Hasta pronto!");
     }
 
+        // ===================== ERROR HANDLING =====================
+
+    /**
+     * Shows the message for a resource that does not exist in the system
+     * (product, customer, seller or sale).
+     *
+     * @param e the exception describing the missing resource
+     */
+    private void showResourceNotFound(ResourceNotFoundException e) {
+        System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+    }
+
+    /**
+     * Shows the message for an operation that violates a business rule
+     * (insufficient stock, duplicated customer, sale without products).
+     *
+     * @param e the exception describing the violated rule
+     */
+    private void showBusinessRuleViolation(BusinessRuleException e) {
+        System.out.println("No se puede completar la operación: " + e.getMessage());
+    }
+
+    /**
+     * Shows the message for input data that fails format or range checks.
+     *
+     * @param e the exception describing the invalid field
+     */
+    private void showInvalidData(InvalidDataException e) {
+        System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+    }
+
+    /**
+     * Shows a generic message for storage problems. It never exposes file
+     * names or technical details to the user.
+     */
+    private void showPersistenceError() {
+        System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
+    }
+
+    /**
+     * Shows a fallback message for any GameZoneException subtype that has
+     * no dedicated handler, so new exception types never reach the user raw.
+     *
+     * @param e the unclassified GameZone exception
+     */
+    private void showGenericError(GameZoneException e) {
+        System.out.println("No se puede completar la operación: " + e.getMessage());
+    }
+    
     // ===================== PRODUCT MENU =====================
 
     private void productMenu() {
