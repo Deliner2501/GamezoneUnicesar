@@ -1,6 +1,6 @@
-
 package com.gamezone.persistence;
 
+import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Product;
 import com.gamezone.model.Sale;
@@ -46,7 +46,9 @@ public class SaleDAO {
      * Saves a single sale by appending it to the sales file.
      *
      * @param sale the sale to persist
-     * @throws IOException if the sale cannot be written to disk
+     * @throws PersistenceException if the sale cannot be written to disk
+     * @throws IOException declared for API compatibility; write failures
+     *         are now wrapped as PersistenceException instead
      */
     public void save(Sale sale) throws IOException {
         File file = new File(FILE_PATH);
@@ -55,6 +57,9 @@ public class SaleDAO {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
             writer.write(toLine(sale));
             writer.newLine();
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al escribir el archivo " + FILE_PATH + " (operación de escritura)", e);
         }
     }
 
@@ -63,7 +68,9 @@ public class SaleDAO {
      *
      * @return the list of all persisted sales, or an empty list
      *         if the file does not exist yet
-     * @throws IOException if the file cannot be read
+     * @throws PersistenceException if the file cannot be read
+     * @throws IOException declared for API compatibility; read failures
+     *         are now wrapped as PersistenceException instead
      */
     public List<Sale> findAll() throws IOException {
         List<Sale> sales = new ArrayList<>();
@@ -80,6 +87,9 @@ public class SaleDAO {
                     sales.add(sale);
                 }
             }
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al leer el archivo " + FILE_PATH + " (operación de lectura)", e);
         }
         return sales;
     }
@@ -122,7 +132,7 @@ public class SaleDAO {
      * Converts a Sale into a single line of text for storage.
      * Format: id;date;customerId;sellerId;productId1,productId2,...
      */
-        private String toLine(Sale sale) {
+    private String toLine(Sale sale) {
         StringBuilder productIds = new StringBuilder();
         List<Product> products = sale.getProducts();
         for (int i = 0; i < products.size(); i++) {
@@ -161,7 +171,7 @@ public class SaleDAO {
             return null;
         }
 
-                Sale sale = new Sale(id, date, customer, seller);
+        Sale sale = new Sale(id, date, customer, seller);
 
         if (parts.length > 4 && !parts[4].isBlank()) {
             String[] productIds = parts[4].split(PRODUCT_SEPARATOR);
