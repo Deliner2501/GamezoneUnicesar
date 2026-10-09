@@ -1,5 +1,7 @@
 package com.gamezone.persistence;
 
+import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Seller;
 import java.io.BufferedReader;
@@ -28,13 +30,14 @@ public class PersonDAO {
      * overwriting any previous content.
      *
      * @param customers the list of customers to save
-     * @throws IllegalArgumentException if the list is null
-     * @throws IOException              if the file cannot be written
+     * @throws InvalidDataException if the list is null
+     * @throws PersistenceException if the file cannot be written
+     * @throws IOException declared for API compatibility; write failures
+     *         are now wrapped as PersistenceException instead
      */
     public void saveCustomers(List<Customer> customers) throws IOException {
-        // Validamos que no nos pasen una lista nula antes de intentar escribir
         if (customers == null) {
-            throw new IllegalArgumentException("La lista de clientes no puede ser nula");
+            throw new InvalidDataException("lista de clientes", "no puede ser nula");
         }
 
         File file = new File(CUSTOMERS_FILE);
@@ -49,9 +52,20 @@ public class PersonDAO {
                 writer.write(line);
                 writer.newLine();
             }
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al escribir el archivo " + CUSTOMERS_FILE + " (operación de escritura)", e);
         }
     }
 
+    /**
+     * Loads the complete list of customers from the customers file.
+     *
+     * @return the list of persisted customers, or an empty list if the file does not exist yet
+     * @throws PersistenceException if the file cannot be read
+     * @throws IOException declared for API compatibility; read failures
+     *         are now wrapped as PersistenceException instead
+     */
     public List<Customer> loadCustomers() throws IOException {
         List<Customer> customers = new ArrayList<>();
         File file = new File(CUSTOMERS_FILE);
@@ -66,6 +80,9 @@ public class PersonDAO {
                 String[] parts = line.split(CUSTOMERS_SEPARATOR);
                 customers.add(new Customer(parts[1], parts[0], parts[2], parts[3]));
             }
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al leer el archivo " + CUSTOMERS_FILE + " (operación de lectura)", e);
         }
         return customers;
     }
@@ -75,13 +92,14 @@ public class PersonDAO {
      * overwriting any previous content.
      *
      * @param sellers the list of sellers to save
-     * @throws IllegalArgumentException if the list is null
-     * @throws IOException              if the file cannot be written
+     * @throws InvalidDataException if the list is null
+     * @throws PersistenceException if the file cannot be written
+     * @throws IOException declared for API compatibility; write failures
+     *         are now wrapped as PersistenceException instead
      */
     public void saveSellers(List<Seller> sellers) throws IOException {
-        // Misma validación defensiva, ahora para la lista de vendedores
         if (sellers == null) {
-            throw new IllegalArgumentException("La lista de vendedores no puede ser nula");
+            throw new InvalidDataException("lista de vendedores", "no puede ser nula");
         }
 
         File file = new File(SELLERS_FILE);
@@ -100,9 +118,20 @@ public class PersonDAO {
                 writer.write(line);
                 writer.newLine();
             }
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al escribir el archivo " + SELLERS_FILE + " (operación de escritura)", e);
         }
     }
 
+    /**
+     * Loads the complete list of sellers from the sellers file.
+     *
+     * @return the list of persisted sellers, or an empty list if the file does not exist yet
+     * @throws PersistenceException if the file cannot be read
+     * @throws IOException declared for API compatibility; read failures
+     *         are now wrapped as PersistenceException instead
+     */
     public List<Seller> loadSellers() throws IOException {
         List<Seller> sellers = new ArrayList<>();
         File file = new File(SELLERS_FILE);
@@ -124,6 +153,9 @@ public class PersonDAO {
                 String[] parts = line.split(SELLERS_SEPARATOR);
                 sellers.add(new Seller(parts[1], parts[0], parts[2], parts[3], parts[4]));
             }
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al leer el archivo " + SELLERS_FILE + " (operación de lectura)", e);
         }
         return sellers;
     }
