@@ -281,8 +281,8 @@ public class MainMenu {
 
             personService.registerCustomer(name, id, phone, email);
             System.out.println("Cliente registrado exitosamente.");
-        } catch (IllegalArgumentException | IOException e) {
-            System.out.println("Error: " + e.getMessage());
+        } catch (IOException e) {
+            showPersistenceError();
         }
     }
 
@@ -365,8 +365,8 @@ public class MainMenu {
             System.out.println(sale.generateReceipt());
         } catch (NumberFormatException e) {
             System.out.println("Error: la cantidad debe ser un valor numérico válido.");
-        } catch (IllegalArgumentException | IOException e) {
-            System.out.println("Error: " + e.getMessage());
+        } catch (IOException e) {
+            showPersistenceError();
         }
     }
 
@@ -375,7 +375,7 @@ public class MainMenu {
             List<Sale> sales = saleService.listSales();
             printSales(sales);
         } catch (IOException e) {
-            System.out.println("Error al leer las ventas: " + e.getMessage());
+            showPersistenceError();
         }
     }
 
@@ -385,7 +385,7 @@ public class MainMenu {
             String customerId = scanner.nextLine();
             printSales(saleService.listSalesByCustomer(customerId));
         } catch (IOException e) {
-            System.out.println("Error al leer las ventas: " + e.getMessage());
+            showPersistenceError();
         }
     }
 
@@ -395,7 +395,7 @@ public class MainMenu {
             String sellerId = scanner.nextLine();
             printSales(saleService.listSalesBySeller(sellerId));
         } catch (IOException e) {
-            System.out.println("Error al leer las ventas: " + e.getMessage());
+            showPersistenceError();
         }
     }
 
