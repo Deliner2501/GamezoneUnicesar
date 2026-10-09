@@ -162,3 +162,73 @@ That error appears the first time you push a new branch to GitHub, because there
 | Response | Proposed adding warrantyRefund to Return's constructor and including it in calculateRefundAmount and generateReturnReceipt; in ReturnService, calculating the warranty refund before creating the Return, only for products instanceof Console. While cross-checking references to the modified constructor, found that ReturnRepository.fromLine still used the old Return constructor and that the CSV file did not persist warrantyRefund, which would have lost that value on reload (the warranties would already be deleted and could not be recalculated); fixed by adding the field to the file format. |
 | Decision | All proposed changes were accepted, including the ReturnRepository fix found during the cross-check of the modified constructor's references. |
 | Related commit | feat: refund canceled warranties on console return and persist them |
+
+
+## Requirement 6 - Validations and Exceptions (ProductService, PersonService, SaleService, ProductDAO, PersonDAO, SaleDAO)
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor ProductService to delegate validation to ProductValidator and throw typed exceptions instead of IllegalArgumentException. |
+| Query | Asked how to replace the inline validation in registerProduct and restoreStock with calls to ProductValidator.validateProductData and ProductValidator.validateProductExists, without breaking findProductById and checkStock, which other classes rely on returning null/false instead of throwing. |
+| Response | Proposed throwing InvalidDataException directly for a null Product (since ProductValidator.validateProductData requires primitives already extracted), delegating the rest of registerProduct's checks to the validator, and using validateProductExists in restoreStock. Recommended leaving findProductById and checkStock unchanged, since ReturnRepository and WarrantyService depend on their null/false contract as a sentinel value. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: use ProductValidator and typed exceptions in ProductService |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor PersonService to delegate validation to PersonValidator and throw typed exceptions. |
+| Query | Asked how to add data and uniqueness validation to registerCustomer using PersonValidator, given that the method previously only checked for a duplicate id and validated nothing else. |
+| Response | Proposed calling PersonValidator.validatePersonData before building the Customer, then PersonValidator.validateUniquePerson (which requires a List<Person>) by wrapping the existing List<Customer> in a new ArrayList<Person> to satisfy Java's generic invariance. Recommended leaving findCustomerById/findSellerById unchanged (still nullable), since SaleService relies on that null to detect a missing customer/seller. |
+| Decision | Accepted as proposed; flagged as an additive validation (customer data was not previously validated at all), which the requirement explicitly allows. |
+| Related commit | refactor: use PersonValidator and typed exceptions in PersonService |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor SaleService.registerSale to use ProductValidator, SaleValidator and typed exceptions for every failure path. |
+| Query | Asked how to map each existing IllegalArgumentException in registerSale (customer/seller not found, invalid quantity, product/accessory not found, insufficient stock, empty product list) to the appropriate custom exception and validator call. |
+| Response | Proposed: ResourceNotFoundException thrown directly for a missing customer/seller (more specific than PersonValidator.validatePersonExists, which only reports a generic "persona"); InvalidDataException thrown directly for a non-positive quantity (no dedicated validator method exists for this); ProductValidator.validateStockAvailability for insufficient product stock; BusinessRuleException thrown directly for insufficient accessory stock (no AccessoryValidator exists, out of this requirement's scope); ResourceNotFoundException for an item that is neither a product nor an accessory; and SaleValidator.validateSaleData(customer, seller, combinedItemsList), called once all items are resolved, to enforce the "at least one product" rule. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: use ProductValidator, SaleValidator and typed exceptions in SaleService |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor ProductDAO so IOException is caught internally and relaunched as PersistenceException with file and operation context. |
+| Query | Asked how to change ProductDAO's existing behavior, which silently swallowed IOException (printing a message and continuing with an empty/partial list), into raising PersistenceException as the requirement specifies. |
+| Response | Proposed wrapping the existing try/catch(IOException) blocks in findAll() and writeAll() to throw `new PersistenceException(message, e)` instead of printing, including the file path and whether it was a read or write operation in the message. Noted this is a real behavior change (errors now surface instead of being silently ignored), which matches the requirement's intent. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: wrap IOException as PersistenceException in ProductDAO |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor PersonDAO so IOException is caught internally and relaunched as PersistenceException. |
+| Query | Asked whether removing the `throws IOException` declaration from PersonDAO's methods was necessary once the IOException was wrapped internally, given that PersonService and MainMenu's catch blocks depend on it. |
+| Response | Explained that Java allows a method to keep declaring a checked exception (`throws IOException`) even if nothing in its body can throw it anymore, so PersonDAO's methods can keep that declaration unchanged while internally throwing PersistenceException (unchecked) on failure. Recommended this over removing the declaration, to avoid a cascading, unplanned change into PersonService and MainMenu (the latter being the Technical Leader's responsibility, per the team's own coordination notes for this requirement). Also proposed changing the null-list check from IllegalArgumentException to InvalidDataException. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: wrap IOException as PersistenceException in PersonDAO |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor SaleDAO so IOException is caught internally and relaunched as PersistenceException, consistent with ProductDAO and PersonDAO. |
+| Query | Asked for the equivalent change in SaleDAO's save and findAll methods, the only two points that perform real file I/O in that class. |
+| Response | Proposed the same pattern used in PersonDAO: wrap the try-with-resources blocks in save() and findAll() with catch(IOException e) that throws PersistenceException with file and operation context, while keeping `throws IOException` declared on the public method signatures for the same compatibility reason explained for PersonDAO. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: wrap IOException as PersistenceException in SaleDAO |
+
