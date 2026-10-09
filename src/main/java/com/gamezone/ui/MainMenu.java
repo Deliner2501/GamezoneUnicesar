@@ -717,7 +717,7 @@ private void registerReturn() {
     } catch (IllegalArgumentException e) {
         System.out.println("Error: " + e.getMessage());
     } catch (java.io.IOException e) {
-        System.out.println("Error al procesar la devolución: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -725,7 +725,7 @@ private void viewAllReturns() {
     try {
         printReturns(returnService.viewAllReturns());
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -735,7 +735,7 @@ private void viewReturnsByCustomer() {
         String customerId = scanner.nextLine();
         printReturns(returnService.viewReturnsByCustomer(customerId));
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -745,7 +745,7 @@ private void viewReturnsBySale() {
         String saleId = scanner.nextLine();
         printReturns(returnService.viewReturnsBySale(saleId));
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -777,7 +777,7 @@ private void consultMonthlyBalance() {
     } catch (NumberFormatException e) {
         System.out.println("Error: el mes y el año deben ser valores numéricos válidos.");
     } catch (java.io.IOException e) {
-        System.out.println("Error al calcular el balance: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
