@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import javax.swing.JOptionPane;
 
 /**
  * Console-based user interface for the GameZone Unicesar system.
@@ -76,32 +77,40 @@ public class MainMenu {
      * Starts the main application loop, showing the menu until
      * the user chooses to exit.
      */
-    public void start() {
+        public void start() {
         boolean running = true;
         while (running) {
-            System.out.println("\n===== GameZone Unicesar =====");
-            System.out.println("1. Gestionar productos");
-            System.out.println("2. Gestionar clientes y vendedores");
-            System.out.println("3. Gestionar ventas");
-            System.out.println("4. Gestionar accesorios");
-            System.out.println("5. Gestionar promociones");
-            System.out.println("6. Gestionar devoluciones");
-            System.out.println("7. Gestionar garantías");
-            System.out.println("0. Salir");
-            System.out.print("Seleccione una opción: ");
+            String[] options = {
+                    "Gestionar productos",
+                    "Gestionar clientes y vendedores",
+                    "Gestionar ventas",
+                    "Gestionar accesorios",
+                    "Gestionar promociones",
+                    "Gestionar devoluciones",
+                    "Gestionar garantías",
+                    "Salir"
+            };
+            int choice = JOptionPane.showOptionDialog(
+                    null,
+                    "Seleccione una opción:",
+                    "GameZone Unicesar",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    options,
+                    options[0]
+            );
 
-                        String option = scanner.nextLine();
             try {
-                switch (option) {
-                    case "1" -> productMenu();
-                    case "2" -> personMenu();
-                    case "3" -> saleMenu();
-                    case "4" -> accessoryMenu();
-                    case "5" -> promotionMenu();
-                    case "6" -> returnMenu();
-                    case "7" -> warrantyMenu();
-                    case "0" -> running = false;
-                    default -> System.out.println("Opción inválida.");
+                switch (choice) {
+                    case 0 -> productMenu();
+                    case 1 -> personMenu();
+                    case 2 -> saleMenu();
+                    case 3 -> accessoryMenu();
+                    case 4 -> promotionMenu();
+                    case 5 -> returnMenu();
+                    case 6 -> warrantyMenu();
+                    case 7, -1 -> running = false;
                 }
             } catch (ResourceNotFoundException e) {
                 showResourceNotFound(e);
@@ -114,10 +123,12 @@ public class MainMenu {
             } catch (GameZoneException e) {
                 showGenericError(e);
             } catch (IllegalArgumentException e) {
-                System.out.println("Error: " + e.getMessage());
+                JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
+                        "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
             }
         }
-        System.out.println("Cerrando GameZone Unicesar. ¡Hasta pronto!");
+        JOptionPane.showMessageDialog(null, "Cerrando GameZone Unicesar. ¡Hasta pronto!",
+                "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
     }
 
         // ===================== ERROR HANDLING =====================
@@ -129,7 +140,8 @@ public class MainMenu {
      * @param e the exception describing the missing resource
      */
     private void showResourceNotFound(ResourceNotFoundException e) {
-        System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        JOptionPane.showMessageDialog(null, "No se encontró el recurso solicitado: " + e.getMessage(),
+                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
     }
 
     /**
@@ -139,7 +151,8 @@ public class MainMenu {
      * @param e the exception describing the violated rule
      */
     private void showBusinessRuleViolation(BusinessRuleException e) {
-        System.out.println("No se puede completar la operación: " + e.getMessage());
+        JOptionPane.showMessageDialog(null, "No se puede completar la operación: " + e.getMessage(),
+                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
     }
 
     /**
@@ -148,7 +161,8 @@ public class MainMenu {
      * @param e the exception describing the invalid field
      */
     private void showInvalidData(InvalidDataException e) {
-        System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        JOptionPane.showMessageDialog(null, "Los datos ingresados no son válidos: " + e.getMessage(),
+                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
     }
 
     /**
@@ -156,7 +170,9 @@ public class MainMenu {
      * names or technical details to the user.
      */
     private void showPersistenceError() {
-        System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
+        JOptionPane.showMessageDialog(null,
+                "Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.",
+                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
     }
 
     /**
@@ -166,7 +182,8 @@ public class MainMenu {
      * @param e the unclassified GameZone exception
      */
     private void showGenericError(GameZoneException e) {
-        System.out.println("No se puede completar la operación: " + e.getMessage());
+        JOptionPane.showMessageDialog(null, "No se puede completar la operación: " + e.getMessage(),
+                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
     }
     
     // ===================== PRODUCT MENU =====================
