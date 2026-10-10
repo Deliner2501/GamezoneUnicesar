@@ -328,36 +328,48 @@ public class MainMenu {
 
     // ===================== PERSON MENU =====================
 
-    private void personMenu() {
-        System.out.println("\n--- Gestión de clientes y vendedores ---");
-        System.out.println("1. Registrar un cliente");
-        System.out.println("2. Listar clientes");
-        System.out.println("3. Listar vendedores");
-        System.out.println("0. Volver");
-        System.out.print("Seleccione una opción: ");
+        private void personMenu() {
+        String[] options = {
+                "Registrar un cliente",
+                "Listar clientes",
+                "Listar vendedores",
+                "Volver"
+        };
+        Object selectedOption = JOptionPane.showInputDialog(
+                null,
+                "Gestión de clientes y vendedores - Seleccione una opción:",
+                "GameZone Unicesar",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        int choice = (selectedOption == null)
+                ? -1
+                : java.util.Arrays.asList(options).indexOf(selectedOption);
 
-        switch (scanner.nextLine()) {
-            case "1" -> registerCustomer();
-            case "2" -> listCustomers();
-            case "3" -> listSellers();
-            case "0" -> { }
-            default -> System.out.println("Opción inválida.");
+        switch (choice) {
+            case 0 -> registerCustomer();
+            case 1 -> listCustomers();
+            case 2 -> listSellers();
+            default -> { }
         }
     }
 
     private void registerCustomer() {
-        try {
-            System.out.print("Id: ");
-            String id = scanner.nextLine();
-            System.out.print("Nombre: ");
-            String name = scanner.nextLine();
-            System.out.print("Teléfono: ");
-            String phone = scanner.nextLine();
-            System.out.print("Correo electrónico: ");
-            String email = scanner.nextLine();
+        String id = askInput("Id:");
+        if (id == null) return;
+        String name = askInput("Nombre:");
+        if (name == null) return;
+        String phone = askInput("Teléfono:");
+        if (phone == null) return;
+        String email = askInput("Correo electrónico:");
+        if (email == null) return;
 
+        try {
             personService.registerCustomer(name, id, phone, email);
-            System.out.println("Cliente registrado exitosamente.");
+            JOptionPane.showMessageDialog(null, "Cliente registrado exitosamente.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
         } catch (IOException e) {
             showPersistenceError();
         }
@@ -366,19 +378,29 @@ public class MainMenu {
     private void listCustomers() {
         List<Customer> customers = personService.listCustomers();
         if (customers.isEmpty()) {
-            System.out.println("Aún no hay clientes registrados.");
+            JOptionPane.showMessageDialog(null, "Aún no hay clientes registrados.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        customers.forEach(customer -> System.out.println(customer.toString()));
+        StringBuilder content = new StringBuilder();
+        for (Customer customer : customers) {
+            content.append(customer.toString()).append("\n");
+        }
+        showList("Clientes registrados", content.toString());
     }
 
     private void listSellers() {
         List<Seller> sellers = personService.listSellers();
         if (sellers.isEmpty()) {
-            System.out.println("Aún no hay vendedores registrados.");
+            JOptionPane.showMessageDialog(null, "Aún no hay vendedores registrados.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        sellers.forEach(seller -> System.out.println(seller.toString()));
+        StringBuilder content = new StringBuilder();
+        for (Seller seller : sellers) {
+            content.append(seller.toString()).append("\n");
+        }
+        showList("Vendedores registrados", content.toString());
     }
 
     // ===================== SALE MENU =====================
