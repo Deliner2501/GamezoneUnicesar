@@ -206,15 +206,36 @@ public class MainMenu {
      * @param title   the dialog title
      * @param content the text content to display
      */
-    private void showList(String title, String content) {
+        private void showList(String title, String content) {
         JTextArea textArea = new JTextArea(content);
         textArea.setEditable(false);
         textArea.setCaretPosition(0);
+        textArea.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 13));
+        textArea.setMargin(new java.awt.Insets(10, 10, 10, 10));
 
         JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new java.awt.Dimension(520, 400));
+        scrollPane.setPreferredSize(new java.awt.Dimension(560, 420));
 
         JOptionPane.showMessageDialog(null, scrollPane, title, JOptionPane.PLAIN_MESSAGE);
+    }
+
+    /**
+     * Formats a list of entries as a numbered block of text, with a
+     * separator line between entries, for display in a scrollable list.
+     *
+     * @param entries the entries to format, in display order
+     * @return the formatted, ready-to-display text
+     */
+    private String formatEntries(List<String> entries) {
+        String separator = "-".repeat(60);
+        StringBuilder content = new StringBuilder();
+        for (int i = 0; i < entries.size(); i++) {
+            content.append(i + 1).append(". ").append(entries.get(i)).append("\n");
+            if (i < entries.size() - 1) {
+                content.append(separator).append("\n");
+            }
+        }
+        return content.toString();
     }
     
     // ===================== PRODUCT MENU =====================
@@ -309,18 +330,18 @@ public class MainMenu {
         }
     }
 
-    private void listProducts() {
+        private void listProducts() {
         List<Product> products = productService.listAvailableProducts();
         if (products.isEmpty()) {
             JOptionPane.showMessageDialog(null, "Aún no hay productos registrados.",
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        StringBuilder content = new StringBuilder();
+        List<String> entries = new java.util.ArrayList<>();
         for (Product product : products) {
-            content.append(product.getFullDescription()).append("\n");
+            entries.add(product.getFullDescription());
         }
-        showList("Productos disponibles", content.toString());
+        showList("Productos disponibles", formatEntries(entries));
     }
 
     // ===================== PERSON MENU =====================
@@ -379,11 +400,11 @@ public class MainMenu {
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        StringBuilder content = new StringBuilder();
+        List<String> entries = new java.util.ArrayList<>();
         for (Customer customer : customers) {
-            content.append(customer.toString()).append("\n");
+            entries.add(customer.toString());
         }
-        showList("Clientes registrados", content.toString());
+        showList("Clientes registrados", formatEntries(entries));
     }
 
     private void listSellers() {
@@ -393,11 +414,11 @@ public class MainMenu {
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        StringBuilder content = new StringBuilder();
+        List<String> entries = new java.util.ArrayList<>();
         for (Seller seller : sellers) {
-            content.append(seller.toString()).append("\n");
+            entries.add(seller.toString());
         }
-        showList("Vendedores registrados", content.toString());
+        showList("Vendedores registrados", formatEntries(entries));
     }
 
     // ===================== SALE MENU =====================
@@ -521,11 +542,11 @@ public class MainMenu {
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        StringBuilder content = new StringBuilder();
+        List<String> entries = new java.util.ArrayList<>();
         for (Sale sale : sales) {
-            content.append(sale.generateReceipt()).append("\n---\n");
+            entries.add(sale.generateReceipt());
         }
-        showList("Ventas", content.toString());
+        showList("Ventas", formatEntries(entries));
     }
     
         private void accessoryMenu() {
@@ -693,11 +714,11 @@ public class MainMenu {
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        StringBuilder content = new StringBuilder();
+        List<String> entries = new java.util.ArrayList<>();
         for (Accessory accessory : accessories) {
-            content.append(accessory.getFullDescription()).append("\n");
+            entries.add(accessory.getFullDescription());
         }
-        showList("Accesorios", content.toString());
+        showList("Accesorios", formatEntries(entries));
     }
 
 // ===================== PROMOTION MENU =====================
@@ -852,13 +873,12 @@ public class MainMenu {
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        StringBuilder content = new StringBuilder();
+        List<String> entries = new java.util.ArrayList<>();
         for (Promotion promotion : promotions) {
-            content.append(promotion.getId()).append(" - ").append(promotion.getName())
-                    .append(" (").append(promotion.getStartDate()).append(" a ")
-                    .append(promotion.getEndDate()).append(")\n");
+            entries.add(promotion.getId() + " - " + promotion.getName()
+                    + " (" + promotion.getStartDate() + " a " + promotion.getEndDate() + ")");
         }
-        showList("Promociones", content.toString());
+        showList("Promociones", formatEntries(entries));
     }
     
 // ===================== RETURN MENU =====================
@@ -958,11 +978,11 @@ public class MainMenu {
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        StringBuilder content = new StringBuilder();
+        List<String> entries = new java.util.ArrayList<>();
         for (Return r : returns) {
-            content.append(r.generateReturnReceipt()).append("\n---\n");
+            entries.add(r.generateReturnReceipt());
         }
-        showList("Devoluciones", content.toString());
+        showList("Devoluciones", formatEntries(entries));
     }
 
     private void consultMonthlyBalance() {
@@ -1082,10 +1102,10 @@ public class MainMenu {
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        StringBuilder content = new StringBuilder();
+        List<String> entries = new java.util.ArrayList<>();
         for (Warranty warranty : warranties) {
-            content.append(warranty.generateWarrantyCertificate()).append("\n---\n");
+            entries.add(warranty.generateWarrantyCertificate());
         }
-        showList("Garantías", content.toString());
+        showList("Garantías", formatEntries(entries));
     }
 }
