@@ -531,143 +531,177 @@ public class MainMenu {
         showList("Ventas", content.toString());
     }
     
-    private void accessoryMenu() {
-    System.out.println("\n--- Gestión de accesorios ---");
-    System.out.println("1. Registrar un control");
-    System.out.println("2. Registrar un cable");
-    System.out.println("3. Registrar una memoria");
-    System.out.println("4. Listar todos los accesorios");
-    System.out.println("5. Listar accesorios por tipo");
-    System.out.println("6. Consultar accesorios compatibles con una consola");
-    System.out.println("0. Volver");
-    System.out.print("Seleccione una opción: ");
+        private void accessoryMenu() {
+        String[] options = {
+                "Registrar un control",
+                "Registrar un cable",
+                "Registrar una memoria",
+                "Listar todos los accesorios",
+                "Listar accesorios por tipo",
+                "Consultar accesorios compatibles con una consola",
+                "Volver"
+        };
+        Object selectedOption = JOptionPane.showInputDialog(
+                null,
+                "Gestión de accesorios - Seleccione una opción:",
+                "GameZone Unicesar",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        int choice = (selectedOption == null)
+                ? -1
+                : java.util.Arrays.asList(options).indexOf(selectedOption);
 
-    switch (scanner.nextLine()) {
-        case "1" -> registerController();
-        case "2" -> registerCable();
-        case "3" -> registerMemory();
-        case "4" -> listAllAccessories();
-        case "5" -> listAccessoriesByType();
-        case "6" -> listAccessoriesCompatibleWithConsole();
-        case "0" -> { }
-        default -> System.out.println("Opción inválida.");
-    }
-}
-
-
-private void registerController() {
-    try {
-        System.out.print("Id: ");
-        String id = scanner.nextLine();
-        System.out.print("Título: ");
-        String title = scanner.nextLine();
-        System.out.print("Precio: ");
-        double price = Double.parseDouble(scanner.nextLine());
-        System.out.print("Cantidad en inventario: ");
-        int stock = Integer.parseInt(scanner.nextLine());
-        System.out.print("Tipo de conexión (inalámbrico/alámbrico): ");
-        String connectionType = scanner.nextLine();
-
-        accessoryService.registerController(id, title, price, stock, connectionType);
-        registerCompatibleConsoles(id);
-        System.out.println("Control registrado exitosamente.");
-    } catch (NumberFormatException e) {
-        System.out.println("Error: precio y cantidad deben ser valores numéricos válidos.");
-    } catch (IllegalArgumentException e) {
-        System.out.println("Error: " + e.getMessage());
-    }
-}
-
-private void registerCable() {
-    try {
-        System.out.print("Id: ");
-        String id = scanner.nextLine();
-        System.out.print("Título: ");
-        String title = scanner.nextLine();
-        System.out.print("Precio: ");
-        double price = Double.parseDouble(scanner.nextLine());
-        System.out.print("Cantidad en inventario: ");
-        int stock = Integer.parseInt(scanner.nextLine());
-        System.out.print("Longitud en metros: ");
-        double lengthInMeters = Double.parseDouble(scanner.nextLine());
-        System.out.print("Tipo de conector (HDMI/USB/óptico/otro): ");
-        String connectorType = scanner.nextLine();
-
-        accessoryService.registerCable(id, title, price, stock, lengthInMeters, connectorType);
-        System.out.println("Cable registrado exitosamente.");
-    } catch (NumberFormatException e) {
-        System.out.println("Error: precio, cantidad y longitud deben ser valores numéricos válidos.");
-    } catch (IllegalArgumentException e) {
-        System.out.println("Error: " + e.getMessage());
-    }
-}
-
-private void registerMemory() {
-    try {
-        System.out.print("Id: ");
-        String id = scanner.nextLine();
-        System.out.print("Título: ");
-        String title = scanner.nextLine();
-        System.out.print("Precio: ");
-        double price = Double.parseDouble(scanner.nextLine());
-        System.out.print("Cantidad en inventario: ");
-        int stock = Integer.parseInt(scanner.nextLine());
-        System.out.print("Capacidad en gigabytes: ");
-        int capacityInGigabytes = Integer.parseInt(scanner.nextLine());
-        System.out.print("Tipo de memoria (SD/microSD/tarjeta interna): ");
-        String memoryType = scanner.nextLine();
-
-        accessoryService.registerMemory(id, title, price, stock, capacityInGigabytes, memoryType);
-        registerCompatibleConsoles(id);
-        System.out.println("Memoria registrada exitosamente.");
-    } catch (NumberFormatException e) {
-        System.out.println("Error: precio, cantidad y capacidad deben ser valores numéricos válidos.");
-    } catch (IllegalArgumentException e) {
-        System.out.println("Error: " + e.getMessage());
-    }
-}
-
-private void registerCompatibleConsoles(String accessoryId) {
-    boolean addingConsoles = true;
-    while (addingConsoles) {
-        System.out.print("Id de consola compatible (deje vacío para terminar): ");
-        String consoleId = scanner.nextLine();
-        if (consoleId.isBlank()) {
-            addingConsoles = false;
-        } else {
-            accessoryService.registerCompatibility(accessoryId, consoleId);
+        switch (choice) {
+            case 0 -> registerController();
+            case 1 -> registerCable();
+            case 2 -> registerMemory();
+            case 3 -> listAllAccessories();
+            case 4 -> listAccessoriesByType();
+            case 5 -> listAccessoriesCompatibleWithConsole();
+            default -> { }
         }
     }
-}
 
-private void listAllAccessories() {
-    List<Accessory> accessories = accessoryService.listAllAccessories();
-    printAccessories(accessories);
-}
+    private void registerController() {
+        String id = askInput("Id:");
+        if (id == null) return;
+        String title = askInput("Título:");
+        if (title == null) return;
+        String priceText = askInput("Precio:");
+        if (priceText == null) return;
+        String stockText = askInput("Cantidad en inventario:");
+        if (stockText == null) return;
+        String connectionType = askInput("Tipo de conexión (inalámbrico/alámbrico):");
+        if (connectionType == null) return;
 
-private void listAccessoriesByType() {
-    System.out.print("Tipo de accesorio (CONTROLLER/CABLE/MEMORY): ");
-    String type = scanner.nextLine();
-    List<Accessory> accessories = accessoryService.listAccessoriesByType(type);
-    printAccessories(accessories);
-}
+        try {
+            double price = Double.parseDouble(priceText);
+            int stock = Integer.parseInt(stockText);
 
-private void listAccessoriesCompatibleWithConsole() {
-    System.out.print("Id de la consola: ");
-    String consoleId = scanner.nextLine();
-    List<Accessory> accessories = accessoryService.findAccessoriesCompatibleWith(consoleId);
-    printAccessories(accessories);
-}
-
-private void printAccessories(List<Accessory> accessories) {
-    if (accessories.isEmpty()) {
-        System.out.println("No se encontraron accesorios.");
-        return;
+            accessoryService.registerController(id, title, price, stock, connectionType);
+            registerCompatibleConsoles(id);
+            JOptionPane.showMessageDialog(null, "Control registrado exitosamente.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Error: precio y cantidad deben ser valores numéricos válidos.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
-    for (Accessory accessory : accessories) {
-        System.out.println(accessory.getFullDescription());
+
+    private void registerCable() {
+        String id = askInput("Id:");
+        if (id == null) return;
+        String title = askInput("Título:");
+        if (title == null) return;
+        String priceText = askInput("Precio:");
+        if (priceText == null) return;
+        String stockText = askInput("Cantidad en inventario:");
+        if (stockText == null) return;
+        String lengthText = askInput("Longitud en metros:");
+        if (lengthText == null) return;
+        String connectorType = askInput("Tipo de conector (HDMI/USB/óptico/otro):");
+        if (connectorType == null) return;
+
+        try {
+            double price = Double.parseDouble(priceText);
+            int stock = Integer.parseInt(stockText);
+            double lengthInMeters = Double.parseDouble(lengthText);
+
+            accessoryService.registerCable(id, title, price, stock, lengthInMeters, connectorType);
+            JOptionPane.showMessageDialog(null, "Cable registrado exitosamente.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null,
+                    "Error: precio, cantidad y longitud deben ser valores numéricos válidos.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
-}
+
+    private void registerMemory() {
+        String id = askInput("Id:");
+        if (id == null) return;
+        String title = askInput("Título:");
+        if (title == null) return;
+        String priceText = askInput("Precio:");
+        if (priceText == null) return;
+        String stockText = askInput("Cantidad en inventario:");
+        if (stockText == null) return;
+        String capacityText = askInput("Capacidad en gigabytes:");
+        if (capacityText == null) return;
+        String memoryType = askInput("Tipo de memoria (SD/microSD/tarjeta interna):");
+        if (memoryType == null) return;
+
+        try {
+            double price = Double.parseDouble(priceText);
+            int stock = Integer.parseInt(stockText);
+            int capacityInGigabytes = Integer.parseInt(capacityText);
+
+            accessoryService.registerMemory(id, title, price, stock, capacityInGigabytes, memoryType);
+            registerCompatibleConsoles(id);
+            JOptionPane.showMessageDialog(null, "Memoria registrada exitosamente.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null,
+                    "Error: precio, cantidad y capacidad deben ser valores numéricos válidos.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void registerCompatibleConsoles(String accessoryId) {
+        boolean addingConsoles = true;
+        while (addingConsoles) {
+            String consoleId = askInput("Id de consola compatible (deje vacío para terminar):");
+            if (consoleId == null || consoleId.isBlank()) {
+                addingConsoles = false;
+            } else {
+                accessoryService.registerCompatibility(accessoryId, consoleId);
+            }
+        }
+    }
+
+    private void listAllAccessories() {
+        List<Accessory> accessories = accessoryService.listAllAccessories();
+        printAccessories(accessories);
+    }
+
+    private void listAccessoriesByType() {
+        String type = askInput("Tipo de accesorio (CONTROLLER/CABLE/MEMORY):");
+        if (type == null) return;
+        List<Accessory> accessories = accessoryService.listAccessoriesByType(type);
+        printAccessories(accessories);
+    }
+
+    private void listAccessoriesCompatibleWithConsole() {
+        String consoleId = askInput("Id de la consola:");
+        if (consoleId == null) return;
+        List<Accessory> accessories = accessoryService.findAccessoriesCompatibleWith(consoleId);
+        printAccessories(accessories);
+    }
+
+    private void printAccessories(List<Accessory> accessories) {
+        if (accessories.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No se encontraron accesorios.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        StringBuilder content = new StringBuilder();
+        for (Accessory accessory : accessories) {
+            content.append(accessory.getFullDescription()).append("\n");
+        }
+        showList("Accesorios", content.toString());
+    }
 
 // ===================== PROMOTION MENU =====================
 
