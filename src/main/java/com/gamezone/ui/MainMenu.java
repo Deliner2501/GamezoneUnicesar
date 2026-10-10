@@ -405,54 +405,74 @@ public class MainMenu {
 
     // ===================== SALE MENU =====================
 
-    private void saleMenu() {
-        System.out.println("\n--- Gestión de ventas ---");
-        System.out.println("1. Registrar una venta (productos y/o accesorios)");
-        System.out.println("2. Listar todas las ventas");
-        System.out.println("3. Consultar historial de compras de un cliente");
-        System.out.println("4. Consultar ventas atendidas por un vendedor");
-        System.out.println("0. Volver");
-        System.out.print("Seleccione una opción: ");
+        private void saleMenu() {
+        String[] options = {
+                "Registrar una venta (productos y/o accesorios)",
+                "Listar todas las ventas",
+                "Consultar historial de compras de un cliente",
+                "Consultar ventas atendidas por un vendedor",
+                "Volver"
+        };
+        Object selectedOption = JOptionPane.showInputDialog(
+                null,
+                "Gestión de ventas - Seleccione una opción:",
+                "GameZone Unicesar",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        int choice = (selectedOption == null)
+                ? -1
+                : java.util.Arrays.asList(options).indexOf(selectedOption);
 
-        switch (scanner.nextLine()) {
-            case "1" -> registerSale();
-            case "2" -> listSales();
-            case "3" -> listSalesByCustomer();
-            case "4" -> listSalesBySeller();
-            case "0" -> { }
-            default -> System.out.println("Opción inválida.");
+        switch (choice) {
+            case 0 -> registerSale();
+            case 1 -> listSales();
+            case 2 -> listSalesByCustomer();
+            case 3 -> listSalesBySeller();
+            default -> { }
         }
     }
 
     private void registerSale() {
-        try {
-            System.out.print("Id de la venta: ");
-            String saleId = scanner.nextLine();
-            System.out.print("Id del cliente: ");
-            String customerId = scanner.nextLine();
-            System.out.print("Id del vendedor: ");
-            String sellerId = scanner.nextLine();
+        String saleId = askInput("Id de la venta:");
+        if (saleId == null) return;
+        String customerId = askInput("Id del cliente:");
+        if (customerId == null) return;
+        String sellerId = askInput("Id del vendedor:");
+        if (sellerId == null) return;
 
+        try {
             Map<String, Integer> productQuantities = new LinkedHashMap<>();
             List<String> productIdsWithExtendedWarranty = new java.util.ArrayList<>();
             boolean addingProducts = true;
-            System.out.println("Puede agregar productos (videojuegos, consolas) y accesorios (controles, cables, memorias) en la misma venta.");
+            JOptionPane.showMessageDialog(null,
+                    "Puede agregar productos (videojuegos, consolas) y accesorios (controles, cables, memorias) en la misma venta.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             while (addingProducts) {
-            System.out.print("Id del producto o accesorio (deje vacío para terminar): ");
-            String productId = scanner.nextLine();
-                if (productId.isBlank()) {
+                String productId = askInput("Id del producto o accesorio (deje vacío para terminar):");
+                if (productId == null || productId.isBlank()) {
                     addingProducts = false;
                     continue;
                 }
-                System.out.print("Cantidad: ");
-                int quantity = Integer.parseInt(scanner.nextLine());
+                String quantityText = askInput("Cantidad:");
+                if (quantityText == null) {
+                    addingProducts = false;
+                    continue;
+                }
+                int quantity = Integer.parseInt(quantityText);
                 productQuantities.merge(productId, quantity, Integer::sum);
 
                 Product product = productService.findProductById(productId);
                 if (product instanceof Console) {
-                    System.out.print("¿Agregar garantía extendida a este producto? (S/N): ");
-                    String answer = scanner.nextLine();
-                    if (answer.equalsIgnoreCase("S")) {
+                    int answer = JOptionPane.showConfirmDialog(
+                            null,
+                            "¿Agregar garantía extendida a este producto?",
+                            "GameZone Unicesar",
+                            JOptionPane.YES_NO_OPTION
+                    );
+                    if (answer == JOptionPane.YES_OPTION) {
                         productIdsWithExtendedWarranty.add(productId);
                     }
                 }
@@ -460,10 +480,10 @@ public class MainMenu {
 
             Sale sale = saleService.registerSale(saleId, LocalDate.now(), customerId, sellerId,
                     productQuantities, productIdsWithExtendedWarranty);
-            System.out.println("Venta registrada exitosamente.");
-            System.out.println(sale.generateReceipt());
+            showList("Venta registrada exitosamente", sale.generateReceipt());
         } catch (NumberFormatException e) {
-            System.out.println("Error: la cantidad debe ser un valor numérico válido.");
+            JOptionPane.showMessageDialog(null, "Error: la cantidad debe ser un valor numérico válido.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
             showPersistenceError();
         }
@@ -479,9 +499,9 @@ public class MainMenu {
     }
 
     private void listSalesByCustomer() {
+        String customerId = askInput("Id del cliente:");
+        if (customerId == null) return;
         try {
-            System.out.print("Id del cliente: ");
-            String customerId = scanner.nextLine();
             printSales(saleService.listSalesByCustomer(customerId));
         } catch (IOException e) {
             showPersistenceError();
@@ -489,24 +509,26 @@ public class MainMenu {
     }
 
     private void listSalesBySeller() {
+        String sellerId = askInput("Id del vendedor:");
+        if (sellerId == null) return;
         try {
-            System.out.print("Id del vendedor: ");
-            String sellerId = scanner.nextLine();
             printSales(saleService.listSalesBySeller(sellerId));
         } catch (IOException e) {
             showPersistenceError();
         }
     }
 
-        private void printSales(List<Sale> sales) {
+    private void printSales(List<Sale> sales) {
         if (sales.isEmpty()) {
-            System.out.println("No se encontraron ventas.");
+            JOptionPane.showMessageDialog(null, "No se encontraron ventas.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+        StringBuilder content = new StringBuilder();
         for (Sale sale : sales) {
-            System.out.println(sale.generateReceipt());
-            System.out.println("---");
+            content.append(sale.generateReceipt()).append("\n---\n");
         }
+        showList("Ventas", content.toString());
     }
     
     private void accessoryMenu() {
