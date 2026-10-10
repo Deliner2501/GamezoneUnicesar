@@ -80,7 +80,7 @@ public class MainMenu {
         public void start() {
         boolean running = true;
         while (running) {
-            String[] options = {
+                    String[] options = {
                     "Gestionar productos",
                     "Gestionar clientes y vendedores",
                     "Gestionar ventas",
@@ -90,16 +90,18 @@ public class MainMenu {
                     "Gestionar garantías",
                     "Salir"
             };
-            int choice = JOptionPane.showOptionDialog(
+            Object selectedOption = JOptionPane.showInputDialog(
                     null,
                     "Seleccione una opción:",
                     "GameZone Unicesar",
-                    JOptionPane.DEFAULT_OPTION,
                     JOptionPane.QUESTION_MESSAGE,
                     null,
                     options,
                     options[0]
             );
+            int choice = (selectedOption == null)
+                    ? -1
+                    : java.util.Arrays.asList(options).indexOf(selectedOption);
 
             try {
                 switch (choice) {
