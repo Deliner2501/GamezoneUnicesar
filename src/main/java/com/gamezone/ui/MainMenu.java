@@ -27,7 +27,6 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -48,7 +47,6 @@ public class MainMenu {
     private final WarrantyService warrantyService;
     private final ReturnService returnService;
     private final SaleService saleService;
-    private final Scanner scanner;
 
     /**
      * Creates the main menu with the services it depends on.
@@ -72,7 +70,6 @@ public class MainMenu {
     this.promotionService = promotionService;
     this.returnService = returnService;
     this.warrantyService = warrantyService;
-    this.scanner = new Scanner(System.in);
 }
 
     /**
