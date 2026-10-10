@@ -996,81 +996,99 @@ public class MainMenu {
 
 // ===================== WARRANTY MENU =====================
 
-private void warrantyMenu() {
-    System.out.println("\n--- Gestión de garantías ---");
-    System.out.println("1. Consultar garantía por producto y venta");
-    System.out.println("2. Listar todas las garantías");
-    System.out.println("3. Listar garantías vigentes");
-    System.out.println("4. Listar garantías próximas a vencer");
-    System.out.println("0. Volver");
-    System.out.print("Seleccione una opción: ");
+    private void warrantyMenu() {
+        String[] options = {
+                "Consultar garantía por producto y venta",
+                "Listar todas las garantías",
+                "Listar garantías vigentes",
+                "Listar garantías próximas a vencer",
+                "Volver"
+        };
+        Object selectedOption = JOptionPane.showInputDialog(
+                null,
+                "Gestión de garantías - Seleccione una opción:",
+                "GameZone Unicesar",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        int choice = (selectedOption == null)
+                ? -1
+                : java.util.Arrays.asList(options).indexOf(selectedOption);
 
-    switch (scanner.nextLine()) {
-        case "1" -> consultWarrantyByProduct();
-        case "2" -> listAllWarranties();
-        case "3" -> listActiveWarranties();
-        case "4" -> listWarrantiesExpiringSoon();
-        case "0" -> { }
-        default -> System.out.println("Opción inválida.");
-    }
-}
-
-private void consultWarrantyByProduct() {
-    try {
-        System.out.print("Id del producto: ");
-        String productId = scanner.nextLine();
-        System.out.print("Id de la venta: ");
-        String saleId = scanner.nextLine();
-
-        Warranty warranty = warrantyService.findWarrantyByProduct(productId, saleId);
-        if (warranty == null) {
-            System.out.println("No se encontró una garantía para ese producto en esa venta.");
-        } else {
-            System.out.println(warranty.generateWarrantyCertificate());
+        switch (choice) {
+            case 0 -> consultWarrantyByProduct();
+            case 1 -> listAllWarranties();
+            case 2 -> listActiveWarranties();
+            case 3 -> listWarrantiesExpiringSoon();
+            default -> { }
         }
-    } catch (java.io.IOException e) {
-        showPersistenceError();
     }
-}
 
-private void listAllWarranties() {
-    try {
-        printWarranties(warrantyService.listAllWarranties());
-    } catch (java.io.IOException e) {
-        showPersistenceError();
-    }
-}
+    private void consultWarrantyByProduct() {
+        String productId = askInput("Id del producto:");
+        if (productId == null) return;
+        String saleId = askInput("Id de la venta:");
+        if (saleId == null) return;
 
-private void listActiveWarranties() {
-    try {
-        printWarranties(warrantyService.listActiveWarranties());
-    } catch (java.io.IOException e) {
-        showPersistenceError();
+        try {
+            Warranty warranty = warrantyService.findWarrantyByProduct(productId, saleId);
+            if (warranty == null) {
+                JOptionPane.showMessageDialog(null, "No se encontró una garantía para ese producto en esa venta.",
+                        "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                showList("Garantía encontrada", warranty.generateWarrantyCertificate());
+            }
+        } catch (java.io.IOException e) {
+            showPersistenceError();
+        }
     }
-}
 
-private void listWarrantiesExpiringSoon() {
-    try {
-        System.out.print("¿Con cuántos días de anticipación desea consultar? ");
-        int daysAhead = Integer.parseInt(scanner.nextLine());
-        printWarranties(warrantyService.listWarrantiesExpiringSoon(daysAhead));
-    } catch (NumberFormatException e) {
-        System.out.println("Error: los días deben ser un valor numérico válido.");
-    } catch (IllegalArgumentException e) {
-        System.out.println("Error: " + e.getMessage());
-    } catch (java.io.IOException e) {
-        showPersistenceError();
+    private void listAllWarranties() {
+        try {
+            printWarranties(warrantyService.listAllWarranties());
+        } catch (java.io.IOException e) {
+            showPersistenceError();
+        }
     }
-}
 
-private void printWarranties(List<Warranty> warranties) {
-    if (warranties.isEmpty()) {
-        System.out.println("No se encontraron garantías.");
-        return;
+    private void listActiveWarranties() {
+        try {
+            printWarranties(warrantyService.listActiveWarranties());
+        } catch (java.io.IOException e) {
+            showPersistenceError();
+        }
     }
-    for (Warranty warranty : warranties) {
-        System.out.println(warranty.generateWarrantyCertificate());
-        System.out.println("---");
+
+    private void listWarrantiesExpiringSoon() {
+        String daysAheadText = askInput("¿Con cuántos días de anticipación desea consultar?");
+        if (daysAheadText == null) return;
+
+        try {
+            int daysAhead = Integer.parseInt(daysAheadText);
+            printWarranties(warrantyService.listWarrantiesExpiringSoon(daysAhead));
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Error: los días deben ser un valor numérico válido.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (java.io.IOException e) {
+            showPersistenceError();
+        }
     }
-}
+
+    private void printWarranties(List<Warranty> warranties) {
+        if (warranties.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No se encontraron garantías.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        StringBuilder content = new StringBuilder();
+        for (Warranty warranty : warranties) {
+            content.append(warranty.generateWarrantyCertificate()).append("\n---\n");
+        }
+        showList("Garantías", content.toString());
+    }
 }
