@@ -81,6 +81,13 @@ The system provides the following main functionalities:
 * List warranties currently active.
 * List warranties expiring within a given number of days.
 
+### Error Handling and Validation
+
+* Report errors with a typed exception hierarchy instead of generic exceptions.
+* Show a different message to the user for each category of error: resource not found, business rule violated, invalid data, and storage problem.
+* Centralize the checks of rules and data in dedicated validators, one per functional area.
+* Never show technical messages or stack traces to the user.
+
 ---
 
 ## Technologies Used
@@ -181,6 +188,8 @@ The `persistence` layer is responsible for saving and loading information from f
 * `ReturnRepository` — manages returns, resolving references to the original sale and returned products.
 * `WarrantyRepository` — manages warranties, resolving references to the associated product and sale.
 
+`ProductDAO`, `PersonDAO`, and `SaleDAO` catch any `IOException` internally and rethrow it as a `PersistenceException` that includes the file name and the operation (reading or writing).
+
 The system uses files inside the `data` directory to maintain information between executions.
 
 ### Service
@@ -197,11 +206,28 @@ The `service` layer contains the application's business rules.
 
 The service layer prevents invalid operations before information is persisted.
 
+### Validation
+
+The `validation` layer sits between `service` and `model`. Services call its validators before running any business operation, and the validators throw the custom exceptions when a rule is not met. Validators contain no file access and never call services or repositories.
+
+* `ProductValidator` — validates product data, stock availability, and product existence.
+* `PersonValidator` — validates customer and seller data, person existence, and identifier uniqueness.
+* `SaleValidator` — validates that a sale has a customer, a seller, and at least one product, and that a sale exists.
+
+### Exceptions
+
+The `exceptions` package is cross-cutting and can be used from any layer. All exceptions extend `GameZoneException`, which is unchecked and carries an error code.
+
+* `ResourceNotFoundException` — a requested product, customer, seller, or sale does not exist.
+* `BusinessRuleException` — a business rule is violated, such as insufficient stock or a duplicated customer.
+* `InvalidDataException` — an input value fails format or range checks.
+* `PersistenceException` — a file could not be read or written; it keeps the original cause.
+
 ### UI
 
 The `ui` layer contains the console interface.
 
-* `MainMenu` — displays the main menu and the submenus for products, people, and sales.
+* `MainMenu` — displays the main menu and the submenus, and handles each type of custom exception with its own message in Spanish.
 
 The UI communicates with the service layer and does not access the persistence layer directly.
 
@@ -235,17 +261,21 @@ GamezoneUnicesar/
 │   ├── return-analysis.md
 │   ├── return-class-diagram.md
 │   ├── warranty-analysis.md
-│   └── warranty-class-diagram.md
+│   ├── warranty-class-diagram.md
+│   ├── exception-analysis.md
+│   └── exception-class-diagram.md
 │
 ├── src/
 │   └── main/
 │       └── java/
 │           └── com/
 │               └── gamezone/
+│                   ├── exceptions/
 │                   ├── model/
 │                   ├── persistence/
 │                   ├── service/
 │                   ├── ui/
+│                   ├── validation/
 │                   └── Main.java
 │
 ├── pom.xml

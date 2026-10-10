@@ -1,5 +1,10 @@
 package com.gamezone.ui;
 
+import com.gamezone.exceptions.BusinessRuleException;
+import com.gamezone.exceptions.GameZoneException;
+import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.exceptions.PersistenceException;
+import com.gamezone.exceptions.ResourceNotFoundException;
 import com.gamezone.model.Accessory;
 import com.gamezone.model.Console;
 import com.gamezone.model.Customer;
@@ -85,22 +90,85 @@ public class MainMenu {
             System.out.println("0. Salir");
             System.out.print("Seleccione una opción: ");
 
-            String option = scanner.nextLine();
-            switch (option) {
-                case "1" -> productMenu();
-                case "2" -> personMenu();
-                case "3" -> saleMenu();
-                case "4" -> accessoryMenu();
-                case "5" -> promotionMenu();
-                case "6" -> returnMenu();
-                case "7" -> warrantyMenu();
-                case "0" -> running = false;
-                default -> System.out.println("Opción inválida.");
+                        String option = scanner.nextLine();
+            try {
+                switch (option) {
+                    case "1" -> productMenu();
+                    case "2" -> personMenu();
+                    case "3" -> saleMenu();
+                    case "4" -> accessoryMenu();
+                    case "5" -> promotionMenu();
+                    case "6" -> returnMenu();
+                    case "7" -> warrantyMenu();
+                    case "0" -> running = false;
+                    default -> System.out.println("Opción inválida.");
+                }
+            } catch (ResourceNotFoundException e) {
+                showResourceNotFound(e);
+            } catch (BusinessRuleException e) {
+                showBusinessRuleViolation(e);
+            } catch (InvalidDataException e) {
+                showInvalidData(e);
+            } catch (PersistenceException e) {
+                showPersistenceError();
+            } catch (GameZoneException e) {
+                showGenericError(e);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
             }
         }
         System.out.println("Cerrando GameZone Unicesar. ¡Hasta pronto!");
     }
 
+        // ===================== ERROR HANDLING =====================
+
+    /**
+     * Shows the message for a resource that does not exist in the system
+     * (product, customer, seller or sale).
+     *
+     * @param e the exception describing the missing resource
+     */
+    private void showResourceNotFound(ResourceNotFoundException e) {
+        System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+    }
+
+    /**
+     * Shows the message for an operation that violates a business rule
+     * (insufficient stock, duplicated customer, sale without products).
+     *
+     * @param e the exception describing the violated rule
+     */
+    private void showBusinessRuleViolation(BusinessRuleException e) {
+        System.out.println("No se puede completar la operación: " + e.getMessage());
+    }
+
+    /**
+     * Shows the message for input data that fails format or range checks.
+     *
+     * @param e the exception describing the invalid field
+     */
+    private void showInvalidData(InvalidDataException e) {
+        System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+    }
+
+    /**
+     * Shows a generic message for storage problems. It never exposes file
+     * names or technical details to the user.
+     */
+    private void showPersistenceError() {
+        System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
+    }
+
+    /**
+     * Shows a fallback message for any GameZoneException subtype that has
+     * no dedicated handler, so new exception types never reach the user raw.
+     *
+     * @param e the unclassified GameZone exception
+     */
+    private void showGenericError(GameZoneException e) {
+        System.out.println("No se puede completar la operación: " + e.getMessage());
+    }
+    
     // ===================== PRODUCT MENU =====================
 
     private void productMenu() {
@@ -142,8 +210,6 @@ public class MainMenu {
             System.out.println("Videojuego registrado exitosamente.");
         } catch (NumberFormatException e) {
             System.out.println("Error: el precio y la cantidad deben ser valores numéricos válidos.");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
         }
     }
 
@@ -169,8 +235,6 @@ public class MainMenu {
             System.out.println("Consola registrada exitosamente.");
         } catch (NumberFormatException e) {
             System.out.println("Error: el precio y la cantidad deben ser valores numéricos válidos.");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
         }
     }
 
@@ -217,8 +281,8 @@ public class MainMenu {
 
             personService.registerCustomer(name, id, phone, email);
             System.out.println("Cliente registrado exitosamente.");
-        } catch (IllegalArgumentException | IOException e) {
-            System.out.println("Error: " + e.getMessage());
+        } catch (IOException e) {
+            showPersistenceError();
         }
     }
 
@@ -301,8 +365,8 @@ public class MainMenu {
             System.out.println(sale.generateReceipt());
         } catch (NumberFormatException e) {
             System.out.println("Error: la cantidad debe ser un valor numérico válido.");
-        } catch (IllegalArgumentException | IOException e) {
-            System.out.println("Error: " + e.getMessage());
+        } catch (IOException e) {
+            showPersistenceError();
         }
     }
 
@@ -311,7 +375,7 @@ public class MainMenu {
             List<Sale> sales = saleService.listSales();
             printSales(sales);
         } catch (IOException e) {
-            System.out.println("Error al leer las ventas: " + e.getMessage());
+            showPersistenceError();
         }
     }
 
@@ -321,7 +385,7 @@ public class MainMenu {
             String customerId = scanner.nextLine();
             printSales(saleService.listSalesByCustomer(customerId));
         } catch (IOException e) {
-            System.out.println("Error al leer las ventas: " + e.getMessage());
+            showPersistenceError();
         }
     }
 
@@ -331,7 +395,7 @@ public class MainMenu {
             String sellerId = scanner.nextLine();
             printSales(saleService.listSalesBySeller(sellerId));
         } catch (IOException e) {
-            System.out.println("Error al leer las ventas: " + e.getMessage());
+            showPersistenceError();
         }
     }
 
@@ -653,7 +717,7 @@ private void registerReturn() {
     } catch (IllegalArgumentException e) {
         System.out.println("Error: " + e.getMessage());
     } catch (java.io.IOException e) {
-        System.out.println("Error al procesar la devolución: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -661,7 +725,7 @@ private void viewAllReturns() {
     try {
         printReturns(returnService.viewAllReturns());
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -671,7 +735,7 @@ private void viewReturnsByCustomer() {
         String customerId = scanner.nextLine();
         printReturns(returnService.viewReturnsByCustomer(customerId));
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -681,7 +745,7 @@ private void viewReturnsBySale() {
         String saleId = scanner.nextLine();
         printReturns(returnService.viewReturnsBySale(saleId));
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las devoluciones: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -713,7 +777,7 @@ private void consultMonthlyBalance() {
     } catch (NumberFormatException e) {
         System.out.println("Error: el mes y el año deben ser valores numéricos válidos.");
     } catch (java.io.IOException e) {
-        System.out.println("Error al calcular el balance: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -752,7 +816,7 @@ private void consultWarrantyByProduct() {
             System.out.println(warranty.generateWarrantyCertificate());
         }
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar la garantía: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -760,7 +824,7 @@ private void listAllWarranties() {
     try {
         printWarranties(warrantyService.listAllWarranties());
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las garantías: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -768,7 +832,7 @@ private void listActiveWarranties() {
     try {
         printWarranties(warrantyService.listActiveWarranties());
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las garantías: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
@@ -782,7 +846,7 @@ private void listWarrantiesExpiringSoon() {
     } catch (IllegalArgumentException e) {
         System.out.println("Error: " + e.getMessage());
     } catch (java.io.IOException e) {
-        System.out.println("Error al consultar las garantías: " + e.getMessage());
+        showPersistenceError();
     }
 }
 
