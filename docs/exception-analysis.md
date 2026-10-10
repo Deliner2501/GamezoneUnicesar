@@ -14,16 +14,16 @@
 
 | # | Operation | Expected result | Verified |
 |---|---|---|---|
-| 1 | Register a video game | Same confirmation as before | ☐ |
-| 2 | Register a console | Same confirmation as before | ☐ |
-| 3 | List available products | Same listing as before | ☐ |
-| 4 | Register a customer | Same confirmation as before | ☐ |
-| 5 | List customers | Same listing as before | ☐ |
-| 6 | List sellers | Same listing as before | ☐ |
-| 7 | Register a sale | Same receipt as before | ☐ |
-| 8 | List all sales | Same listing as before | ☐ |
-| 9 | Customer purchase history | Same listing as before | ☐ |
-| 10 | Seller sales history | Same listing as before | ☐ |
+| 1 | Register a video game | Same confirmation as before | ☑ |
+| 2 | Register a console | Same confirmation as before | ☑ |
+| 3 | List available products | Same listing as before | ☑ |
+| 4 | Register a customer | Same confirmation as before | ☑ |
+| 5 | List customers | Same listing as before | ☑ |
+| 6 | List sellers | Same listing as before | ☑ |
+| 7 | Register a sale | Same receipt as before | ☑ |
+| 8 | List all sales | Same listing as before | ☑ |
+| 9 | Customer purchase history | Same listing as before | ☑ |
+| 10 | Seller sales history | Same listing as before | ☑ |
 
 | Error scenario | Message now shown | Verified |
 |---|---|---|
