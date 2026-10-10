@@ -1,6 +1,6 @@
 # GameZoneUnicesar
 
-GameZoneUnicesar is a Java-based data management system developed for a video game and console store. The system allows the store to manage its products, customers, sellers, and sales through a console-based user interface.
+GameZoneUnicesar is a Java-based data management system developed for a video game and console store. The system allows the store to manage its products, customers, sellers, sales, accessories, promotions, returns, and warranties through a graphical user interface built with Java Swing.
 
 The project was developed using object-oriented programming principles and a four-layer architecture: **Model, Persistence, Service, and UI**.
 
@@ -97,7 +97,7 @@ The system provides the following main functionalities:
 * **Object-Oriented Programming (OOP)**
 * **Git and GitHub**
 * **CSV and TXT files for persistence**
-* **Console-based user interface**
+* **Graphical user interface with Java Swing (JOptionPane, JTextArea, JScrollPane)**
 
 The project uses Java release **21** as configured in the Maven `pom.xml`.
 
@@ -225,11 +225,11 @@ The `exceptions` package is cross-cutting and can be used from any layer. All ex
 
 ### UI
 
-The `ui` layer contains the console interface.
+The `ui` layer contains the graphical interface, built entirely with Java Swing dialogs instead of a console loop.
 
-* `MainMenu` — displays the main menu and the submenus, and handles each type of custom exception with its own message in Spanish.
+* `MainMenu` — builds every menu as a `JOptionPane` dropdown dialog (`showInputDialog` with an options array), every data entry field as a `JOptionPane.showInputDialog` text prompt, every confirmation or error message as a `JOptionPane.showMessageDialog`, and every listing (products, customers, sellers, sales, accessories, promotions, returns, warranties) as a numbered, scrollable `JTextArea` wrapped in a `JScrollPane`. It still handles each type of custom exception with its own message in Spanish, now shown as an error dialog instead of a console line.
 
-The UI communicates with the service layer and does not access the persistence layer directly.
+The UI communicates with the service layer and does not access the persistence layer directly. Converting the interaction model from console to Swing dialogs did not change any business rule or validation: every operation behaves exactly as before, only the presentation layer changed.
 
 ---
 
@@ -413,19 +413,18 @@ After compiling, run the main class:
 java -cp target/classes com.gamezone.Main
 ```
 
-The application will display the main console menu:
+The application opens a Swing dialog with a dropdown listing the main menu options:
 
-```text
-===== GameZone Unicesar =====
-1. Gestionar productos
-2. Gestionar clientes y vendedores
-3. Gestionar ventas
-4. Gestionar accesorios
-5. Gestionar promociones
-6. Gestionar devoluciones
-7. Gestionar garantías
-0. Salir
-```
+* Gestionar productos
+* Gestionar clientes y vendedores
+* Gestionar ventas
+* Gestionar accesorios
+* Gestionar promociones
+* Gestionar devoluciones
+* Gestionar garantías
+* Salir
+
+Every submenu works the same way: a dropdown dialog for navigation, input dialogs for each field, and a scrollable text window for listings and receipts.
 
 ---
 
@@ -573,7 +572,7 @@ The system includes the three main modules:
 * Customer and seller management.
 * Sales management.
 
-It also includes persistence, business validations, layered architecture, documentation, Git workflow, and a console-based user interface.
+It also includes persistence, business validations, layered architecture, documentation, Git workflow, and a Swing-based graphical user interface.
 
 ---
 
