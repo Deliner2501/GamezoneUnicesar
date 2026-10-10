@@ -705,124 +705,165 @@ public class MainMenu {
 
 // ===================== PROMOTION MENU =====================
 
-private void promotionMenu() {
-    System.out.println("\n--- Gestión de promociones ---");
-    System.out.println("1. Registrar promoción por porcentaje");
-    System.out.println("2. Registrar promoción por categoría");
-    System.out.println("3. Registrar promoción por volumen de compra");
-    System.out.println("4. Listar todas las promociones");
-    System.out.println("5. Listar promociones vigentes");
-    System.out.println("0. Volver");
-    System.out.print("Seleccione una opción: ");
+    private void promotionMenu() {
+        String[] options = {
+                "Registrar promoción por porcentaje",
+                "Registrar promoción por categoría",
+                "Registrar promoción por volumen de compra",
+                "Listar todas las promociones",
+                "Listar promociones vigentes",
+                "Volver"
+        };
+        Object selectedOption = JOptionPane.showInputDialog(
+                null,
+                "Gestión de promociones - Seleccione una opción:",
+                "GameZone Unicesar",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        int choice = (selectedOption == null)
+                ? -1
+                : java.util.Arrays.asList(options).indexOf(selectedOption);
 
-    switch (scanner.nextLine()) {
-        case "1" -> registerPercentageDiscount();
-        case "2" -> registerCategoryDiscount();
-        case "3" -> registerBulkPurchaseDiscount();
-        case "4" -> listAllPromotions();
-        case "5" -> listActivePromotions();
-        case "0" -> { }
-        default -> System.out.println("Opción inválida.");
-    }
-}
-
-private void registerPercentageDiscount() {
-    try {
-        System.out.print("Id: ");
-        String id = scanner.nextLine();
-        System.out.print("Nombre: ");
-        String name = scanner.nextLine();
-        System.out.print("Fecha de inicio (AAAA-MM-DD): ");
-        LocalDate startDate = LocalDate.parse(scanner.nextLine());
-        System.out.print("Fecha de fin (AAAA-MM-DD): ");
-        LocalDate endDate = LocalDate.parse(scanner.nextLine());
-        System.out.print("Porcentaje de descuento (0-100): ");
-        double percentage = Double.parseDouble(scanner.nextLine());
-
-        promotionService.registerPercentageDiscount(id, name, startDate, endDate, percentage);
-        System.out.println("Promoción por porcentaje registrada exitosamente.");
-    } catch (NumberFormatException e) {
-        System.out.println("Error: el porcentaje debe ser un valor numérico válido.");
-    } catch (java.time.format.DateTimeParseException e) {
-        System.out.println("Error: la fecha debe tener el formato AAAA-MM-DD.");
-    } catch (IllegalArgumentException e) {
-        System.out.println("Error: " + e.getMessage());
-    }
-}
-
-    private void registerCategoryDiscount() {
-        try {
-            System.out.print("Id: ");
-            String id = scanner.nextLine();
-            System.out.print("Nombre: ");
-            String name = scanner.nextLine();
-            System.out.print("Fecha de inicio (AAAA-MM-DD): ");
-            LocalDate startDate = LocalDate.parse(scanner.nextLine());
-            System.out.print("Fecha de fin (AAAA-MM-DD): ");
-            LocalDate endDate = LocalDate.parse(scanner.nextLine());
-            System.out.print("Porcentaje de descuento (0-100): ");
-            double percentage = Double.parseDouble(scanner.nextLine());
-            System.out.print("Categoría objetivo (VIDEOGAME/CONSOLE/ACCESSORY): ");
-            String targetCategory = scanner.nextLine();
-
-            promotionService.registerCategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
-            System.out.println("Promoción por categoría registrada exitosamente.");
-        } catch (NumberFormatException e) {
-            System.out.println("Error: el porcentaje debe ser un valor numérico válido.");
-        } catch (java.time.format.DateTimeParseException e) {
-            System.out.println("Error: la fecha debe tener el formato AAAA-MM-DD.");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
+        switch (choice) {
+            case 0 -> registerPercentageDiscount();
+            case 1 -> registerCategoryDiscount();
+            case 2 -> registerBulkPurchaseDiscount();
+            case 3 -> listAllPromotions();
+            case 4 -> listActivePromotions();
+            default -> { }
         }
     }
 
-private void registerBulkPurchaseDiscount() {
-    try {
-        System.out.print("Id: ");
-        String id = scanner.nextLine();
-        System.out.print("Nombre: ");
-        String name = scanner.nextLine();
-        System.out.print("Fecha de inicio (AAAA-MM-DD): ");
-        LocalDate startDate = LocalDate.parse(scanner.nextLine());
-        System.out.print("Fecha de fin (AAAA-MM-DD): ");
-        LocalDate endDate = LocalDate.parse(scanner.nextLine());
-        System.out.print("Cantidad mínima de productos: ");
-        int minQuantity = Integer.parseInt(scanner.nextLine());
-        System.out.print("Porcentaje de descuento (0-100): ");
-        double percentage = Double.parseDouble(scanner.nextLine());
+    private void registerPercentageDiscount() {
+        String id = askInput("Id:");
+        if (id == null) return;
+        String name = askInput("Nombre:");
+        if (name == null) return;
+        String startDateText = askInput("Fecha de inicio (AAAA-MM-DD):");
+        if (startDateText == null) return;
+        String endDateText = askInput("Fecha de fin (AAAA-MM-DD):");
+        if (endDateText == null) return;
+        String percentageText = askInput("Porcentaje de descuento (0-100):");
+        if (percentageText == null) return;
 
-        promotionService.registerBulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
-        System.out.println("Promoción por volumen de compra registrada exitosamente.");
-    } catch (NumberFormatException e) {
-        System.out.println("Error: la cantidad mínima y el porcentaje deben ser valores numéricos válidos.");
-    } catch (java.time.format.DateTimeParseException e) {
-        System.out.println("Error: la fecha debe tener el formato AAAA-MM-DD.");
-    } catch (IllegalArgumentException e) {
-        System.out.println("Error: " + e.getMessage());
+        try {
+            LocalDate startDate = LocalDate.parse(startDateText);
+            LocalDate endDate = LocalDate.parse(endDateText);
+            double percentage = Double.parseDouble(percentageText);
+
+            promotionService.registerPercentageDiscount(id, name, startDate, endDate, percentage);
+            JOptionPane.showMessageDialog(null, "Promoción por porcentaje registrada exitosamente.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Error: el porcentaje debe ser un valor numérico válido.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (java.time.format.DateTimeParseException e) {
+            JOptionPane.showMessageDialog(null, "Error: la fecha debe tener el formato AAAA-MM-DD.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
-}
 
-private void listAllPromotions() {
-    List<Promotion> promotions = promotionService.listAllPromotions();
-    printPromotions(promotions);
-}
+    private void registerCategoryDiscount() {
+        String id = askInput("Id:");
+        if (id == null) return;
+        String name = askInput("Nombre:");
+        if (name == null) return;
+        String startDateText = askInput("Fecha de inicio (AAAA-MM-DD):");
+        if (startDateText == null) return;
+        String endDateText = askInput("Fecha de fin (AAAA-MM-DD):");
+        if (endDateText == null) return;
+        String percentageText = askInput("Porcentaje de descuento (0-100):");
+        if (percentageText == null) return;
+        String targetCategory = askInput("Categoría objetivo (VIDEOGAME/CONSOLE/ACCESSORY):");
+        if (targetCategory == null) return;
 
-private void listActivePromotions() {
-    List<Promotion> promotions = promotionService.listActivePromotions();
-    printPromotions(promotions);
-}
+        try {
+            LocalDate startDate = LocalDate.parse(startDateText);
+            LocalDate endDate = LocalDate.parse(endDateText);
+            double percentage = Double.parseDouble(percentageText);
 
-private void printPromotions(List<Promotion> promotions) {
-    if (promotions.isEmpty()) {
-        System.out.println("No se encontraron promociones.");
-        return;
+            promotionService.registerCategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
+            JOptionPane.showMessageDialog(null, "Promoción por categoría registrada exitosamente.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Error: el porcentaje debe ser un valor numérico válido.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (java.time.format.DateTimeParseException e) {
+            JOptionPane.showMessageDialog(null, "Error: la fecha debe tener el formato AAAA-MM-DD.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
-    for (Promotion promotion : promotions) {
-        System.out.println(promotion.getId() + " - " + promotion.getName()
-                + " (" + promotion.getStartDate() + " a " + promotion.getEndDate() + ")");
-    }
-}
 
+    private void registerBulkPurchaseDiscount() {
+        String id = askInput("Id:");
+        if (id == null) return;
+        String name = askInput("Nombre:");
+        if (name == null) return;
+        String startDateText = askInput("Fecha de inicio (AAAA-MM-DD):");
+        if (startDateText == null) return;
+        String endDateText = askInput("Fecha de fin (AAAA-MM-DD):");
+        if (endDateText == null) return;
+        String minQuantityText = askInput("Cantidad mínima de productos:");
+        if (minQuantityText == null) return;
+        String percentageText = askInput("Porcentaje de descuento (0-100):");
+        if (percentageText == null) return;
+
+        try {
+            LocalDate startDate = LocalDate.parse(startDateText);
+            LocalDate endDate = LocalDate.parse(endDateText);
+            int minQuantity = Integer.parseInt(minQuantityText);
+            double percentage = Double.parseDouble(percentageText);
+
+            promotionService.registerBulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
+            JOptionPane.showMessageDialog(null, "Promoción por volumen de compra registrada exitosamente.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null,
+                    "Error: la cantidad mínima y el porcentaje deben ser valores numéricos válidos.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (java.time.format.DateTimeParseException e) {
+            JOptionPane.showMessageDialog(null, "Error: la fecha debe tener el formato AAAA-MM-DD.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void listAllPromotions() {
+        List<Promotion> promotions = promotionService.listAllPromotions();
+        printPromotions(promotions);
+    }
+
+    private void listActivePromotions() {
+        List<Promotion> promotions = promotionService.listActivePromotions();
+        printPromotions(promotions);
+    }
+
+    private void printPromotions(List<Promotion> promotions) {
+        if (promotions.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No se encontraron promociones.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        StringBuilder content = new StringBuilder();
+        for (Promotion promotion : promotions) {
+            content.append(promotion.getId()).append(" - ").append(promotion.getName())
+                    .append(" (").append(promotion.getStartDate()).append(" a ")
+                    .append(promotion.getEndDate()).append(")\n");
+        }
+        showList("Promociones", content.toString());
+    }
+    
 // ===================== RETURN MENU =====================
 
 private void returnMenu() {
