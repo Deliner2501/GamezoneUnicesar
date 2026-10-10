@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 
 /**
  * Console-based user interface for the GameZone Unicesar system.
@@ -188,84 +190,140 @@ public class MainMenu {
                 "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
     }
     
+        // ===================== UI HELPERS =====================
+
+    /**
+     * Shows a single-line input dialog and returns what the user typed.
+     *
+     * @param label the label describing the requested value
+     * @return the text entered, or null if the dialog was cancelled/closed
+     */
+    private String askInput(String label) {
+        return JOptionPane.showInputDialog(null, label, "GameZone Unicesar", JOptionPane.QUESTION_MESSAGE);
+    }
+
+    /**
+     * Shows a block of text inside a scrollable, read-only text area,
+     * used to display listings that may be too long for a plain dialog.
+     *
+     * @param title   the dialog title
+     * @param content the text content to display
+     */
+    private void showList(String title, String content) {
+        JTextArea textArea = new JTextArea(content);
+        textArea.setEditable(false);
+        textArea.setCaretPosition(0);
+
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new java.awt.Dimension(520, 400));
+
+        JOptionPane.showMessageDialog(null, scrollPane, title, JOptionPane.PLAIN_MESSAGE);
+    }
+    
     // ===================== PRODUCT MENU =====================
 
-    private void productMenu() {
-        System.out.println("\n--- Gestión de productos ---");
-        System.out.println("1. Registrar un videojuego");
-        System.out.println("2. Registrar una consola");
-        System.out.println("3. Listar productos disponibles");
-        System.out.println("0. Volver");
-        System.out.print("Seleccione una opción: ");
+        private void productMenu() {
+        String[] options = {
+                "Registrar un videojuego",
+                "Registrar una consola",
+                "Listar productos disponibles",
+                "Volver"
+        };
+        Object selectedOption = JOptionPane.showInputDialog(
+                null,
+                "Gestión de productos - Seleccione una opción:",
+                "GameZone Unicesar",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        int choice = (selectedOption == null)
+                ? -1
+                : java.util.Arrays.asList(options).indexOf(selectedOption);
 
-        switch (scanner.nextLine()) {
-            case "1" -> registerVideoGame();
-            case "2" -> registerConsole();
-            case "3" -> listProducts();
-            case "0" -> { }
-            default -> System.out.println("Opción inválida.");
+        switch (choice) {
+            case 0 -> registerVideoGame();
+            case 1 -> registerConsole();
+            case 2 -> listProducts();
+            default -> { }
         }
     }
 
     private void registerVideoGame() {
+        String id = askInput("Id:");
+        if (id == null) return;
+        String title = askInput("Título:");
+        if (title == null) return;
+        String priceText = askInput("Precio:");
+        if (priceText == null) return;
+        String stockText = askInput("Cantidad en inventario:");
+        if (stockText == null) return;
+        String platform = askInput("Plataforma:");
+        if (platform == null) return;
+        String genre = askInput("Género:");
+        if (genre == null) return;
+        String ageRating = askInput("Clasificación de edad:");
+        if (ageRating == null) return;
+
         try {
-            System.out.print("Id: ");
-            String id = scanner.nextLine();
-            System.out.print("Título: ");
-            String title = scanner.nextLine();
-            System.out.print("Precio: ");
-            double price = Double.parseDouble(scanner.nextLine());
-            System.out.print("Cantidad en inventario: ");
-            int stock = Integer.parseInt(scanner.nextLine());
-            System.out.print("Plataforma: ");
-            String platform = scanner.nextLine();
-            System.out.print("Género: ");
-            String genre = scanner.nextLine();
-            System.out.print("Clasificación de edad: ");
-            String ageRating = scanner.nextLine();
+            double price = Double.parseDouble(priceText);
+            int stock = Integer.parseInt(stockText);
 
             Product videoGame = new VideoGame(id, title, price, stock, platform, genre, ageRating);
             productService.registerProduct(videoGame);
-            System.out.println("Videojuego registrado exitosamente.");
+            JOptionPane.showMessageDialog(null, "Videojuego registrado exitosamente.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
         } catch (NumberFormatException e) {
-            System.out.println("Error: el precio y la cantidad deben ser valores numéricos válidos.");
+            JOptionPane.showMessageDialog(null,
+                    "Error: el precio y la cantidad deben ser valores numéricos válidos.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void registerConsole() {
+        String id = askInput("Id:");
+        if (id == null) return;
+        String title = askInput("Título:");
+        if (title == null) return;
+        String priceText = askInput("Precio:");
+        if (priceText == null) return;
+        String stockText = askInput("Cantidad en inventario:");
+        if (stockText == null) return;
+        String brand = askInput("Marca:");
+        if (brand == null) return;
+        String model = askInput("Modelo:");
+        if (model == null) return;
+        String generation = askInput("Generación:");
+        if (generation == null) return;
+
         try {
-            System.out.print("Id: ");
-            String id = scanner.nextLine();
-            System.out.print("Título: ");
-            String title = scanner.nextLine();
-            System.out.print("Precio: ");
-            double price = Double.parseDouble(scanner.nextLine());
-            System.out.print("Cantidad en inventario: ");
-            int stock = Integer.parseInt(scanner.nextLine());
-            System.out.print("Marca: ");
-            String brand = scanner.nextLine();
-            System.out.print("Modelo: ");
-            String model = scanner.nextLine();
-            System.out.print("Generación: ");
-            String generation = scanner.nextLine();
+            double price = Double.parseDouble(priceText);
+            int stock = Integer.parseInt(stockText);
 
             Product console = new Console(id, title, price, stock, brand, model, generation);
             productService.registerProduct(console);
-            System.out.println("Consola registrada exitosamente.");
+            JOptionPane.showMessageDialog(null, "Consola registrada exitosamente.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
         } catch (NumberFormatException e) {
-            System.out.println("Error: el precio y la cantidad deben ser valores numéricos válidos.");
+            JOptionPane.showMessageDialog(null,
+                    "Error: el precio y la cantidad deben ser valores numéricos válidos.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void listProducts() {
         List<Product> products = productService.listAvailableProducts();
         if (products.isEmpty()) {
-            System.out.println("Aún no hay productos registrados.");
+            JOptionPane.showMessageDialog(null, "Aún no hay productos registrados.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+        StringBuilder content = new StringBuilder();
         for (Product product : products) {
-            System.out.println(product.getFullDescription());
+            content.append(product.getFullDescription()).append("\n");
         }
+        showList("Productos disponibles", content.toString());
     }
 
     // ===================== PERSON MENU =====================
