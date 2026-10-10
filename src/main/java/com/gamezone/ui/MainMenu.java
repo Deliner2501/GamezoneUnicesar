@@ -866,116 +866,133 @@ public class MainMenu {
     
 // ===================== RETURN MENU =====================
 
-private void returnMenu() {
-    System.out.println("\n--- Gestión de devoluciones ---");
-    System.out.println("1. Registrar una devolución");
-    System.out.println("2. Consultar todas las devoluciones");
-    System.out.println("3. Consultar devoluciones por cliente");
-    System.out.println("4. Consultar devoluciones por venta");
-    System.out.println("5. Consultar balance mensual");
-    System.out.println("0. Volver");
-    System.out.print("Seleccione una opción: ");
+    private void returnMenu() {
+        String[] options = {
+                "Registrar una devolución",
+                "Consultar todas las devoluciones",
+                "Consultar devoluciones por cliente",
+                "Consultar devoluciones por venta",
+                "Consultar balance mensual",
+                "Volver"
+        };
+        Object selectedOption = JOptionPane.showInputDialog(
+                null,
+                "Gestión de devoluciones - Seleccione una opción:",
+                "GameZone Unicesar",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        int choice = (selectedOption == null)
+                ? -1
+                : java.util.Arrays.asList(options).indexOf(selectedOption);
 
-    switch (scanner.nextLine()) {
-        case "1" -> registerReturn();
-        case "2" -> viewAllReturns();
-        case "3" -> viewReturnsByCustomer();
-        case "4" -> viewReturnsBySale();
-        case "5" -> consultMonthlyBalance();
-        case "0" -> { }
-        default -> System.out.println("Opción inválida.");
-    }
-}
-
-private void registerReturn() {
-    try {
-        System.out.print("Id de la venta original: ");
-        String saleId = scanner.nextLine();
-
-        List<String> productIds = new java.util.ArrayList<>();
-        boolean addingProducts = true;
-        while (addingProducts) {
-            System.out.print("Id de producto a devolver (deje vacío para terminar): ");
-            String productId = scanner.nextLine();
-            if (productId.isBlank()) {
-                addingProducts = false;
-            } else {
-                productIds.add(productId);
-            }
+        switch (choice) {
+            case 0 -> registerReturn();
+            case 1 -> viewAllReturns();
+            case 2 -> viewReturnsByCustomer();
+            case 3 -> viewReturnsBySale();
+            case 4 -> consultMonthlyBalance();
+            default -> { }
         }
-
-        System.out.print("Motivo de la devolución: ");
-        String reason = scanner.nextLine();
-
-        Return processedReturn = returnService.registerReturn(saleId, productIds, reason);
-        System.out.println("Devolución registrada exitosamente.");
-        System.out.println(processedReturn.generateReturnReceipt());
-    } catch (IllegalArgumentException e) {
-        System.out.println("Error: " + e.getMessage());
-    } catch (java.io.IOException e) {
-        showPersistenceError();
     }
-}
 
-private void viewAllReturns() {
-    try {
-        printReturns(returnService.viewAllReturns());
-    } catch (java.io.IOException e) {
-        showPersistenceError();
+    private void registerReturn() {
+        String saleId = askInput("Id de la venta original:");
+        if (saleId == null) return;
+
+        try {
+            List<String> productIds = new java.util.ArrayList<>();
+            boolean addingProducts = true;
+            while (addingProducts) {
+                String productId = askInput("Id de producto a devolver (deje vacío para terminar):");
+                if (productId == null || productId.isBlank()) {
+                    addingProducts = false;
+                } else {
+                    productIds.add(productId);
+                }
+            }
+
+            String reason = askInput("Motivo de la devolución:");
+            if (reason == null) return;
+
+            Return processedReturn = returnService.registerReturn(saleId, productIds, reason);
+            showList("Devolución registrada exitosamente", processedReturn.generateReturnReceipt());
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (java.io.IOException e) {
+            showPersistenceError();
+        }
     }
-}
 
-private void viewReturnsByCustomer() {
-    try {
-        System.out.print("Id del cliente: ");
-        String customerId = scanner.nextLine();
-        printReturns(returnService.viewReturnsByCustomer(customerId));
-    } catch (java.io.IOException e) {
-        showPersistenceError();
+    private void viewAllReturns() {
+        try {
+            printReturns(returnService.viewAllReturns());
+        } catch (java.io.IOException e) {
+            showPersistenceError();
+        }
     }
-}
 
-private void viewReturnsBySale() {
-    try {
-        System.out.print("Id de la venta: ");
-        String saleId = scanner.nextLine();
-        printReturns(returnService.viewReturnsBySale(saleId));
-    } catch (java.io.IOException e) {
-        showPersistenceError();
+    private void viewReturnsByCustomer() {
+        String customerId = askInput("Id del cliente:");
+        if (customerId == null) return;
+        try {
+            printReturns(returnService.viewReturnsByCustomer(customerId));
+        } catch (java.io.IOException e) {
+            showPersistenceError();
+        }
     }
-}
 
-private void printReturns(List<Return> returns) {
-    if (returns.isEmpty()) {
-        System.out.println("No se encontraron devoluciones.");
-        return;
+    private void viewReturnsBySale() {
+        String saleId = askInput("Id de la venta:");
+        if (saleId == null) return;
+        try {
+            printReturns(returnService.viewReturnsBySale(saleId));
+        } catch (java.io.IOException e) {
+            showPersistenceError();
+        }
     }
-    for (Return r : returns) {
-        System.out.println(r.generateReturnReceipt());
-        System.out.println("---");
+
+    private void printReturns(List<Return> returns) {
+        if (returns.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No se encontraron devoluciones.",
+                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        StringBuilder content = new StringBuilder();
+        for (Return r : returns) {
+            content.append(r.generateReturnReceipt()).append("\n---\n");
+        }
+        showList("Devoluciones", content.toString());
     }
-}
 
-private void consultMonthlyBalance() {
-    try {
-        System.out.print("Mes (1-12): ");
-        int month = Integer.parseInt(scanner.nextLine());
-        System.out.print("Año (AAAA): ");
-        int year = Integer.parseInt(scanner.nextLine());
+    private void consultMonthlyBalance() {
+        String monthText = askInput("Mes (1-12):");
+        if (monthText == null) return;
+        String yearText = askInput("Año (AAAA):");
+        if (yearText == null) return;
 
-        double totalSales = returnService.calculateMonthlySales(month, year);
-        double totalReturns = returnService.calculateMonthlyReturns(month, year);
-        double balance = returnService.generateMonthlyBalance(month, year);
+        try {
+            int month = Integer.parseInt(monthText);
+            int year = Integer.parseInt(yearText);
 
-        System.out.println("Total de ventas para " + month + "/" + year + ": " + totalSales);
-        System.out.println("Total de devoluciones para " + month + "/" + year + ": " + totalReturns);
-        System.out.println("Balance neto para " + month + "/" + year + ": " + balance);
-    } catch (NumberFormatException e) {
-        System.out.println("Error: el mes y el año deben ser valores numéricos válidos.");
-    } catch (java.io.IOException e) {
-        showPersistenceError();
+            double totalSales = returnService.calculateMonthlySales(month, year);
+            double totalReturns = returnService.calculateMonthlyReturns(month, year);
+            double balance = returnService.generateMonthlyBalance(month, year);
+
+            String summary = "Total de ventas para " + month + "/" + year + ": " + totalSales + "\n"
+                    + "Total de devoluciones para " + month + "/" + year + ": " + totalReturns + "\n"
+                    + "Balance neto para " + month + "/" + year + ": " + balance;
+            JOptionPane.showMessageDialog(null, summary, "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Error: el mes y el año deben ser valores numéricos válidos.",
+                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
+        } catch (java.io.IOException e) {
+            showPersistenceError();
+        }
     }
-}
 
 // ===================== WARRANTY MENU =====================
 
