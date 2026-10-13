@@ -329,3 +329,143 @@ on the typed exception hierarchy (`ResourceNotFoundException`,
 `BusinessRuleException`, `InvalidDataException`), not on the internal
 details of how promotions or warranties are computed. Changes to those
 internals do not ripple out to `MainMenu`.
+
+---
+
+## 4. `MainMenu.java`
+
+### Information Expert — Not a Violation
+
+`MainMenu` never computes business results itself; it only collects raw
+input (strings from `askInput`) and hands them to the appropriate service
+(`personService`, `productService`, `accessoryService`, `promotionService`,
+`warrantyService`, `returnService`, `saleService`). It does not duplicate
+logic that already belongs to those experts.
+
+### Creator — Violation (V-05)
+
+**V-05 — UI layer directly instantiates domain objects**
+- **Pattern:** Creator
+- **Module:** `MainMenu.registerVideoGame()` and
+  `MainMenu.registerConsole()` — both build the domain object with
+  `new VideoGame(...)` / `new Console(...)` directly, then pass it to
+  `productService.registerProduct(...)`.
+- **Evidence:** `Product videoGame = new VideoGame(id, title, price,
+  stock, platform, genre, ageRating); productService.registerProduct(
+  videoGame);` and the equivalent for `Console`.
+- **Explanation:** Creator says a class B should create instances of
+  class A when B aggregates, contains, or records A — none of which is
+  true for `MainMenu` with respect to `VideoGame`/`Console`. The class
+  that actually owns and records products is `ProductService` (via
+  `ProductDAO`), so it is the more appropriate Creator.
+- **Consequence:** The UI layer is coupled to the exact construction
+  signature of every product subtype. Any change to how a `VideoGame` or
+  `Console` is built (new required field, validation moved to the
+  constructor, etc.) forces a change in `MainMenu`, a layer that should
+  only be concerned with collecting input and displaying output.
+- **Proposed solution:** Add a factory-style registration method to
+  `ProductService` (e.g. `registerVideoGame(id, title, price, stock,
+  platform, genre, ageRating)` and `registerConsole(...)`) that builds the
+  object internally and registers it, so `MainMenu` only passes raw field
+  values and never constructs the domain object itself.
+- **Other member's code involved:** **Yes.** `ProductService` belongs to
+  Developer 1's scope, so adding these factory methods needs to be
+  coordinated with them; the call-site change in `MainMenu` is mine.
+
+### Controller — Not a Violation
+
+`MainMenu.start()` and each submenu method act as the UI-level
+controller, receiving the user's menu choice and delegating immediately
+to the service layer. In this project's simple layered architecture
+(no separate MVC framework), it is expected and consistent for the
+console/Swing class to also play this role.
+
+### Low Coupling — Not a Violation
+
+`MainMenu` depends on all seven services (`PersonService`,
+`ProductService`, `AccessoryService`, `PromotionService`,
+`WarrantyService`, `ReturnService`, `SaleService`). This is necessary and
+expected, since `MainMenu` is the single UI entry point that must expose
+every feature of the system; it is not coupled to anything beyond what
+each feature requires (no direct DAO or persistence dependency anywhere).
+
+### High Cohesion — Violation (V-06)
+
+**V-06 — `MainMenu` concentrates the UI for all seven unrelated feature
+areas in a single class**
+- **Pattern:** High Cohesion
+- **Module:** `MainMenu.java` as a whole (1100+ lines): products,
+  people, sales, accessories, promotions, returns and warranties each
+  have their own full submenu, input-collection and listing methods, all
+  inside one class.
+- **Evidence:** Seven independent `*Menu()` methods (`productMenu`,
+  `personMenu`, `saleMenu`, `accessoryMenu`, `promotionMenu`,
+  `returnMenu`, `warrantyMenu`) plus ~35 supporting private methods, all
+  members of the same class.
+- **Explanation:** High Cohesion asks a class's responsibilities to be
+  strongly related. While every method here is "UI-related," the actual
+  business areas they serve (inventory, people, sales, accessories,
+  promotions, returns, warranties) are largely independent of each other.
+  Grouping all of them into one class mixes seven loosely related
+  responsibilities under a single name.
+- **Consequence:** The class is hard to navigate and maintain (1100+
+  lines), merge conflicts between team members become more likely since
+  everyone edits the same file, and a change to one feature's menu (e.g.
+  promotions) carries some risk of accidentally affecting unrelated code
+  in the same class.
+- **Proposed solution:** Split `MainMenu` into one menu class per feature
+  area (e.g. `ProductMenu`, `PersonMenu`, `SaleMenu`,
+  `AccessoryMenu`, `PromotionMenu`, `ReturnMenu`, `WarrantyMenu`), each
+  depending only on the service(s) it needs, with a slim `MainMenu` left
+  to show the top-level menu and delegate to the right one. The shared
+  helpers (`askInput`, `showList`, `formatEntries`) would move to a small
+  shared UI-helper class.
+- **Other member's code involved:** No — this split is entirely within
+  `MainMenu.java`, which is fully my own responsibility.
+
+### Polymorphism — Violation (V-07, related to V-04)
+
+**V-07 — Explicit `instanceof Console` check to decide whether to offer
+an extended warranty**
+- **Pattern:** Polymorphism
+- **Module:** `MainMenu.registerSale()`, inside the item-collection loop:
+  `Product product = productService.findProductById(productId); if
+  (product instanceof Console) { /* ask about extended warranty */ }`
+- **Evidence:** The UI branches on the product's concrete type to decide
+  whether to show the "¿Agregar garantía extendida?" confirmation dialog.
+- **Explanation:** This is the same root issue as **V-04** in
+  `SaleService`: the system asks "is this a `Console`?" via `instanceof`
+  instead of asking the product itself whether it supports warranties.
+- **Consequence:** Same as V-04 — adding a new product type that should
+  also offer warranties requires editing this UI code directly, and
+  `MainMenu` depends on the concrete `Console` subtype instead of only on
+  the `Product` abstraction.
+- **Proposed solution:** Once `Product.requiresWarranty()` is added (per
+  V-04's solution), replace `product instanceof Console` here with
+  `product.requiresWarranty()`. Both V-04 and V-07 share this single fix
+  on the `Product` hierarchy.
+- **Other member's code involved:** **Yes**, same as V-04 — depends on
+  Developer 1 adding the method to `Product`/`Console`.
+
+### Pure Fabrication — Not Applicable
+
+`MainMenu` is a legitimate UI/view class with a real counterpart in the
+problem (the system's user interface), not an artificial class invented
+purely to centralize an unrelated responsibility. Pure Fabrication does
+not apply as a judgment here.
+
+### Indirection — Not a Violation
+
+`MainMenu` never accesses persistence directly; every operation goes
+through a service. It correctly mediates only between user input/output
+and the service layer.
+
+### Protected Variations — Not a Violation
+
+`MainMenu.start()` catches the stable `GameZoneException` hierarchy
+(`ResourceNotFoundException`, `BusinessRuleException`,
+`InvalidDataException`, `PersistenceException`, with a generic
+`GameZoneException` fallback) rather than reacting to specific internal
+causes. This correctly shields the UI from needing to know about every
+possible internal failure mode, and a new exception subtype added later
+would still be caught by the generic handler without changing `MainMenu`.
