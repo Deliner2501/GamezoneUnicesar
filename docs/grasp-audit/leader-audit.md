@@ -198,3 +198,134 @@ reload, instead of silently disappearing), and this requirement's scope
 is limited to zero-behavior-change refactors. Per the requirement's rules,
 this is recorded as an **out-of-scope functional defect** for the
 consolidated audit, not something I will correct in Phase 2.
+
+---
+
+## 3. `SaleService.java`
+
+### Information Expert — Not a Violation
+
+`SaleService` does not compute business data it is not entitled to; it
+delegates to the class that actually owns each piece of information:
+customer/seller resolution to `PersonService`, product/accessory stock
+checks to `ProductDAO`/`AccessoryDAO`, discount calculation to
+`PromotionService`, and warranty assignment/cost to `WarrantyService`.
+It only uses the ids and quantities it directly receives as parameters to
+coordinate these calls.
+
+### Creator — Not a Violation
+
+`SaleService.registerSale` creates the `Sale` instance after gathering the
+data needed to initialize it (id, date, resolved customer, resolved
+seller) from its own parameters and collaborators. Since it aggregates and
+owns this initializing data for the use case, it is a reasonable Creator
+for `Sale`.
+
+### Controller — Not a Violation
+
+`SaleService` acts as the use-case controller for "register a sale" and
+related sale queries: it receives the request (ids, quantities), delegates
+to the appropriate experts, and coordinates the overall operation without
+being a UI or persistence class itself. This matches GRASP's "use-case
+controller" variant and keeps `MainMenu` free of business logic.
+
+### Low Coupling — Not a Violation
+
+`SaleService` depends on six collaborator types (`SaleDAO`, `ProductDAO`,
+`AccessoryDAO`, `PromotionService`, `WarrantyService`, `PersonService`),
+all of which are necessary to perform the "register sale" use case — none
+is an incidental or avoidable dependency. Notably, `WarrantyService` is
+injected via a setter (`setWarrantyService`) instead of the constructor,
+specifically to break a circular dependency with `WarrantyRepository`
+(which itself depends on `SaleService`). This is evidence of deliberate,
+well-managed coupling rather than accidental coupling.
+
+### High Cohesion — Violation (V-03)
+
+**V-03 — `registerSale` concentrates too many responsibilities in one
+method**
+- **Pattern:** High Cohesion
+- **Module:** `SaleService.registerSale(saleId, date, customerId,
+  sellerId, productQuantities, productIdsWithExtendedWarranty)`
+- **Evidence:** In a single method body, `registerSale` (1) resolves the
+  customer and seller, (2) resolves and validates stock for every product
+  and accessory id, (3) runs `SaleValidator.validateSaleData`, (4) builds
+  the `Sale` and adds its items, (5) finds and applies the best
+  `Promotion`, (6) assigns basic/extended warranties and sums their cost,
+  (7) adds that cost to the sale, (8) updates product/accessory stock,
+  and (9) persists the sale and updates the customer's purchase history —
+  nine distinct steps in one method.
+- **Explanation:** High Cohesion asks that a unit's responsibilities be
+  strongly related and limited in number. While all nine steps belong to
+  the same use case, packing all of them into a single method makes the
+  method's responsibility too broad: it mixes orchestration of six
+  different collaborators and read poorly as "one thing the method does."
+- **Consequence:** The method is harder to read, test in isolation (each
+  step cannot be unit-tested on its own), and extend — adding a new step
+  to the sale workflow (e.g. a loyalty-points calculation) means editing
+  an already large method rather than composing a new step.
+- **Proposed solution:** Extract each logical step into a small private
+  helper method within `SaleService` (e.g. `resolveParties`,
+  `resolveSaleItems`, `applyBestPromotion`, `assignWarranties`), and have
+  `registerSale` read as a short sequence of calls to those helpers. This
+  keeps the same public behavior and signature while raising the
+  method-level cohesion.
+- **Other member's code involved:** No — entirely within
+  `SaleService.java`.
+
+### Polymorphism — Violation (V-04)
+
+**V-04 — Explicit `instanceof Console` check to decide warranty
+assignment**
+- **Pattern:** Polymorphism
+- **Module:** `SaleService.registerSale`, the warranty-assignment step
+  (iterates the sale's products and checks whether each one is a
+  `Console` before assigning a warranty through `WarrantyService`)
+- **Evidence:** The warranty-assignment logic branches explicitly on the
+  product's concrete type (`Console` vs. other `Product` subtypes) instead
+  of asking the product itself whether it requires a warranty.
+- **Explanation:** Polymorphism states that when behavior varies by type,
+  that variation should be handled by polymorphic methods on the type
+  hierarchy, not by explicit type-checking conditionals in a client class.
+  Here, `SaleService` needs to know about the existence and behavior of
+  the `Console` subtype directly.
+- **Consequence:** Every time a new product type that also needs
+  warranties is introduced (or an existing type's warranty eligibility
+  changes), `SaleService` itself has to be modified, instead of the change
+  being isolated to the `Product` hierarchy. This also makes `SaleService`
+  depend on a concrete subtype (`Console`) rather than only on the
+  `Product` abstraction, weakening the abstraction boundary with
+  Developer 1's class hierarchy.
+- **Proposed solution:** Add a method such as `requiresWarranty()` (or
+  `isWarrantyEligible()`) to `Product`, overridden to return `true` in
+  `Console` and `false` elsewhere (or, if other product types later need
+  this, overridden per subtype). `SaleService` would then call
+  `product.requiresWarranty()` instead of checking `instanceof Console`.
+- **Other member's code involved:** **Yes.** `Product` and `Console` are
+  part of Developer 1's audit scope (per `TEAM.md`), so this fix requires
+  Developer 1's class hierarchy to add the new method. I will flag this to
+  them so it is coordinated, but the call site being corrected
+  (`SaleService`) is my own responsibility.
+
+### Pure Fabrication — Not Applicable
+
+`SaleService` is itself a Pure Fabrication (a service-layer class with no
+direct real-world counterpart), which is appropriate and already covered
+under Controller/Low Coupling above; there is no separate violation to
+report here.
+
+### Indirection — Not a Violation
+
+`SaleService` mediates between `MainMenu` and the lower layers
+(`SaleDAO`, `ProductDAO`, `AccessoryDAO`, `PromotionService`,
+`WarrantyService`, `PersonService`), so `MainMenu` never talks to
+persistence or other services directly for sale-related operations. This
+is a correct use of Indirection.
+
+### Protected Variations — Not a Violation
+
+Callers of `SaleService` depend only on its public method signatures and
+on the typed exception hierarchy (`ResourceNotFoundException`,
+`BusinessRuleException`, `InvalidDataException`), not on the internal
+details of how promotions or warranties are computed. Changes to those
+internals do not ripple out to `MainMenu`.
