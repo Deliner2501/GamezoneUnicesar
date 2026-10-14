@@ -493,4 +493,97 @@ instead of the project's typed exception hierarchy**
   `AccessoryService.java`.
 
 
+---
+
+## 6. `PromotionDAO.java`
+
+### Information Expert — Not a Violation
+
+`PromotionDAO` holds the file path and the CSV format for the three
+promotion subtypes, so it is the right expert to perform saving and
+loading.
+
+### Creator — Not a Violation
+
+`parseLine` creates `PercentageDiscount`/`CategoryDiscount`/
+`BulkPurchaseDiscount` instances from the exact fields it just parsed,
+matching Creator's criteria.
+
+### Controller — Not Applicable
+
+`PromotionDAO` is a persistence-layer class, not a use-case entry point.
+
+### Low Coupling — Not a Violation
+
+`PromotionDAO` depends on `Promotion` and its three subtypes, all
+necessary to read and write the CSV format correctly.
+
+### High Cohesion — Not a Violation
+
+`saveAll`, `loadAll` and `parseLine` are all about one responsibility:
+reading and writing promotion records.
+
+### Polymorphism — Violation (V-08, same root cause as V-03)
+
+**V-08 — `saveAll()` uses `instanceof` checks instead of polymorphic
+serialization**
+- **Pattern:** Polymorphism
+- **Module:** `PromotionDAO.saveAll(List<Promotion>)`
+- **Evidence:** `if (p instanceof PercentageDiscount) {...} else if (p
+  instanceof CategoryDiscount) {...} else if (p instanceof
+  BulkPurchaseDiscount) {...}`, each branch manually building the CSV
+  line.
+- **Explanation:** Same issue as V-03 in `AccessoryDAO`: `saveAll`
+  already has a real `Promotion` object, so subtype-specific formatting
+  should be handled by a polymorphic method on the hierarchy rather than
+  a type-check conditional in the DAO.
+- **Consequence:** Every new promotion type requires another
+  `instanceof` branch here, and `PromotionDAO` must know every subtype's
+  internal fields instead of depending only on `Promotion`.
+- **Proposed solution:** Add a `toCsvLine()` method to `Promotion`
+  (abstract), overridden by each subtype, so `saveAll` just calls
+  `p.toCsvLine()` for every promotion.
+- **Other member's code involved:** **Yes.** `Promotion`,
+  `PercentageDiscount`, `CategoryDiscount` and `BulkPurchaseDiscount`
+  belong to Developer 1's scope; the call site in
+  `PromotionDAO.saveAll` is my own responsibility.
+
+As with V-03, `parseLine`'s type-string check is not flagged — no
+`Promotion` object exists yet to dispatch on when parsing raw text.
+
+### Pure Fabrication — Not a Violation
+
+`PromotionDAO` has no direct real-world counterpart; it exists purely to
+keep file I/O out of the domain and service layers.
+
+### Indirection — Not a Violation
+
+`PromotionDAO` mediates between the `Promotion` hierarchy and the file
+system, so `PromotionService` never touches file I/O directly.
+
+### Protected Variations — Violation (V-09, same root cause as V-04)
+
+**V-09 — `PromotionDAO` silently swallows `IOException` instead of using
+the project's exception hierarchy**
+- **Pattern:** Protected Variations
+- **Module:** `saveAll()`'s `catch (IOException e)`, and `loadAll()`'s
+  inner per-line `catch (Exception e)` and outer `catch (IOException e)`.
+- **Evidence:** `catch (IOException e) { System.out.println("Error
+  saving promotions: " + e.getMessage()); }`, with no exception
+  propagated.
+- **Explanation:** Same gap as V-04: `ProductDAO`/`PersonDAO`/`SaleDAO`
+  wrap `IOException` as `PersistenceException` since Requirement 6,
+  giving every caller one stable, typed contract. `PromotionDAO` was not
+  included in that migration and still fails silently.
+- **Consequence:** `PromotionService`/`MainMenu` cannot detect a
+  persistence failure for promotions; a save or load error is invisible
+  to the rest of the system.
+- **Proposed solution:** Apply the same pattern as `ProductDAO`: wrap
+  each `catch (IOException e)` to throw
+  `new PersistenceException("...", e)` with file path and operation
+  context.
+- **Other member's code involved:** No — entirely within
+  `PromotionDAO.java`.
+
+
 
