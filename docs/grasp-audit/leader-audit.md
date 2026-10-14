@@ -469,3 +469,168 @@ and the service layer.
 causes. This correctly shields the UI from needing to know about every
 possible internal failure mode, and a new exception subtype added later
 would still be caught by the generic handler without changing `MainMenu`.
+
+---
+
+## 5. `Main.java`
+
+`Main` is the application's composition root: it builds every DAO and
+service, wires their dependencies (including the `setWarrantyService`
+setter-injection that breaks the `SaleService`/`WarrantyRepository`
+circular dependency), and starts `MainMenu` via
+`SwingUtilities.invokeLater`.
+
+### Information Expert — Not Applicable
+`Main` holds no business data; it only assembles other objects.
+
+### Creator — Not a Violation
+`Main` is the single place responsible for creating the full object graph
+(DAOs → services → `MainMenu`). Centralizing this in one composition-root
+class is the expected, standard way to wire a layered application without
+a DI framework, and keeps every other class free of construction logic
+for its own dependencies.
+
+### Controller — Not Applicable
+`Main.main()` is the application entry point, not a use-case controller.
+
+### Low Coupling — Not a Violation
+`Main` necessarily references nearly every class in the system, but this
+is intrinsic to its one and only responsibility (wiring); no other class
+in the project is coupled to this many types.
+
+### High Cohesion — Not a Violation
+`main()` does exactly one thing: build the dependency graph and launch the
+UI. There is no unrelated logic mixed in.
+
+### Polymorphism — Not Applicable
+No type-varying behavior is present.
+
+### Pure Fabrication — Not a Violation
+`Main` is itself a Pure Fabrication (a composition root with no real-world
+counterpart), and this is the correct, intentional use of the pattern to
+keep construction logic out of every domain/service/UI class.
+
+### Indirection — Not Applicable
+`Main` runs once at startup; it is not a runtime mediator between two
+other components.
+
+### Protected Variations — Not a Violation
+`Main` catches the single checked exception its DAO constructors declare
+(`IOException`) and shows a generic fatal-error dialog via `JOptionPane`,
+without depending on any DAO's internal failure details.
+
+**Conclusion: no violations found in `Main.java`.**
+
+---
+
+## 6. `ProductService.restoreStock(String productId, int quantity)`
+
+Scope note: only this method is mine to audit; the rest of
+`ProductService` belongs to Developer 1 per `TEAM.md`.
+
+```java
+public void restoreStock(String productId, int quantity) {
+    Product product = productDAO.findById(productId);
+    ProductValidator.validateProductExists(product, productId);
+    product.increaseStock(quantity);
+    productDAO.update(product);
+}
+```
+
+### Information Expert — Not a Violation
+Stock is actually changed by `product.increaseStock(quantity)` — the
+`Product` itself, which owns the stock field, performs the mutation.
+`ProductService` only coordinates: fetch, validate, delegate, persist.
+
+### Creator — Not Applicable
+No object is created in this method.
+
+### Controller — Not a Violation
+`restoreStock` is a reasonable, small service-layer operation for the
+"restore stock after a return" step of the Returns use case.
+
+### Low Coupling — Not a Violation
+Depends only on `productDAO` and `ProductValidator`, both necessary and
+already used consistently elsewhere in the class.
+
+### High Cohesion — Not a Violation
+The method does one thing (restore a product's stock) in four short,
+related steps.
+
+### Polymorphism — Not Applicable
+No type-based branching.
+
+### Pure Fabrication — Not Applicable
+Not relevant to a single method's audit; `ProductService` as a whole is
+Developer 1's scope.
+
+### Indirection — Not a Violation
+Mediates between the Returns workflow (`ReturnRepository`/`ReturnService`)
+and `ProductDAO`, so the returns flow never touches persistence directly
+for this operation.
+
+### Protected Variations — Not a Violation
+Uses `ProductValidator.validateProductExists`, consistent with the
+typed-validation pattern already established (Req 6) across the codebase,
+instead of an ad hoc null check.
+
+**Conclusion: no violations found in `ProductService.restoreStock`.**
+
+---
+
+## Coverage Summary
+
+| Module                              | Patterns audited | Violations found |
+|--------------------------------------|:-----------------:|:-----------------:|
+| `Sale.java`                          | 9/9                | 1 (V-01)           |
+| `SaleDAO.java`                       | 9/9                | 1 (V-02)           |
+| `SaleService.java`                   | 9/9                | 2 (V-03, V-04)     |
+| `MainMenu.java`                      | 9/9                | 3 (V-05, V-06, V-07)|
+| `Main.java`                          | 9/9                | 0                  |
+| `ProductService.restoreStock`        | 9/9                | 0                  |
+| **Total**                            | **—**              | **7**              |
+
+## Verdict Table by GRASP Pattern (Leader's scope only)
+
+| Pattern              | `Sale` | `SaleDAO` | `SaleService` | `MainMenu` | `Main` | `restoreStock` |
+|-----------------------|:------:|:---------:|:-------------:|:----------:|:------:|:---------------:|
+| Information Expert     | Correct | Correct | Correct | Correct | N/A | Correct |
+| Creator                | N/A | Correct | Correct | **Violation (V-05)** | Correct | N/A |
+| Controller              | N/A | N/A | Correct | Correct | N/A | Correct |
+| Low Coupling            | Correct | Correct | Correct | Correct | Correct | Correct |
+| High Cohesion           | Correct | Correct | **Violation (V-03)** | **Violation (V-06)** | Correct | Correct |
+| Polymorphism            | N/A | N/A | **Violation (V-04)** | **Violation (V-07)** | N/A | N/A |
+| Pure Fabrication        | Correct (class-level); Violation at method-level, see V-01 | Correct | N/A | N/A | Correct | N/A |
+| Indirection              | N/A | Correct | Correct | Correct | N/A | Correct |
+| Protected Variations     | **Violation (V-01)** | **Violation (V-02)** | Correct | Correct | Correct | Correct |
+
+## Violations Requiring Another Member's Code
+
+Per the audit above, 3 of the 7 violations found in my scope cannot be
+fully corrected without a change in Developer 1's code:
+
+| ID   | Module (mine)     | Needs change in            | Owner        |
+|------|--------------------|------------------------------|--------------|
+| V-04 | `SaleService`       | `Product`/`Console` (add `requiresWarranty()`) | Developer 1 |
+| V-05 | `MainMenu`          | `ProductService` (add factory-style registration methods) | Developer 1 |
+| V-07 | `MainMenu`          | `Product`/`Console` (same method as V-04) | Developer 1 |
+
+These three are flagged for the consolidated audit's "frontier findings"
+section, to be coordinated with Developer 1 before Phase 2 correction
+starts on my side.
+
+## Out-of-Scope Functional Defects
+
+| Found in       | Description                                                                 |
+|------------------|-------------------------------------------------------------------------------|
+| `SaleDAO.fromLine` | Resolves sale items only via `ProductDAO`, with no `AccessoryDAO` fallback. A sale containing an accessory silently loses that item when reloaded from `data/sales.txt`. Not corrected here because fixing it changes observable behavior, which is out of scope for a zero-behavior-change GRASP refactor. |
+
+## Summary
+
+My audit covers 5 classes and 1 method (`Sale`, `SaleDAO`, `SaleService`,
+`MainMenu`, `Main`, `ProductService.restoreStock`), all 9 GRASP patterns
+applied to each. I found **7 violations** (V-01 through V-07) and **1
+out-of-scope functional defect**. `Main.java` and
+`ProductService.restoreStock` had no violations. 3 of the 7 violations
+require coordinated changes in Developer 1's code and are flagged above
+for the team's consolidated audit.
