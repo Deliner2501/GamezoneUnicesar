@@ -689,4 +689,120 @@ instead of the project's typed exception hierarchy**
   `PromotionService.java`.
 
 
+---
+
+## 8. `ReturnRepository.java`
+
+### Information Expert — Not a Violation
+
+`ReturnRepository` holds the file path, separators and serialization
+format (`toLine`/`fromLine`), so it is the right expert to perform
+saving and loading of `Return` data.
+
+### Creator — Not a Violation
+
+`fromLine` creates `Return` instances from the data it resolves and
+parses itself, matching Creator's criteria.
+
+### Controller — Not Applicable
+
+`ReturnRepository` is a persistence-layer class, not a use-case entry
+point.
+
+### Low Coupling — Violation (V-12)
+
+**V-12 — `ReturnRepository` (persistence layer) depends directly on
+three service-layer classes, inverting the project's required layering**
+- **Pattern:** Low Coupling
+- **Module:** `ReturnRepository`'s constructor and fields:
+  `SaleService saleService`, `ProductService productService`,
+  `AccessoryService accessoryService`.
+- **Evidence:** `fromLine(String)` calls `saleService.findSaleById(saleId)`,
+  `productService.findProductById(productId)` and
+  `accessoryService.findById(productId)` to resolve references while
+  deserializing a return.
+- **Explanation:** The project's own architecture rule (section 6 of the
+  requirement, `ui → service → persistence → model`) requires the
+  persistence layer to depend only downward, toward the model — never
+  upward into the service layer. `ReturnRepository` depends on three
+  service classes instead, the exact circular-dependency shape that was
+  already identified and fixed for `WarrantyRepository` (ajuste A2,
+  `fix/warranty-circular-dependency`) by introducing a raw, id-only
+  `WarrantyRecord` DTO and moving resolution logic into `WarrantyService`.
+  `ReturnRepository` was never updated to follow the same fix.
+- **Consequence:** `ReturnRepository` cannot be instantiated or tested
+  without also wiring up `SaleService`, `ProductService` and
+  `AccessoryService`, coupling a low-level persistence class to the
+  entire service graph. It also creates the same risk of a circular
+  dependency the A2 fix was meant to eliminate project-wide (here,
+  `ReturnService` depends on `ReturnRepository`, which depends back on
+  `SaleService`/`ProductService`/`AccessoryService`).
+- **Proposed solution:** Apply the same DTO pattern used for
+  `WarrantyRecord`: `ReturnRepository` persists and loads a raw
+  `ReturnRecord` (id, date, sale id, product ids, reason, refund amount,
+  warranty refund — no resolved objects), and `ReturnService` — which
+  already depends on `SaleService`/`ProductService`/`AccessoryService` —
+  performs the resolution into real `Sale`/`Product`/`Accessory`
+  references.
+- **Other member's code involved:** No — `SaleService`, `ProductService`
+  and `AccessoryService` are only consumed here, not modified; moving the
+  resolution logic into `ReturnService` is entirely within my own scope.
+
+### High Cohesion — Not a Violation
+
+`saveAll`, `loadAll`, `toLine` and `fromLine` are all about persisting
+`Return` records; the resolution calls inside `fromLine` are a direct
+symptom of **V-12** rather than a separate cohesion problem — once the
+DTO fix is applied, `fromLine` will only parse raw fields.
+
+### Polymorphism — Not Applicable
+
+`fromLine`'s sequential lookup (`productService.findProductById`, then
+`accessoryService.findById`) reflects that products and accessories are
+persisted in two separate stores, not a type-check that should instead
+be polymorphic dispatch; this mirrors the same accepted pattern already
+used in `SaleService.registerSale`.
+
+### Pure Fabrication — Not a Violation
+
+`ReturnRepository` has no direct real-world counterpart; it exists
+purely to keep file I/O out of the domain and service layers. Its
+*dependencies* are the problem (V-12), not its role as a Pure
+Fabrication.
+
+### Indirection — Not a Violation
+
+Aside from V-12's layering issue, `ReturnRepository` otherwise correctly
+mediates between the `Return` model and the file system.
+
+### Protected Variations — Violation (V-13)
+
+**V-13 — `fromLine()` silently skips unresolvable returns via
+`System.out.println` instead of a typed exception**
+- **Pattern:** Protected Variations
+- **Module:** `fromLine(String)`, both early returns:
+  `System.out.println("Skipping return " + id + ": original sale not
+  found"); return null;` and the equivalent for unresolved products.
+- **Evidence:** Neither case raises any exception; the caller
+  (`loadAll`) simply does not add that return to the list, with no
+  signal that data was lost.
+- **Explanation:** This failure mode is partly a direct consequence of
+  V-12: resolution can fail here specifically because
+  `ReturnRepository` depends on services that may not be fully
+  initialized yet. Regardless of cause, silently dropping a persisted
+  record is exactly the kind of outcome the project's `PersistenceException`
+  hierarchy was introduced to make visible instead of hidden.
+- **Consequence:** A return record that fails to resolve (e.g. due to a
+  data inconsistency) disappears from `viewAllReturns()` and from the
+  monthly balance calculation with no trace, which is especially risky
+  given `ReturnService.calculateMonthlyReturns` relies on `loadAll()`
+  returning every persisted return.
+- **Proposed solution:** Once V-12's `ReturnRecord` DTO is in place,
+  `fromLine` only parses raw fields and cannot fail to resolve anything
+  (resolution moves to `ReturnService`); any remaining parse failure
+  should then be surfaced as `PersistenceException` rather than printed.
+- **Other member's code involved:** No — entirely within
+  `ReturnRepository.java`.
+
+
 
