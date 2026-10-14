@@ -232,3 +232,64 @@ That error appears the first time you push a new branch to GitHub, because there
 | Decision | Accepted as proposed. |
 | Related commit | refactor: wrap IOException as PersistenceException in SaleDAO |
 
+
+
+## Requirement 7 - GRASP Audit
+
+### Phase 1 - Audit
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit the Person/Customer/Seller hierarchy, PersonDAO and PersonService against the nine GRASP patterns. |
+| Query | Asked for a pattern-by-pattern review of my own Requirement 1/Workshop 1 people classes, following the same format the Líder Técnico used in leader-audit.md (one section per class, nine pattern subsections each, explicit violations with evidence/explanation/consequence/proposed solution). |
+| Response | Found two violations: Customer.getPurchaseHistory() returns the live mutable list instead of an unmodifiable view (Protected Variations); PersonDAO/PersonService still declare throws IOException even though the checked exception is fully wrapped as PersistenceException internally since Requirement 6, misstating the real failure contract (Protected Variations). Everything else (Information Expert, Creator, Controller, Low/High Cohesion, Polymorphism, Pure Fabrication, Indirection) was judged correctly applied or not applicable, with justification for each verdict. |
+| Decision | Accepted both findings as documented; flagged the dead throws IOException issue as needing coordination with the Líder Técnico's MainMenu catch blocks. |
+| Related commit | docs: add Person/Customer/Seller hierarchy GRASP audit findings; docs: add PersonDAO GRASP audit findings; docs: add PersonService GRASP audit findings |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit AccessoryDAO and AccessoryService against the nine GRASP patterns. |
+| Query | Same audit format as above, applied to the accessories module, which (unlike Product/Person/Sale) was never refactored during Requirement 6. |
+| Response | Found four violations: AccessoryDAO.writeAll() and AccessoryService.matchesType() use instanceof/type-string checks instead of polymorphic dispatch (Polymorphism); AccessoryDAO silently swallows IOException via System.out.println instead of wrapping it as PersistenceException (Protected Variations); AccessoryService keeps validation as a private method instead of a dedicated AccessoryValidator, unlike every other domain in the project (Pure Fabrication); AccessoryService throws raw IllegalArgumentException instead of the typed GameZoneException hierarchy (Protected Variations). |
+| Decision | Accepted all four findings; noted two (the instanceof checks) require a type-discriminator method added to the Accessory hierarchy, which is Developer 1's scope and needs coordination. |
+| Related commit | docs: add AccessoryDAO GRASP audit findings; docs: add AccessoryService GRASP audit findings |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit PromotionDAO and PromotionService against the nine GRASP patterns. |
+| Query | Same audit format, applied to the promotions module, also untouched by Requirement 6. |
+| Response | Found the same shape of violations as accessories, by the same root causes: instanceof checks in PromotionDAO.saveAll() instead of polymorphic serialization (Polymorphism); silently swallowed IOException (Protected Variations); validation logic as private methods instead of a PromotionValidator (Pure Fabrication); raw IllegalArgumentException instead of the typed hierarchy (Protected Variations). Also confirmed findBestPromotionFor() correctly uses polymorphism (calculateDiscount/isActive) with no violation. |
+| Decision | Accepted all findings; noted the parallel structure with the Accessory findings so the Líder can consolidate them as a recurring pattern across both modules if useful. |
+| Related commit | docs: add PromotionDAO GRASP audit findings; docs: add PromotionService GRASP audit findings |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit ReturnRepository and ReturnService (including the monthly balance methods) against the nine GRASP patterns. |
+| Query | Same audit format, applied to the returns module. Specifically asked whether ReturnRepository's dependency on SaleService/ProductService/AccessoryService was a Low Coupling problem, given the project's layering rule and the precedent set by the WarrantyRepository/A2 fix. |
+| Response | Confirmed it is a real violation: ReturnRepository (persistence layer) depends on three service-layer classes, inverting the required ui→service→persistence→model direction — the same shape already fixed for WarrantyRepository via the WarrantyRecord DTO in ajuste A2, never applied here. Proposed the same fix (a ReturnRecord DTO, resolution logic moved to ReturnService). Also found: silent println-based record skipping (Protected Variations); registerReturn concentrating nine responsibilities in one method, mirroring the Líder's SaleService finding (High Cohesion); instanceof Console/Accessory checks for warranty cancellation and stock routing (Polymorphism); raw IllegalArgumentException throughout (Protected Variations). The monthly balance methods were judged correctly placed and not a separate violation. |
+| Decision | Accepted all findings, including the Low Coupling one as the most significant finding of my audit. |
+| Related commit | docs: add ReturnRepository GRASP audit findings; docs: add ReturnService GRASP audit findings; docs: add monthly balance methods GRASP audit findings |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit WarrantyRepository and WarrantyService against the nine GRASP patterns. |
+| Query | Same audit format, applied to the warranty module, which was already partially fixed by ajuste A2. Asked whether the A2 fix resolved all GRASP concerns or only the circular-dependency one. |
+| Response | Confirmed Low Coupling and Indirection are now correctly applied (the DTO pattern works as intended), and High Cohesion/Polymorphism are also correct (no oversized methods, no instanceof on Warranty subtypes — getAdditionalCost/isActive are called polymorphically). Found two remaining, smaller violations: WarrantyRepository.toLine() still uses instanceof instead of Warranty.getWarrantyType() (Polymorphism); WarrantyRepository propagates raw IOException and WarrantyService uses raw IllegalArgumentException plus silent println skips, the same unmigrated-exception pattern found elsewhere (Protected Variations). |
+| Decision | Accepted both findings; noted this module needed the fewest fixes of all five, as expected given the prior A2 work. |
+| Related commit | docs: add WarrantyRepository GRASP audit findings; docs: add WarrantyService GRASP audit findings |
+
