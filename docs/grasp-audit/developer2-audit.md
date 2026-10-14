@@ -950,6 +950,56 @@ of the project's typed exception hierarchy**
   `ReturnService.java`.
 
 
+### Monthly balance methods — `calculateMonthlySales`, `calculateMonthlyReturns`, `generateMonthlyBalance`
+
+**Information Expert — Not a Violation**
+
+`calculateMonthlySales` asks `saleService.listSales()` for the data it
+needs (it does not reach into `SaleDAO` or re-implement sale listing),
+and `calculateMonthlyReturns` uses the `returnRepository` it already
+owns. `generateMonthlyBalance` simply combines the two totals it
+receives from its own two methods — it does not duplicate either
+calculation. This is the class best positioned to compute a
+sales-minus-returns balance, since it is the only one with direct access
+to both return data and (via `SaleService`) sale data for the same
+period.
+
+**Creator — Not Applicable**
+
+These methods compute a numeric total; they do not create any domain
+object.
+
+**Controller — Not a Violation**
+
+`generateMonthlyBalance` is the entry point `MainMenu` calls for the
+"monthly balance" use case, consistent with `ReturnService`'s existing
+role as the controller for return-related operations.
+
+**Low Coupling — Not a Violation**
+
+No new dependency is introduced beyond `SaleService` and
+`returnRepository`, both already used elsewhere in the class.
+
+**High Cohesion — Not a Violation**
+
+Placing sales-vs-returns balance logic in `ReturnService`, rather than
+in `SaleService`, is intentional: a "balance" is a returns-specific
+report (sales minus the returns that reduce them), so it belongs with
+the module that owns the "return" concept, not with plain sales
+listing.
+
+**Polymorphism / Pure Fabrication / Indirection — Not Applicable**
+
+These methods do no type-based branching, are not artificial classes,
+and do not mediate between two other components.
+
+**Protected Variations — Not a separate violation (same root cause as V-16)**
+
+All three methods declare `throws IOException`, the same unwrapped,
+inconsistent exception contract already flagged in **V-16** for the rest
+of `ReturnService`; it is not re-documented as a separate finding here.
+
+
 ---
 
 ## 10. `WarrantyRepository.java`
