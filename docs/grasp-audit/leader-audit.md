@@ -469,3 +469,109 @@ and the service layer.
 causes. This correctly shields the UI from needing to know about every
 possible internal failure mode, and a new exception subtype added later
 would still be caught by the generic handler without changing `MainMenu`.
+
+---
+
+## 5. `Main.java`
+
+`Main` is the application's composition root: it builds every DAO and
+service, wires their dependencies (including the `setWarrantyService`
+setter-injection that breaks the `SaleService`/`WarrantyRepository`
+circular dependency), and starts `MainMenu` via
+`SwingUtilities.invokeLater`.
+
+### Information Expert — Not Applicable
+`Main` holds no business data; it only assembles other objects.
+
+### Creator — Not a Violation
+`Main` is the single place responsible for creating the full object graph
+(DAOs → services → `MainMenu`). Centralizing this in one composition-root
+class is the expected, standard way to wire a layered application without
+a DI framework, and keeps every other class free of construction logic
+for its own dependencies.
+
+### Controller — Not Applicable
+`Main.main()` is the application entry point, not a use-case controller.
+
+### Low Coupling — Not a Violation
+`Main` necessarily references nearly every class in the system, but this
+is intrinsic to its one and only responsibility (wiring); no other class
+in the project is coupled to this many types.
+
+### High Cohesion — Not a Violation
+`main()` does exactly one thing: build the dependency graph and launch the
+UI. There is no unrelated logic mixed in.
+
+### Polymorphism — Not Applicable
+No type-varying behavior is present.
+
+### Pure Fabrication — Not a Violation
+`Main` is itself a Pure Fabrication (a composition root with no real-world
+counterpart), and this is the correct, intentional use of the pattern to
+keep construction logic out of every domain/service/UI class.
+
+### Indirection — Not Applicable
+`Main` runs once at startup; it is not a runtime mediator between two
+other components.
+
+### Protected Variations — Not a Violation
+`Main` catches the single checked exception its DAO constructors declare
+(`IOException`) and shows a generic fatal-error dialog via `JOptionPane`,
+without depending on any DAO's internal failure details.
+
+**Conclusion: no violations found in `Main.java`.**
+
+---
+
+## 6. `ProductService.restoreStock(String productId, int quantity)`
+
+Scope note: only this method is mine to audit; the rest of
+`ProductService` belongs to Developer 1 per `TEAM.md`.
+
+```java
+public void restoreStock(String productId, int quantity) {
+    Product product = productDAO.findById(productId);
+    ProductValidator.validateProductExists(product, productId);
+    product.increaseStock(quantity);
+    productDAO.update(product);
+}
+```
+
+### Information Expert — Not a Violation
+Stock is actually changed by `product.increaseStock(quantity)` — the
+`Product` itself, which owns the stock field, performs the mutation.
+`ProductService` only coordinates: fetch, validate, delegate, persist.
+
+### Creator — Not Applicable
+No object is created in this method.
+
+### Controller — Not a Violation
+`restoreStock` is a reasonable, small service-layer operation for the
+"restore stock after a return" step of the Returns use case.
+
+### Low Coupling — Not a Violation
+Depends only on `productDAO` and `ProductValidator`, both necessary and
+already used consistently elsewhere in the class.
+
+### High Cohesion — Not a Violation
+The method does one thing (restore a product's stock) in four short,
+related steps.
+
+### Polymorphism — Not Applicable
+No type-based branching.
+
+### Pure Fabrication — Not Applicable
+Not relevant to a single method's audit; `ProductService` as a whole is
+Developer 1's scope.
+
+### Indirection — Not a Violation
+Mediates between the Returns workflow (`ReturnRepository`/`ReturnService`)
+and `ProductDAO`, so the returns flow never touches persistence directly
+for this operation.
+
+### Protected Variations — Not a Violation
+Uses `ProductValidator.validateProductExists`, consistent with the
+typed-validation pattern already established (Req 6) across the codebase,
+instead of an ad hoc null check.
+
+**Conclusion: no violations found in `ProductService.restoreStock`.**
