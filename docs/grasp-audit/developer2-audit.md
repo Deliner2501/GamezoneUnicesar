@@ -181,4 +181,80 @@ contract**
   changes are coordinated together.
 
 
+---
+
+## 3. `PersonService.java`
+
+### Information Expert — Not a Violation
+
+`PersonService` does not duplicate information it is not entitled to: it
+only operates on its own `customers`/`sellers` lists (loaded once via
+`PersonDAO`) and delegates data validation to `PersonValidator`, which
+owns the validation rules.
+
+### Creator — Not a Violation
+
+`registerCustomer` creates the `Customer` instance after gathering and
+validating the exact data needed to initialize it (`name`, `id`,
+`phone`, `email`) from its own parameters, and immediately records it in
+the list it owns (`customers.add(newCustomer)`). This matches Creator's
+criteria: the class that aggregates and records the object is a
+reasonable place to create it.
+
+### Controller — Not a Violation
+
+`PersonService` acts as the use-case controller for "register a
+customer" and for the person-lookup queries (`findCustomerById`,
+`findSellerById`, `listCustomers`, `listSellers`), receiving requests
+from `MainMenu` and coordinating `PersonValidator`/`PersonDAO` without
+being a UI or persistence class itself.
+
+### Low Coupling — Not a Violation
+
+`PersonService` depends only on `PersonDAO` and `PersonValidator`, both
+necessary and directly required to register and validate people. No
+dependency on unrelated services or on persistence details beyond the
+DAO.
+
+### High Cohesion — Not a Violation
+
+Every method in `PersonService` (`registerCustomer`, `listCustomers`,
+`listSellers`, `findCustomerById`, `findSellerById`) is about managing
+customers and sellers — the two subtypes of the same `Person` hierarchy
+the Taller groups together as one module. No unrelated responsibility is
+present.
+
+### Polymorphism — Not Applicable
+
+`PersonService` has no behavior that branches on the concrete type of a
+`Person`; `Customer` and `Seller` are handled through separate,
+explicitly-typed methods rather than a shared polymorphic call that
+would need to vary by type.
+
+### Pure Fabrication — Not Applicable
+
+`PersonService` is itself a Pure Fabrication (a service-layer class with
+no direct real-world counterpart), which is appropriate and already
+covered under Controller/Low Coupling above; there is no separate
+violation to report.
+
+### Indirection — Not a Violation
+
+`PersonService` mediates between `MainMenu` and `PersonDAO`, so
+`MainMenu` never touches file persistence directly for person-related
+operations.
+
+### Protected Variations — Violation (continues V-02)
+
+`registerCustomer(String, String, String, String)` still declares
+`throws IOException`, purely because it calls `personDAO.saveCustomers`,
+which carries the same dead declaration described in **V-02** above. The
+cause, evidence and consequence are identical — this method cannot
+actually throw a checked `IOException` either, since the only internal
+source of it (`PersonDAO`) already wraps it as `PersistenceException`.
+Removing `throws IOException` from `PersonDAO` (V-02's proposed
+solution) must be applied here too, since this signature only exists to
+satisfy the one below it.
+
+
 
