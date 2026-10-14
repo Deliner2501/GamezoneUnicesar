@@ -93,4 +93,92 @@ components.
 - **Other member's code involved:** No — entirely within my own scope
   (`Customer.java`).
 
+---
+
+## 2. `PersonDAO.java`
+
+### Information Expert — Not a Violation
+
+`PersonDAO` holds the file paths and field separators for both customers
+and sellers, so it is the right expert to perform saving and loading for
+both. No other class has this information.
+
+### Creator — Not a Violation
+
+`loadCustomers()` and `loadSellers()` create `Customer`/`Seller`
+instances from the exact data they just parsed from each line. Per
+Creator's criteria, the class holding the initializing data is a
+reasonable place to create the object.
+
+### Controller — Not Applicable
+
+`PersonDAO` is a persistence-layer class, not a use-case entry point.
+
+### Low Coupling — Not a Violation
+
+`PersonDAO` depends only on `Customer`, `Seller` and the project's own
+exception types — all necessary for its persistence responsibility. It
+has no dependency on the service or UI layers.
+
+### High Cohesion — Not a Violation
+
+All four public methods (`saveCustomers`, `loadCustomers`, `saveSellers`,
+`loadSellers`) are about one responsibility: reading and writing people
+data to text files. Nothing unrelated is mixed in.
+
+### Polymorphism — Not Applicable
+
+`PersonDAO` has no behavior that varies by the concrete type of a
+`Person`; it handles `Customer` and `Seller` through separate, explicit
+methods rather than branching on type, so there is no conditional to
+replace with polymorphism.
+
+### Pure Fabrication — Not a Violation
+
+`PersonDAO` has no direct real-world counterpart; it exists purely to
+keep file I/O out of the domain classes and out of `PersonService`. This
+is a correct, intentional use of Pure Fabrication.
+
+### Indirection — Not a Violation
+
+`PersonDAO` mediates between the `Person` hierarchy and the file system,
+so `PersonService` never touches file I/O directly.
+
+### Protected Variations — Violation (V-02)
+
+**V-02 — Dead `throws IOException` declarations misstate the real failure
+contract**
+- **Pattern:** Protected Variations
+- **Module:** All four public methods of `PersonDAO`
+  (`saveCustomers`, `loadCustomers`, `saveSellers`, `loadSellers`) still
+  declare `throws IOException` in their signature.
+- **Evidence:** Every `catch (IOException e)` block inside these methods
+  now wraps the exception and throws `PersistenceException` (unchecked)
+  instead of letting `IOException` propagate — e.g. `saveCustomers`:
+  `catch (IOException e) { throw new PersistenceException(...); }`. No
+  statement in any of these method bodies can still throw a checked
+  `IOException` out to the caller.
+- **Explanation:** Protected Variations asks that callers be shielded
+  behind a stable, accurate interface. A `throws IOException` clause
+  that can never actually fire is a stale artifact of the pre-Requirement-6
+  implementation: it advertises a checked-exception contract that no
+  longer reflects what the method can really do, while the real failure
+  mode (`PersistenceException`) is a different, unchecked type that
+  callers must discover by reading the body, not the signature.
+- **Consequence:** `PersonService` and `MainMenu` are still forced to
+  declare/catch `IOException` for calls that can never throw it, adding
+  dead exception-handling code and obscuring the exception type that can
+  actually occur (`PersistenceException`). A developer reading only the
+  method signatures would reasonably — and incorrectly — assume
+  `IOException` is still the real failure mode.
+- **Proposed solution:** Remove `throws IOException` from all four
+  `PersonDAO` methods now that the checked exception is fully wrapped,
+  and propagate that signature change to `PersonService` (see finding
+  below) and to the corresponding `MainMenu` catch blocks.
+- **Other member's code involved:** **Yes.** The matching `MainMenu`
+  catch blocks for these calls are the Líder Técnico's scope
+  (`ConsoleMenu`/`MainMenu` per TEAM.md); I will flag this so the two
+  changes are coordinated together.
+
+
 
