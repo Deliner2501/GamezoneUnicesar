@@ -44,3 +44,29 @@ Retrospective summary covering the most relevant AI-assisted decisions across Re
 
 **2026-09-27 — Claude — Requirement 5, `docs/integration-documentation` (A8).** Objective: produce the integration analysis and the unified class diagram covering all four modules. I asked Claude to write `docs/integration-analysis.md` and `docs/integrated-class-diagram.md` based on the final, already-merged code for A1 through A7, rather than from the original specification alone. Claude reviewed the actual merged classes first and wrote the cause/solution summary and a single Mermaid diagram spanning all four layers and modules from that. I accepted the content with no changes. Reflected in commits `docs: add integration analysis for the A1-A7 adjustments` and `docs: add integrated class diagram for the full system`.
 
+
+# Requirement 7 - Phase 1 (GRASP Audit) - AI usage log
+
+## 1. How should a team split a GRASP audit of an existing codebase among three members?
+**Answer:** Each member audits the code they are responsible for, following the same ownership already used for previous requirements, so the scope is consistent with the project's history instead of reassigned from scratch.
+
+## 2. What should an individual GRASP audit report contain before it can be consolidated?
+**Answer:** A scope section listing exactly what was audited, a verdict per pattern (Violation, Correct, or Not Applicable), and for every violation: an ID, evidence from the actual code, an explanation, a consequence, and a proposed solution.
+
+## 3. As Technical Leader, what is my role in consolidating three individual audits into one?
+**Answer:** Verify that every class in the project was audited by exactly one person, check that each violation has real evidence, merge any findings that appear in more than one report into a single entry, and assign a final responsible person to each one.
+
+## 4. How should orienting questions be split between team members when the assignment isn't fixed by the instructions?
+**Answer:** Split them by who is best placed to answer from their own role — the member who coordinates consolidation and corrections answers the questions about methodology and coordination, and the rest answer the questions tied to their own audit work.
+
+## 5. If a Pull Request workflow deviates from what was planned (for example, everyone committing to one shared branch instead of separate branches), how should that be documented?
+**Answer:** State plainly in the consolidated document what actually happened and why, instead of describing the workflow as if it went as originally planned, so the record stays accurate even if the team accepts the risk of not meeting a specific rule.
+
+## 6. What should happen when one team member's audit finds a problem in another member's code that the responsible person didn't report themselves?
+**Answer:** The finding should still be included in the consolidated audit, credited to whoever found it, and assigned to the person actually responsible for that code to correct in the next phase — it shouldn't be dropped just because it wasn't self-reported.
+
+## 7. How should violations that depend on another member's code be organized before starting corrections?
+**Answer:** Group them separately from independent violations, note exactly what the prerequisite change is and who makes it, and define an order so the dependent fix only happens after the prerequisite change is merged.
+
+## 8. What should be done with a real bug found during an audit that isn't the GRASP pattern violation being looked for?
+**Answer:** Record it separately as an out-of-scope functional defect instead of fixing it, since correcting it would change what the user observes, which goes against the requirement's rule of preserving current behavior.
