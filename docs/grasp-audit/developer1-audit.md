@@ -143,3 +143,22 @@ Two violations were found (V-01 and V-02). The pattern is applied correctly in t
 - `PersistenceException` wraps `IOException` (`ProductDAO`, lines 55 and 111), so the upper layers handle one error category and not a file-system detail.
 - The validators sit between the services and the rules they apply.
 - Limitation: the service depends on the concrete DAO and not on an interface. This weakness is recorded as V-03 under Low Coupling and is not counted twice.
+
+## 9. Protected Variations - Verdict: Violation
+
+### V-07
+
+- **ID:** V-07
+- **Pattern:** Protected Variations
+- **Module:** Accessories (Req. 1) and Returns (Req. 3)
+- **Evidence:** `Accessory.getCompatibleConsoleIds()` returns the internal list `compatibleConsoleIds`, and `Accessory.setCompatibleConsoleIds(List<String>)` stores the list received from the caller. `Return.getReturnedProducts()` returns the internal `returnedProducts`, and the `Return` constructor stores the list it receives, although the class JavaDoc states that the list is immutable once the return is created. In contrast, `Sale.getProducts()` returns `Collections.unmodifiableList(products)`.
+- **Explanation:** the internal representation is exposed. Any caller can modify the list without going through the class that owns it.
+- **Consequence:** compatibility can receive duplicates by skipping the check inside `addCompatibleConsole`; the products of a `Return` can change after `refundAmount` was calculated, leaving the amount stale; and the internal structure cannot change (for example, to a `Set`) without breaking callers.
+- **Proposed solution:** return unmodifiable views and copy defensively in the setter and in the constructor, the same approach already used by `Sale.getProducts()`.
+- **Code of another member:** Possibly Developer 2 (`AccessoryService`, `AccessoryDAO`, `ReturnService`, `ReturnRepository`) if they modify the lists through the getters. This must be checked before the correction in Phase 2.
+
+### Where the pattern is correctly applied
+
+- The duration of each warranty is encapsulated in its subclass: a new warranty type is a new class and `Warranty` does not change.
+- Each promotion strategy is encapsulated in its subclass.
+- The other unprotected variation points (storage format and path, product type, product category) are already recorded as V-03, V-05 and V-06 and are not counted again.
