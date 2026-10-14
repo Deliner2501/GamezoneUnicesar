@@ -950,4 +950,97 @@ of the project's typed exception hierarchy**
   `ReturnService.java`.
 
 
+---
+
+## 10. `WarrantyRepository.java`
+
+### Information Expert — Not a Violation
+
+`WarrantyRepository` holds the file path, separator and raw record
+format, so it is the right expert to perform saving and loading of
+warranty data.
+
+### Creator — Not a Violation
+
+`fromLine` creates `WarrantyRecord` instances from the exact fields it
+just parsed, matching Creator's criteria.
+
+### Controller — Not Applicable
+
+`WarrantyRepository` is a persistence-layer class, not a use-case entry
+point.
+
+### Low Coupling — Not a Violation (correctly fixed by ajuste A2)
+
+Unlike `ReturnRepository` (**V-12**), `WarrantyRepository` depends only
+on `Warranty`/`ExtendedWarranty` — no service-layer dependency at all.
+This is the direct result of the A2 fix
+(`fix/warranty-circular-dependency`): the repository persists and loads
+a raw `WarrantyRecord` (ids and dates only) instead of resolving
+`Product`/`Sale` references itself, which is exactly the pattern
+proposed in V-12 for `ReturnRepository`.
+
+### High Cohesion — Not a Violation
+
+`saveAll`, `loadAll`, `toLine`, `fromLine` and the `WarrantyRecord`
+inner class are all about reading and writing raw warranty data.
+
+### Polymorphism — Violation (V-17, smaller instance of V-03/V-08)
+
+**V-17 — `toLine()` uses `instanceof` to pick the type discriminator**
+- **Pattern:** Polymorphism
+- **Module:** `WarrantyRepository.toLine(Warranty)`
+- **Evidence:** `String type = (warranty instanceof ExtendedWarranty) ?
+  EXTENDED_TYPE : BASIC_TYPE;`
+- **Explanation:** Same root issue as V-03/V-08: the discriminator used
+  for serialization should come from the object itself (e.g. a
+  `getWarrantyType()` method, which `Warranty` already exposes per the
+  class diagram as an abstract method returning `"BASIC"`/`"EXTENDED"`-style
+  values), not from a type check in the DAO.
+- **Consequence:** Smaller impact than V-03/V-08 since there are only
+  two subtypes, but the same fragility applies if a third warranty type
+  is ever added.
+- **Proposed solution:** `Warranty` already defines
+  `getWarrantyType()` (per `docs/warranty-class-diagram.md`); use
+  `warranty.getWarrantyType()` directly instead of the `instanceof`
+  check, assuming its return value matches `BASIC_TYPE`/`EXTENDED_TYPE`
+  (or adjust the constants to match it).
+- **Other member's code involved:** No — `getWarrantyType()` already
+  exists on `Warranty`/`BasicWarranty`/`ExtendedWarranty` (my own scope,
+  Requirement 4); this is purely a call-site fix in `toLine`.
+
+### Pure Fabrication — Not a Violation
+
+`WarrantyRepository` has no direct real-world counterpart; it exists
+purely to keep file I/O out of the domain and service layers.
+
+### Indirection — Not a Violation
+
+`WarrantyRepository` correctly mediates only between raw warranty data
+and the file system — it no longer mediates between `Warranty` and the
+service layer, which was the A2 fix's purpose.
+
+### Protected Variations — Violation (V-18, same root cause as V-04/V-09)
+
+**V-18 — `WarrantyRepository` propagates raw `IOException` instead of
+the project's exception hierarchy**
+- **Pattern:** Protected Variations
+- **Module:** `saveAll(List<Warranty>)` and `loadAll()`, both declaring
+  `throws IOException` with no internal catch at all.
+- **Evidence:** Neither method catches the `IOException` that the
+  try-with-resources block can throw; it propagates directly to
+  `WarrantyService`.
+- **Explanation:** Same gap as V-04/V-09: `ProductDAO`/`PersonDAO`/
+  `SaleDAO` wrap `IOException` as `PersistenceException` since
+  Requirement 6. `WarrantyRepository` was not included in that
+  migration — here the exception is not even swallowed (unlike the
+  Accessory/Promotion DAOs), just left as a raw checked exception.
+- **Consequence:** `WarrantyService`/`MainMenu` must handle a different
+  exception type for warranty failures than for product, person or sale
+  failures, breaking the system's single stable exception contract.
+- **Proposed solution:** Wrap both methods' `IOException` as
+  `PersistenceException`, exactly as `ProductDAO` does.
+- **Other member's code involved:** No — entirely within
+  `WarrantyRepository.java`.
+
 
