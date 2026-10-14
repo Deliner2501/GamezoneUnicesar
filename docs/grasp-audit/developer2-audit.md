@@ -804,5 +804,150 @@ mediates between the `Return` model and the file system.
 - **Other member's code involved:** No — entirely within
   `ReturnRepository.java`.
 
+---
+
+## 9. `ReturnService.java`
+
+### Information Expert — Not a Violation
+
+`ReturnService` delegates to the class that owns each piece of
+information: sale lookup to `SaleService`, warranty cancellation to
+`WarrantyService`, stock restoration to `ProductService`/
+`AccessoryService`. `findProductInSale` operates on the `Sale`'s own
+product list rather than duplicating that data.
+
+### Creator — Not a Violation
+
+`registerReturn` creates the `Return` instance after gathering the data
+needed to initialize it (generated id, today's date, resolved sale,
+resolved products, reason, calculated warranty refund) from its own
+logic and collaborators, matching Creator's criteria.
+
+### Controller — Not a Violation
+
+`ReturnService` is the use-case controller for "register a return" and
+the related return queries, receiving requests from `MainMenu` and
+coordinating the appropriate experts without being a UI or persistence
+class.
+
+### Low Coupling — Not a Violation
+
+`ReturnService` depends on five collaborators (`ReturnRepository`,
+`SaleService`, `ProductService`, `AccessoryService`, `WarrantyService`),
+all genuinely required by the return workflow: resolving the original
+sale, cancelling warranties for returned consoles, and restoring stock
+for returned products/accessories. None is incidental — in fact, this is
+the correct place for the resolution logic that **V-12** proposes moving
+out of `ReturnRepository`.
+
+### High Cohesion — Violation (V-14, same shape as Leader's V-03)
+
+**V-14 — `registerReturn` concentrates too many responsibilities in one
+method**
+- **Pattern:** High Cohesion
+- **Module:** `ReturnService.registerReturn(saleId, productIds, reason)`
+- **Evidence:** In a single method body: (1) validates the three raw
+  inputs, (2) resolves the original sale, (3) checks the 30-day return
+  window, (4) validates every product belongs to the sale, (5) generates
+  the return id, (6) cancels warranties for returned consoles, (7)
+  builds the `Return` and calculates its refund, (8) restores stock for
+  every returned product/accessory, and (9) persists the updated list —
+  nine distinct steps in one method.
+- **Explanation:** Same issue the Líder Técnico already identified in
+  `SaleService.registerSale` (their V-03): all nine steps belong to the
+  same use case, but packing them into a single method makes its
+  responsibility too broad to read, test or extend in isolation.
+- **Consequence:** The method is hard to unit-test step by step, and
+  adding a new step to the return workflow (e.g. notifying the customer)
+  means editing an already large method.
+- **Proposed solution:** Extract each logical step into small private
+  helper methods (e.g. `validateReturnRequest`, `resolveSale`,
+  `resolveReturnedProducts`, `cancelWarrantiesIfNeeded`,
+  `restoreInventory`), with `registerReturn` reading as a short sequence
+  of calls to those helpers — the same solution the Líder proposed for
+  `SaleService`.
+- **Other member's code involved:** No — entirely within
+  `ReturnService.java`.
+
+### Polymorphism — Violation (V-15, same root cause as Leader's V-04)
+
+**V-15 — Explicit `instanceof` checks decide warranty cancellation and
+stock-restoration routing**
+- **Pattern:** Polymorphism
+- **Module:** `ReturnService.registerReturn`, two separate loops:
+  `if (product instanceof Console) { warrantyService.cancelWarranties(...); }`
+  and `if (product instanceof Accessory) { accessoryService.restoreStock(...); }
+  else { productService.restoreStock(...); }`
+- **Evidence:** Both branches ask "what concrete type is this product?"
+  instead of asking the product itself what it needs.
+- **Explanation:** The `Console` check is the exact same root issue the
+  Líder Técnico already flagged as their V-04 in `SaleService` (and V-07
+  in `MainMenu`) — `ReturnService` needs the same fix
+  (`product.requiresWarranty()`) applied here too. The `Accessory` check
+  is a related but distinct instance of the same pattern: the service
+  decides which stock-restoring collaborator to call based on concrete
+  type, instead of a single uniform call.
+- **Consequence:** Same as V-04/V-07 for the warranty check — any new
+  product type needing warranties forces another edit here. For the
+  stock check, `ReturnService` must know about both `ProductService` and
+  `AccessoryService` and choose between them by type, instead of a
+  single restoration call that works polymorphically.
+- **Proposed solution:** Reuse `Product.requiresWarranty()` (once added
+  per V-04) for the first check. For the second, since stock is still
+  split across two separate DAOs/services by design, a reasonable
+  alternative is a single `InventoryService.restoreStock(Product)`
+  facade that internally picks `ProductDAO` or `AccessoryDAO` — but this
+  would be a larger structural change, so for this requirement I will
+  limit the fix to the `Console` check, which shares Developer 1's
+  planned change, and document the `Accessory` check as a smaller,
+  accepted exception (two concrete, already-distinct inventory stores,
+  not an arbitrary type check).
+- **Other member's code involved:** **Yes**, for the `Console`/warranty
+  half — same coordination as the Líder's V-04/V-07, since it depends on
+  `Product`/`Console` (Developer 1's scope).
+
+### Pure Fabrication — Not Applicable
+
+`ReturnService` is itself a Pure Fabrication (a service-layer class with
+no direct real-world counterpart), already appropriate and covered under
+Controller/Low Coupling above.
+
+### Indirection — Not a Violation
+
+`ReturnService` mediates between `MainMenu` and `ReturnRepository`/
+`SaleService`/`ProductService`/`AccessoryService`/`WarrantyService`, so
+`MainMenu` never touches persistence or other services directly for
+return-related operations.
+
+### Protected Variations — Violation (V-16, same root cause as V-07/V-11)
+
+**V-16 — `ReturnService` exposes raw `IllegalArgumentException` instead
+of the project's typed exception hierarchy**
+- **Pattern:** Protected Variations
+- **Module:** `registerReturn`, every validation branch (blank saleId,
+  empty productIds, blank reason, sale not found, 30-day window
+  exceeded, product not in sale).
+- **Evidence:** E.g. `throw new IllegalArgumentException("La venta
+  indicada no existe: " + saleId);` — compare to `ProductService`, which
+  throws `ResourceNotFoundException`/`InvalidDataException` since
+  Requirement 6.
+- **Explanation:** Same gap as V-07/V-11: `ReturnService` was not
+  included in the Requirement 6 migration to the typed
+  `GameZoneException` hierarchy.
+- **Consequence:** `MainMenu`'s differentiated catch blocks for
+  `GameZoneException` subtypes do not apply to return registration,
+  breaking the uniform error-handling contract the rest of the system
+  now relies on.
+- **Proposed solution:** Replace each `IllegalArgumentException` with
+  the matching typed exception: `InvalidDataException` for blank
+  inputs, `ResourceNotFoundException` for an unknown sale,
+  `BusinessRuleException` for the 30-day window and for a product not
+  belonging to the sale. This would most naturally live behind a new
+  `ReturnValidator` class (same Pure Fabrication gap noted for
+  Accessory/Promotion in V-06/V-10, though not re-flagged separately
+  here to avoid duplicating the same finding a third time).
+- **Other member's code involved:** No — entirely within
+  `ReturnService.java`.
+
 
 
