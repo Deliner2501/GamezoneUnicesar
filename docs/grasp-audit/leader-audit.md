@@ -575,3 +575,62 @@ typed-validation pattern already established (Req 6) across the codebase,
 instead of an ad hoc null check.
 
 **Conclusion: no violations found in `ProductService.restoreStock`.**
+
+---
+
+## Coverage Summary
+
+| Module                              | Patterns audited | Violations found |
+|--------------------------------------|:-----------------:|:-----------------:|
+| `Sale.java`                          | 9/9                | 1 (V-01)           |
+| `SaleDAO.java`                       | 9/9                | 1 (V-02)           |
+| `SaleService.java`                   | 9/9                | 2 (V-03, V-04)     |
+| `MainMenu.java`                      | 9/9                | 3 (V-05, V-06, V-07)|
+| `Main.java`                          | 9/9                | 0                  |
+| `ProductService.restoreStock`        | 9/9                | 0                  |
+| **Total**                            | **—**              | **7**              |
+
+## Verdict Table by GRASP Pattern (Leader's scope only)
+
+| Pattern              | `Sale` | `SaleDAO` | `SaleService` | `MainMenu` | `Main` | `restoreStock` |
+|-----------------------|:------:|:---------:|:-------------:|:----------:|:------:|:---------------:|
+| Information Expert     | Correct | Correct | Correct | Correct | N/A | Correct |
+| Creator                | N/A | Correct | Correct | **Violation (V-05)** | Correct | N/A |
+| Controller              | N/A | N/A | Correct | Correct | N/A | Correct |
+| Low Coupling            | Correct | Correct | Correct | Correct | Correct | Correct |
+| High Cohesion           | Correct | Correct | **Violation (V-03)** | **Violation (V-06)** | Correct | Correct |
+| Polymorphism            | N/A | N/A | **Violation (V-04)** | **Violation (V-07)** | N/A | N/A |
+| Pure Fabrication        | Correct (class-level); Violation at method-level, see V-01 | Correct | N/A | N/A | Correct | N/A |
+| Indirection              | N/A | Correct | Correct | Correct | N/A | Correct |
+| Protected Variations     | **Violation (V-01)** | **Violation (V-02)** | Correct | Correct | Correct | Correct |
+
+## Violations Requiring Another Member's Code
+
+Per the audit above, 3 of the 7 violations found in my scope cannot be
+fully corrected without a change in Developer 1's code:
+
+| ID   | Module (mine)     | Needs change in            | Owner        |
+|------|--------------------|------------------------------|--------------|
+| V-04 | `SaleService`       | `Product`/`Console` (add `requiresWarranty()`) | Developer 1 |
+| V-05 | `MainMenu`          | `ProductService` (add factory-style registration methods) | Developer 1 |
+| V-07 | `MainMenu`          | `Product`/`Console` (same method as V-04) | Developer 1 |
+
+These three are flagged for the consolidated audit's "frontier findings"
+section, to be coordinated with Developer 1 before Phase 2 correction
+starts on my side.
+
+## Out-of-Scope Functional Defects
+
+| Found in       | Description                                                                 |
+|------------------|-------------------------------------------------------------------------------|
+| `SaleDAO.fromLine` | Resolves sale items only via `ProductDAO`, with no `AccessoryDAO` fallback. A sale containing an accessory silently loses that item when reloaded from `data/sales.txt`. Not corrected here because fixing it changes observable behavior, which is out of scope for a zero-behavior-change GRASP refactor. |
+
+## Summary
+
+My audit covers 5 classes and 1 method (`Sale`, `SaleDAO`, `SaleService`,
+`MainMenu`, `Main`, `ProductService.restoreStock`), all 9 GRASP patterns
+applied to each. I found **7 violations** (V-01 through V-07) and **1
+out-of-scope functional defect**. `Main.java` and
+`ProductService.restoreStock` had no violations. 3 of the 7 violations
+require coordinated changes in Developer 1's code and are flagged above
+for the team's consolidated audit.
