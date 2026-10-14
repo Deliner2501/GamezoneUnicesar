@@ -586,4 +586,107 @@ the project's exception hierarchy**
   `PromotionDAO.java`.
 
 
+---
+
+## 7. `PromotionService.java`
+
+### Information Expert — Not a Violation
+
+`PromotionService` does not duplicate data it is not entitled to: it
+uses the fields passed in as parameters and delegates persistence to
+`PromotionDAO`, and each `Promotion` subtype computes its own discount
+(`p.calculateDiscount(sale)`, `p.isActive(today)`) rather than
+`PromotionService` reaching into a promotion's fields to compute it
+externally.
+
+### Creator — Not a Violation
+
+`registerPercentageDiscount`, `registerCategoryDiscount` and
+`registerBulkPurchaseDiscount` each create their respective `Promotion`
+subtype from exactly the parameters they receive, then record it via
+`promotionDAO.saveAll(...)`. This matches Creator's criteria.
+
+### Controller — Not a Violation
+
+`PromotionService` is the use-case controller for every promotion
+operation (registration, listing, and selecting the best applicable
+promotion for a sale), coordinating `PromotionDAO` without being a UI or
+persistence class.
+
+### Low Coupling — Not a Violation
+
+`PromotionService` depends only on `PromotionDAO`, the `Promotion`
+hierarchy and `Sale` (needed to evaluate discounts) — all necessary,
+direct collaborations.
+
+### High Cohesion — Not a Violation
+
+Every method concerns promotion business rules (registration, listing,
+best-promotion selection). No unrelated responsibility is present.
+
+### Polymorphism — Not a Violation
+
+`findBestPromotionFor` iterates the active promotions and calls
+`p.calculateDiscount(sale)` and `p.isActive(today)` uniformly through the
+`Promotion` abstraction, with no `instanceof` check to decide how to
+compute each discount. This is a correct use of polymorphism: the
+variation in discount calculation between `PercentageDiscount`,
+`CategoryDiscount` and `BulkPurchaseDiscount` is handled entirely by
+each subtype's own override.
+
+### Pure Fabrication — Violation (V-10, same root cause as V-06)
+
+**V-10 — Promotion validation is a private method instead of a reusable
+`PromotionValidator`**
+- **Pattern:** Pure Fabrication
+- **Module:** `PromotionService.validatePercentage(double)` and
+  `validateTargetCategory(String)` (both private)
+- **Evidence:** Same gap as V-06: the project already has
+  `ProductValidator`, `PersonValidator` and `SaleValidator` as dedicated
+  Pure Fabrications; `PromotionService` keeps its validation logic as
+  private methods instead.
+- **Explanation:** Keeping validation inside the service reduces
+  reusability and testability, and breaks the pattern the rest of the
+  project follows for this exact kind of cross-cutting responsibility.
+- **Consequence:** `validatePercentage`/`validateTargetCategory` cannot
+  be reused or tested independently of `PromotionService`, and a
+  developer looking for promotion validation rules in a
+  `validation.PromotionValidator` (by analogy with the other domains)
+  would not find it.
+- **Proposed solution:** Extract both methods into a new
+  `PromotionValidator` class in `com.gamezone.validation`, following the
+  same static-utility-class shape as `ProductValidator`.
+- **Other member's code involved:** No — a new class fully within my own
+  scope.
+
+### Indirection — Not a Violation
+
+`PromotionService` mediates between its callers and `PromotionDAO`, so
+callers never touch file persistence directly.
+
+### Protected Variations — Violation (V-11, same root cause as V-07)
+
+**V-11 — `PromotionService` exposes raw `IllegalArgumentException`
+instead of the project's typed exception hierarchy**
+- **Pattern:** Protected Variations
+- **Module:** `validatePercentage` and `validateTargetCategory`, both
+  throwing plain `IllegalArgumentException`.
+- **Evidence:** `throw new IllegalArgumentException("Percentage must be
+  between 0 and 100");` — compare to `ProductValidator`'s equivalent
+  checks, which throw `InvalidDataException`.
+- **Explanation:** Same gap as V-07: the service layer was migrated to
+  the typed `GameZoneException` hierarchy in Requirement 6 specifically
+  so callers could rely on one stable contract; `PromotionService` was
+  left out.
+- **Consequence:** `MainMenu`'s differentiated catch blocks for
+  `GameZoneException` subtypes do not apply to promotion registration —
+  a caller must still catch generic `IllegalArgumentException`
+  separately for this one service.
+- **Proposed solution:** Replace both with `InvalidDataException`,
+  naturally paired with V-10, since the new `PromotionValidator` would
+  be the class that throws them.
+- **Other member's code involved:** No — entirely within
+  `PromotionService.java`.
+
+
 
