@@ -1043,4 +1043,109 @@ the project's exception hierarchy**
 - **Other member's code involved:** No — entirely within
   `WarrantyRepository.java`.
 
+---
+
+## 11. `WarrantyService.java`
+
+### Information Expert — Not a Violation
+
+`WarrantyService` delegates to the class that owns each piece of
+information: product resolution to `ProductService`, sale resolution to
+`SaleDAO`. It does not duplicate data it is not entitled to.
+
+### Creator — Not a Violation
+
+`assignBasicWarranty`/`assignExtendedWarranty` create `BasicWarranty`/
+`ExtendedWarranty` from exactly the `product`, `sale` and `startDate`
+they receive, and `resolveWarranty` creates the same from a resolved
+`product`/`sale` plus the raw record's fields — both match Creator's
+criteria. The `EXTENDED_TYPE`-string check in `resolveWarranty` is not
+flagged under Polymorphism, for the same reason as `parseLine` in the
+other DAOs: there is no `Warranty` object yet to dispatch on at that
+point, so a discriminated construction step is unavoidable.
+
+### Controller — Not a Violation
+
+`WarrantyService` is the use-case controller for every warranty
+operation (assignment, cancellation, queries), coordinating
+`WarrantyRepository`, `SaleDAO` and `ProductService` without being a UI
+or persistence class.
+
+### Low Coupling — Not a Violation (deliberate, already justified)
+
+`WarrantyService` depends on `WarrantyRepository`, `SaleDAO` (not
+`SaleService`) and `ProductService`. Using `SaleDAO` directly, instead of
+`SaleService`, is intentional: it is precisely what the A2 fix relies on
+to avoid recreating the circular dependency between `SaleService` and
+the warranty module (`SaleService` already depends on `WarrantyService`
+via `setWarrantyService`). This is deliberate, well-managed coupling,
+not an accidental one.
+
+### High Cohesion — Not a Violation
+
+Each method has a single, well-scoped responsibility
+(`assignBasicWarranty`, `assignExtendedWarranty`, `cancelWarranties`,
+the three `list*` queries, `resolveWarranty`, `findSaleById`,
+`generateWarrantyId`). Unlike `SaleService.registerSale` (Leader's V-03)
+or `ReturnService.registerReturn` (**V-14**), no single method here
+concentrates many unrelated steps — the warranty-assignment flow is
+intentionally kept simple because warranty creation itself is a small
+operation.
+
+### Polymorphism — Not a Violation
+
+No method branches on the concrete type of `Warranty` via `instanceof`;
+`getAdditionalCost()` (used in `cancelWarranties`) and `getEndDate()`/
+`isActive()` (used in the `list*` queries) are called polymorphically
+through the `Warranty` abstraction, letting `BasicWarranty` and
+`ExtendedWarranty` each provide their own values. This is a correct use
+of polymorphism.
+
+### Pure Fabrication — Not Applicable
+
+`WarrantyService` is itself a Pure Fabrication, already appropriate and
+covered under Controller/Low Coupling above.
+
+### Indirection — Not a Violation
+
+`WarrantyService` mediates between its callers and
+`WarrantyRepository`/`SaleDAO`/`ProductService`, so callers never touch
+persistence directly for warranty operations.
+
+### Protected Variations — Violation (V-19, same root cause as V-16/V-18)
+
+**V-19 — `WarrantyService` uses raw `IllegalArgumentException` and
+silent `println` instead of the project's exception hierarchy**
+- **Pattern:** Protected Variations
+- **Module:** Two related gaps:
+  - `assignBasicWarranty`, `assignExtendedWarranty` and
+    `listWarrantiesExpiringSoon` throw plain `IllegalArgumentException`
+    for invalid input, instead of `InvalidDataException`.
+  - `resolveWarranty` silently skips an unresolvable record via
+    `System.out.println("Skipping warranty " + record.getId() + ":
+    product not found")` / `"... sale not found"`, with no exception and
+    no caller-visible signal, the same pattern as **V-13** in
+    `ReturnRepository`.
+- **Evidence:** `throw new IllegalArgumentException("Debe indicar el
+  producto y la venta...")`; and the two `System.out.println` calls in
+  `resolveWarranty`.
+- **Explanation:** Same gap as V-07/V-11/V-16: this class was not
+  included in the Requirement 6 migration to the typed
+  `GameZoneException` hierarchy, and its silent-skip behavior hides data
+  loss the same way V-04/V-09/V-13 do elsewhere.
+- **Consequence:** `MainMenu`'s differentiated catch blocks do not apply
+  to warranty assignment, and a warranty record that fails to resolve
+  (e.g. because its product was deleted) silently disappears from every
+  listing with no trace — including `listWarrantiesExpiringSoon`, which
+  a store owner might rely on for maintenance planning.
+- **Proposed solution:** Replace the `IllegalArgumentException`s with
+  `InvalidDataException`; once V-18 wraps `WarrantyRepository`'s
+  `IOException` as `PersistenceException`, replace the two
+  `System.out.println` skips in `resolveWarranty` with a
+  `PersistenceException` (or, if silently skipping is intentionally kept
+  as a resilience choice, document that decision explicitly rather than
+  leaving it as a side effect of unrelated exception swallowing).
+- **Other member's code involved:** No — entirely within
+  `WarrantyService.java`.
+
 
