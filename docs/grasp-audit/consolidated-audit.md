@@ -207,3 +207,48 @@ currently mutate those lists through the getters.
   Developer 2 checks whether any of their own classes mutate those lists
   in place (rather than only reading them). If so, Developer 2 adjusts
   those call sites in the same Phase 2 window so nothing breaks silently.
+
+  ---
+
+## Out-of-Scope Functional Defects
+
+These are real bugs identified during the audit, but correcting them
+would change what the user observes (not a zero-behavior-change refactor),
+so per the requirement's rules they are **not corrected in this
+requirement**. They are recorded here for a future one.
+
+| ID | Found by | Description |
+|---|---|---|
+| F-01 | Technical Leader | `SaleDAO.fromLine` resolves sale items only via `ProductDAO`, with no `AccessoryDAO` fallback. A sale containing an accessory silently loses that item when the sale is reloaded from `data/sales.txt`. |
+| F-02 | Developer 1 | `ProductDAO.save`/`update` call `findAll` (which skips corrupted lines) and then `writeAll` rewrites the whole file — corrupted lines are permanently lost on the next write. `writeAll` also silently omits any `Product` that is neither `VideoGame` nor `Console`. |
+| F-03 | Developer 1 | `ProductService.checkStock` returns `false` when the product does not exist, while `restoreStock` raises `ResourceNotFoundException` for the same situation — inconsistent handling of the same "not found" case. |
+
+**Methodological note on silent-skip violations (V-18, V-23, V-27, V-32,
+V-33):** several Protected Variations violations found by Developer 2
+involve a DAO/service silently printing and skipping a failure
+(`System.out.println`) instead of raising a typed exception. Replacing
+`println` with a thrown `PersistenceException`, as proposed for each of
+these, is treated as an in-scope GRASP correction (not a functional
+defect) because it only changes behavior on an already-abnormal path
+(corrupted data or a failed read/write) that falls outside the menu
+operations exercised by the no-regression checklist. This is the same
+category as the Leader's own V-02 fix on `SaleDAO`. The team should keep
+this distinction in mind during Phase 2 verification: these five fixes
+are expected to surface errors that were previously invisible, and that
+is the intended, approved outcome — not a regression.
+
+---
+
+## Consolidation Checklist
+
+- [x] All three individual reports read and verified for evidence.
+- [x] Coverage confirmed: every class in `TEAM.md`'s responsibility table
+      audited exactly once.
+- [x] 34 violations consolidated with unique IDs (V-01–V-34), including
+      one (V-34) found by a teammate in code that was not originally
+      self-reported.
+- [x] 7 frontier findings (FF-01–FF-07) identified and assigned a
+      prerequisite/dependent order.
+- [x] 3 out-of-scope functional defects recorded, not corrected.
+- [ ] Phase 2 branch `feature/grasp-refactor` not yet created — opens
+      only once this Phase 1 work is merged to `develop`.
