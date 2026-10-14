@@ -35,3 +35,64 @@ I asked the AI if that made technical sense. He explained to me that Git merges 
 9. **"What do the prefixes feat:, fix:, refactor: mean in the commits, and when is each one used?" **
 
 He explained to me the Conventional Commits convention that the workshop requires: feat: for new functionality, fix: to correct errors, refactor: to reorganize without changing behavior, and docs:/chore: for documentation and maintenance.
+
+
+
+
+---
+
+## Phase 1 - Audit (feature/grasp-audit)
+
+### Entry 1
+- **Date:** 2026-10-13
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Understand Requirement 7, its two phases and my role as Developer 1.
+- **Query:** I shared the Requirement 7 PDF and asked what I had to do and in what order.
+- **Response summary:** It summarized the two phases, my audit scope (products, accessories, promotions, Return and Sale.canBeReturned, warranties, exceptions and validation) and the deliverables (individual audit, orienting questions, AI log), and explained the nine GRASP patterns with a key question for each.
+- **Decision:** Accepted. I confirmed the scope against the responsibility table of the PDF and used the key questions as a checklist for the audit.
+- **Related commit:** -
+
+### Entry 2
+- **Date:** 2026-10-13
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Know which version of the code had to be audited.
+- **Query:** I asked how to check whether Requirement 6 was already merged into develop and which commit to audit.
+- **Response summary:** It gave git fetch, git log and git grep commands, and told me to compare the source tree of the audit branch with develop.
+- **Decision:** Accepted. The audit is based on commit a377cfb, whose src tree is identical to develop at d669eed (git diff showed no source differences).
+- **Related commit:** f207ad8
+
+### Entry 3
+- **Date:** 2026-10-13
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Audit the product module against the nine patterns.
+- **Query:** I pasted Product, VideoGame, Console, ProductDAO and ProductService and asked for the candidate findings per pattern.
+- **Response summary:** It proposed violations in the duplicated stock rule, the instanceof chain in ProductDAO, the dependency of ProductService on the concrete ProductDAO and the console output inside ProductDAO, and marked Creator, Controller, Pure Fabrication and Indirection as correct. I ran Select-String commands to get the exact lines.
+- **Decision:** Accepted the findings and used the lines returned by Select-String as evidence. The use of ProductDAO inside SaleService and the creation of VideoGame and Console inside MainMenu were not audited by me and were reported to the Technical Leader as boundary findings.
+- **Related commit:** 64c8c7e, 7d90fae
+
+### Entry 4
+- **Date:** 2026-10-13
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Audit the accessory, promotion, return, warranty, exception and validation classes.
+- **Query:** I pasted the source of those classes and asked for the findings and the correct applications of each pattern.
+- **Response summary:** It proposed three additional violations: Return computing the discount rate from data owned by Sale, CategoryDiscount selecting the category with instanceof and text codes, and Accessory and Return exposing their internal mutable lists. It also listed where Polymorphism, Pure Fabrication, Indirection and Protected Variations are correctly applied.
+- **Decision:** Accepted. I kept as evidence the class, the method and the code fragment of each finding.
+- **Related commit:** 64c8c7e, 7d90fae, bee37d8, 9265cf1
+
+### Entry 5
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Answer the orienting question assigned to me.
+- **Query:** I asked which questions were pending in grasp-analysis.md and for an answer to question 4, based on the no-regression section of the PDF.
+- **Response summary:** It detected that question 4 was missing and drafted the answer: a baseline checklist run on develop, one violation per commit, verification on every Pull Request, comparison of the data files and the evidence shown at the end.
+- **Decision:** Accepted, and I asked the Technical Leader to confirm that it matches the strategy of the refactor log.
+- **Related commit:** a8af1b0
+
+## Phase 2 - Correction (feature/grasp-refactor)
+
+No entries yet.

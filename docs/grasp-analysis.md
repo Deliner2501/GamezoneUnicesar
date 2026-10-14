@@ -119,6 +119,20 @@ closely related pattern is noted in parentheses only when it adds
 useful context for *why* the fix matters, never as a separate ID, so the
 final violation count is not inflated by counting the same code twice.
 
+## 4. The correction must preserve the external behavior of the system. What strategy does the team follow to guarantee that all the menu operations keep working the same? What evidence is shown at the end to demonstrate that nothing was broken?
+
+The corrections are refactors, so the strategy is to compare the system before and after with the same inputs, and to keep every change small enough to be compared.
+
+**Strategy.**
+
+1. **Baseline before the first correction.** Before any Phase 2 change, the team writes in `docs/grasp-refactor-log.md` a verification checklist that covers every operation of the user interface (the ten operations of the base workshop plus those added by the accessory, promotion, return and warranty modules). Each row states the operation, the input data and the expected result. The checklist is run on `develop` and the observed results are recorded as the reference.
+2. **One violation per commit.** Each correction is a separate atomic commit tagged with its violation ID, so any regression can be traced to a single change and reverted on its own.
+3. **Verification on every Phase 2 Pull Request.** Before a Pull Request is opened, the project must compile with `mvn clean compile`, and the checklist rows for the operations touched by that correction are run again and compared with the baseline: same inputs, same results, same messages shown to the user.
+4. **Data files are part of the behavior.** The same scenario is run against a copy of the `data/` folder before and after each correction, and the resulting CSV files are compared (for example with `Compare-Object` on their content or with a file hash), because the requirement demands identical file contents.
+5. **Out-of-scope defects stay untouched.** Functional defects recorded as out of scope, such as the data loss in `ProductDAO.save`, are not fixed in this requirement even when a correction touches the same code, so that "the same behavior" remains well defined.
+6. **No new violations.** A correction cannot introduce a new violation. If a pattern has to be sacrificed in favor of another one, the decision is justified in the refactor log.
+
+**Evidence shown at the end.** (a) The baseline and the final results of the checklist side by side, covering all operations. (b) The `BUILD SUCCESS` output of `mvn clean compile` for each Pull Request. (c) The comparison of the data files before and after the scenario. (d) A live demonstration in the oral defense of the complete scenario (a sale with a console, a video game and an accessory, the best promotion applied, an extended warranty, a partial return and the monthly balance), showing the same results as the baseline.
 
 ## 5. In what order are violations corrected, and why? When a correction
 involves more than one member's code, how is the work coordinated?
