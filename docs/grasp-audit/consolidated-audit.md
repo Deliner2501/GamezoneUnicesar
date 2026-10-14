@@ -108,3 +108,102 @@ traced. "Responsible" is who corrects it in Phase 2, per code ownership in
 | V-32 | Protected Variations | `WarrantyRepository` | Raw `IOException` propagated, not wrapped | Dev 2 | developer2-audit V-18 |
 | V-33 | Protected Variations | `WarrantyService` | Raw `IllegalArgumentException` + silent `println` skips | Dev 2 | developer2-audit V-19 |
 | V-34 | Low Coupling | `SaleService`, `SaleDAO` | Depend directly on concrete `ProductDAO` instead of `ProductService` | Leader | developer1-audit B-1 (not self-reported in leader-audit; added here) |
+
+---
+
+## Boundary / Frontier Findings
+
+These violations require a change in more than one member's code. Each
+entry names the prerequisite change, who makes it, and who depends on it.
+Per the correction order agreed in `docs/grasp-analysis.md` (question 5),
+independent violations are corrected first; these frontier items are
+corrected only after their prerequisite change is merged to `develop`.
+
+### FF-01 — `Product.requiresWarranty()`
+
+Affects **V-04**, **V-07** (Leader) and the `Console` half of **V-29**
+(Developer 2) — all three are the same root cause: an explicit
+`instanceof Console` check deciding warranty eligibility, found
+independently by the Leader (in `SaleService` and `MainMenu`) and by
+Developer 2 (in `ReturnService`).
+
+- **Prerequisite:** Developer 1 adds `requiresWarranty()` (or similar) to
+  `Product`, overridden `true` in `Console`.
+- **Then:** Leader replaces the two `instanceof Console` checks in
+  `SaleService`/`MainMenu`; Developer 2 replaces the one in
+  `ReturnService`.
+- **Order:** Developer 1's PR merges first; Leader and Developer 2 rebase
+  on it and apply their fixes in separate commits.
+
+### FF-02 — `ProductService` factory-style registration
+
+Affects **V-05** (Leader). Confirmed independently by Developer 1 as
+boundary finding B-1.
+
+- **Prerequisite:** Developer 1 adds `registerVideoGame(...)` and
+  `registerConsole(...)` to `ProductService`, each building the domain
+  object internally.
+- **Then:** Leader replaces the direct `new VideoGame(...)`/`new
+  Console(...)` calls in `MainMenu` with calls to the new methods.
+
+### FF-03 — `Sale.getDiscountRate()`
+
+Affects **V-09** (Developer 1, `Return`).
+
+- **Prerequisite:** Leader adds `getDiscountRate()` to `Sale`.
+- **Then:** Developer 1 replaces the duplicated formula in
+  `Return.calculateRefundAmount`/`generateReturnReceipt` with a call to
+  it.
+
+### FF-04 — `PersonDAO` signature cleanup
+
+Affects **V-16** (Developer 2, `PersonDAO`) and the corresponding
+`MainMenu` catch blocks (Leader's scope).
+
+- **Prerequisite:** Developer 2 removes the dead `throws IOException`
+  from `PersonDAO`'s four methods (and from `PersonService`, which
+  currently also re-declares it).
+- **Then:** Leader checks whether any `MainMenu` catch block for these
+  calls still expects `IOException` and updates it if so (most likely
+  already redundant, since `PersistenceException` is unchecked and
+  already caught).
+- **Order:** Developer 2's PR merges first; Leader verifies afterward.
+
+### FF-05 — Accessory type discriminator
+
+Affects **V-17** and **V-19** (Developer 2, `AccessoryDAO`/
+`AccessoryService`).
+
+- **Prerequisite:** Developer 1 adds a type-discriminator method to
+  `Accessory` (e.g. `toCsvLine()` for V-17's serialization use, and a
+  `getTypeCode()`-style method for V-19's type-matching use — both can
+  be satisfied by one well-designed abstract method pair).
+- **Then:** Developer 2 replaces the `instanceof` branches in
+  `AccessoryDAO.writeAll` and `AccessoryService.matchesType` with calls
+  to it.
+
+### FF-06 — Promotion type discriminator
+
+Affects **V-22** (Developer 2, `PromotionDAO`) and relates to **V-13**
+(Developer 1, `CategoryDiscount`) — both concern the same `Promotion`
+hierarchy lacking a clean type/category abstraction.
+
+- **Prerequisite:** Developer 1 adds `toCsvLine()` to `Promotion`
+  (abstract, overridden per subtype) while also addressing V-13's
+  category-check redesign, so both are solved together rather than
+  introducing two separate discriminator mechanisms.
+- **Then:** Developer 2 replaces the `instanceof` branches in
+  `PromotionDAO.saveAll` with a call to `toCsvLine()`.
+
+### FF-07 — Verify `Accessory`/`Return` encapsulation fix (V-14) against Developer 2's call sites
+
+Affects **V-14** (Developer 1, `Accessory`/`Return` expose mutable
+lists), flagged by Developer 1 as possibly touching `AccessoryService`,
+`AccessoryDAO`, `ReturnService` and `ReturnRepository` if any of them
+currently mutate those lists through the getters.
+
+- **Action:** Before Developer 1 returns unmodifiable views from
+  `Accessory.getCompatibleConsoleIds()` and `Return.getReturnedProducts()`,
+  Developer 2 checks whether any of their own classes mutate those lists
+  in place (rather than only reading them). If so, Developer 2 adjusts
+  those call sites in the same Phase 2 window so nothing breaks silently.
