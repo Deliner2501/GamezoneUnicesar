@@ -19,7 +19,6 @@
 Problems whose origin is in another member's code are not audited here. They are listed in the section "Boundary findings" and were reported to the Technical Leader.
 
 
-<!-- COMMIT-BREAK -->
 
 ## 1. Information Expert - Verdict: Violation
 
@@ -162,3 +161,31 @@ Two violations were found (V-01 and V-02). The pattern is applied correctly in t
 - The duration of each warranty is encapsulated in its subclass: a new warranty type is a new class and `Warranty` does not change.
 - Each promotion strategy is encapsulated in its subclass.
 - The other unprotected variation points (storage format and path, product type, product category) are already recorded as V-03, V-05 and V-06 and are not counted again.
+
+## Boundary findings
+
+These problems originate in code of another member. They were not audited here and were reported to the Technical Leader for the consolidation.
+
+- **B-1 (Indirection / Low Coupling).** `SaleService` uses `ProductDAO` directly instead of going through `ProductService`: `SaleService.java` line 36 (field), lines 51 and 54 (constructor), line 125 `productDAO.findById(itemId)` and line 209 `productDAO.update(product)`. `SaleDAO.java` also depends on the concrete `ProductDAO` (lines 31, 40 and 179).
+- **B-2 (Creator / Controller).** The user interface creates domain objects: `MainMenu.java` line 291 `Product videoGame = new VideoGame(...)` and line 322 `Product console = new Console(...)`.
+
+## Out-of-scope findings (functional defects)
+
+These behaviors would change what the user observes if corrected, so they are recorded and not fixed in this requirement.
+
+- **F-01 (data loss in `ProductDAO`).** `save` and `update` call `findAll`, which skips corrupted lines (lines 49-50), and then `writeAll` rewrites the whole file. The corrupted lines are permanently lost on the next write. In addition, `writeAll` (lines 97-110) silently omits any `Product` that is neither a `VideoGame` nor a `Console`.
+- **F-02 (inconsistent not-found handling).** `ProductService.checkStock` (lines 53-57) returns `false` when the product does not exist, while `restoreStock` raises `ResourceNotFoundException` for the same situation.
+
+## Summary of verdicts
+
+| # | Pattern | Verdict | Findings |
+|---|---|---|---|
+| 1 | Information Expert | Violation | V-01, V-02 |
+| 2 | Creator | Correct | - |
+| 3 | Controller | Correct | - |
+| 4 | Low Coupling | Violation | V-03 |
+| 5 | High Cohesion | Violation | V-04 |
+| 6 | Polymorphism | Violation | V-05, V-06 |
+| 7 | Pure Fabrication | Correct | - |
+| 8 | Indirection | Correct | - |
+| 9 | Protected Variations | Violation | V-07 |
