@@ -369,4 +369,128 @@ the project's exception hierarchy**
   `AccessoryDAO.java`.
 
 
+---
+
+## 5. `AccessoryService.java`
+
+### Information Expert — Not a Violation
+
+`AccessoryService` does not duplicate data; it only uses the id/price
+fields it directly receives, and delegates all persistence to
+`AccessoryDAO`.
+
+### Creator — Not a Violation
+
+`registerController`, `registerCable` and `registerMemory` each create
+their respective `Accessory` subtype from exactly the data passed in as
+parameters, and immediately record it via `accessoryDAO.save(...)`.
+This matches Creator's criteria.
+
+### Controller — Not a Violation
+
+`AccessoryService` is the use-case controller for every accessory
+operation (register, check/update/restore stock, register compatibility,
+list and search), receiving requests from `MainMenu`/`SaleService` and
+coordinating `AccessoryDAO` without being a UI or persistence class.
+
+### Low Coupling — Not a Violation
+
+`AccessoryService` depends only on `AccessoryDAO` and the `Accessory`
+hierarchy, all necessary for its responsibilities.
+
+### High Cohesion — Not a Violation
+
+Every method concerns managing accessories (registration, stock,
+compatibility, queries). No unrelated responsibility is present.
+
+### Polymorphism — Violation (V-05, related to V-03)
+
+**V-05 — `matchesType()` uses a type-string switch with `instanceof`
+instead of asking the accessory its own type**
+- **Pattern:** Polymorphism
+- **Module:** `AccessoryService.matchesType(Accessory, String)`, used by
+  `listAccessoriesByType`
+- **Evidence:** `switch (type.toUpperCase()) { case "CONTROLLER" ->
+  accessory instanceof Controller; case "CABLE" -> accessory instanceof
+  Cable; case "MEMORY" -> accessory instanceof Memory; ... }`
+- **Explanation:** Same root issue as **V-03**: behavior that depends on
+  an accessory's concrete type is handled by a conditional in the
+  service instead of a polymorphic method on the `Accessory` hierarchy.
+- **Consequence:** Adding a new accessory subtype requires editing this
+  method as well as `AccessoryDAO.writeAll` (V-03), doubling the places
+  that must change together and risking them drifting out of sync.
+- **Proposed solution:** Once `Accessory` exposes a type discriminator
+  (e.g. a `getTypeCode()` method returning `"CONTROLLER"`/`"CABLE"`/
+  `"MEMORY"`, the same value used in V-03's `toCsvLine()`), replace this
+  switch with `accessory.getTypeCode().equalsIgnoreCase(type)`.
+- **Other member's code involved:** **Yes**, same as V-03 — depends on
+  Developer 1 adding the type discriminator to the `Accessory` hierarchy.
+
+### Pure Fabrication — Violation (V-06)
+
+**V-06 — Accessory validation is a private method instead of a reusable
+`AccessoryValidator`**
+- **Pattern:** Pure Fabrication
+- **Module:** `AccessoryService.validateAccessory(Accessory)` (private)
+- **Evidence:** The project already has dedicated validator classes for
+  every other domain (`ProductValidator`, `PersonValidator`,
+  `SaleValidator`), each a Pure Fabrication with no private-method
+  equivalent inside its service. `AccessoryService` instead keeps its
+  validation logic as a private method mixed into the service itself.
+- **Explanation:** Pure Fabrication recommends placing a
+  cross-cutting responsibility like validation in its own class when
+  keeping it inside the service would reduce cohesion or reusability.
+  The rest of the project already follows this pattern; `AccessoryService`
+  is the odd one out.
+- **Consequence:** `validateAccessory`'s rules cannot be reused or unit
+  tested independently of `AccessoryService`, and the inconsistency makes
+  the codebase harder to navigate — a developer looking for accessory
+  validation rules in `validation.AccessoryValidator` (by analogy with
+  the other domains) would not find it.
+- **Proposed solution:** Extract `validateAccessory`'s logic into a new
+  `AccessoryValidator` class in `com.gamezone.validation`, following the
+  same static-utility-class shape as `ProductValidator`.
+- **Other member's code involved:** No — this is a new class I would
+  introduce myself; it does not require changes outside my own scope.
+
+### Indirection — Not a Violation
+
+`AccessoryService` mediates between its callers and `AccessoryDAO`, so
+callers never touch file persistence directly.
+
+### Protected Variations — Violation (V-07)
+
+**V-07 — `AccessoryService` exposes raw `IllegalArgumentException`
+instead of the project's typed exception hierarchy**
+- **Pattern:** Protected Variations
+- **Module:** `registerController`/`registerCable`/`registerMemory`
+  (via `validateAccessory`), `registerCompatibility`, `updateStock`,
+  `restoreStock` — all throw plain `IllegalArgumentException`.
+- **Evidence:** E.g. `updateStock`: `throw new
+  IllegalArgumentException("Accessory not found: " + accessoryId);`
+  compare to `ProductService.restoreStock`, which throws
+  `ResourceNotFoundException`/`InvalidDataException` from the
+  `com.gamezone.exceptions` hierarchy introduced in Requirement 6.
+- **Explanation:** The rest of the service layer was migrated to a
+  stable, typed exception contract (`ResourceNotFoundException`,
+  `InvalidDataException`, `BusinessRuleException`) specifically so
+  callers (`MainMenu`) could depend on one consistent hierarchy instead
+  of generic JDK exceptions. `AccessoryService` was left out of that
+  migration.
+- **Consequence:** `MainMenu`'s differentiated catch blocks (built for
+  `GameZoneException` and its subtypes) do not apply to accessory
+  operations; a caller must still catch generic
+  `IllegalArgumentException` separately for this one service, breaking
+  the uniform error-handling contract the rest of the system now relies
+  on.
+- **Proposed solution:** Replace each `IllegalArgumentException` with
+  the matching typed exception: `ResourceNotFoundException("accesorio",
+  accessoryId)` where an accessory is not found, `InvalidDataException`
+  for invalid input (id, price, quantity). This pairs naturally with
+  V-06, since the new `AccessoryValidator` would be the class that
+  throws these.
+- **Other member's code involved:** No — entirely within
+  `AccessoryService.java`.
+
+
 
