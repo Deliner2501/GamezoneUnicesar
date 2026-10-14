@@ -257,4 +257,116 @@ solution) must be applied here too, since this signature only exists to
 satisfy the one below it.
 
 
+---
+
+## 4. `AccessoryDAO.java`
+
+### Information Expert — Not a Violation
+
+`AccessoryDAO` holds the file path and the CSV format for the three
+accessory subtypes, so it is the right expert to perform saving and
+loading. No other class has this information.
+
+### Creator — Not a Violation
+
+`parseLine` creates `Controller`/`Cable`/`Memory` instances from the
+exact fields it just parsed from the line, matching Creator's criteria.
+
+### Controller — Not Applicable
+
+`AccessoryDAO` is a persistence-layer class, not a use-case entry point.
+
+### Low Coupling — Not a Violation
+
+`AccessoryDAO` depends on `Accessory` and its three subtypes
+(`Controller`, `Cable`, `Memory`), all necessary to read and write the
+CSV format correctly. It has no dependency on the service or UI layers.
+
+### High Cohesion — Not a Violation
+
+All public and private members (`save`, `findAll`, `findById`, `update`,
+`writeAll`, `parseLine`, `applyCompatibleConsoles`) are about one
+responsibility: reading and writing accessory records.
+
+### Polymorphism — Violation (V-03)
+
+**V-03 — `writeAll()` uses `instanceof` checks instead of polymorphic
+serialization**
+- **Pattern:** Polymorphism
+- **Module:** `AccessoryDAO.writeAll(List<Accessory>)`
+- **Evidence:** `if (a instanceof Controller) {...} else if (a instanceof
+  Cable) {...} else if (a instanceof Memory) {...}`, each branch manually
+  building the CSV line for that subtype.
+- **Explanation:** At this point `writeAll` already has a real `Accessory`
+  object in hand (not just raw text), so the subtype-specific formatting
+  is exactly the kind of type-varying behavior Polymorphism says should
+  be handled by a method on the type hierarchy, not by a conditional in
+  the client class.
+- **Consequence:** Every time a new accessory subtype is added, this
+  method must be edited with another `instanceof` branch, and
+  `AccessoryDAO` must know the internal fields of every subtype
+  (`Controller`, `Cable`, `Memory`) instead of depending only on the
+  `Accessory` abstraction.
+- **Proposed solution:** Add a method such as `toCsvLine()` to
+  `Accessory` (abstract), overridden by each subtype to produce its own
+  comma-separated fields, including the type discriminator. `writeAll`
+  would then just call `a.toCsvLine()` for every accessory, with no
+  `instanceof` check.
+- **Other member's code involved:** **Yes.** `Accessory`, `Controller`,
+  `Cable` and `Memory` belong to Developer 1's scope, so adding this
+  method needs to be coordinated with them; the call site in
+  `AccessoryDAO.writeAll` is my own responsibility.
+
+Note: `parseLine`'s type-string check (`"CONTROLLER"`/`"CABLE"`/`"MEMORY"`)
+is **not** flagged here — at that point there is no `Accessory` object
+yet to dispatch on, so a discriminated factory step is unavoidable when
+parsing raw text. This is a legitimate use of Creator-style construction,
+not a Polymorphism violation.
+
+### Pure Fabrication — Not a Violation
+
+`AccessoryDAO` has no direct real-world counterpart; it exists purely to
+keep file I/O out of the domain and service layers.
+
+### Indirection — Not a Violation
+
+`AccessoryDAO` mediates between the `Accessory` hierarchy and the file
+system, so `AccessoryService` never touches file I/O directly.
+
+### Protected Variations — Violation (V-04)
+
+**V-04 — `AccessoryDAO` silently swallows `IOException` instead of using
+the project's exception hierarchy**
+- **Pattern:** Protected Variations
+- **Module:** `findAll()` (both the inner per-line `catch (Exception e)`
+  and the outer `catch (IOException e)`) and `writeAll()`'s
+  `catch (IOException e)`.
+- **Evidence:** All three catch blocks call
+  `System.out.println(...)` and continue, instead of raising an
+  exception — e.g. `catch (IOException e) { System.out.println("Error
+  reading accessories: " + e.getMessage()); }`.
+- **Explanation:** As of Requirement 6, `ProductDAO`, `PersonDAO` and
+  `SaleDAO` all wrap `IOException` as the project's own
+  `PersistenceException`, giving every caller one stable, typed failure
+  contract regardless of which DAO it calls. `AccessoryDAO` was not
+  included in that refactor and still exposes the old behavior: a read
+  or write failure is silently printed to the console and the caller
+  receives an empty or partial list with no indication anything went
+  wrong.
+- **Consequence:** `AccessoryService`/`MainMenu` cannot detect or react
+  to a persistence failure for accessories the way they can for
+  products, people or sales — the system's own exception contract is
+  inconsistent across DAOs, breaking the "callers depend on one stable
+  interface" guarantee Protected Variations asks for.
+- **Proposed solution:** Apply the same pattern used in `ProductDAO`:
+  wrap each `catch (IOException e)` to throw
+  `new PersistenceException("...", e)` instead of printing, with file
+  path and operation (read/write) in the message. The inner corrupted-line
+  catch can keep skipping that one line (that part is a reasonable
+  resilience choice), but should still report the skip through a
+  mechanism callers can observe if needed, rather than only `System.out`.
+- **Other member's code involved:** No — entirely within
+  `AccessoryDAO.java`.
+
+
 
