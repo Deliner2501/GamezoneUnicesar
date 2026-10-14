@@ -132,3 +132,14 @@ Two violations were found (V-01 and V-02). The pattern is applied correctly in t
 - `Product.getFullDescription()` is abstract and implemented by `VideoGame`, `Console`, `Controller`, `Cable` and `Memory`.
 - `Promotion.calculateDiscount(Sale)` is abstract and each subclass defines its own strategy.
 - `Warranty` declares `getDurationInMonths`, `getWarrantyType` and `getAdditionalCost` as abstract methods, and its constructor obtains `endDate` through `getDurationInMonths()` without knowing the concrete type.
+
+## 7. Pure Fabrication - Verdict: Correct
+
+`ProductDAO` is a class that does not exist in the business domain: it was created to keep file access out of `Product`. `ProductValidator`, `PersonValidator` and `SaleValidator` are utility classes (static methods, private constructor) created to keep validation rules out of the services and of the model. The exceptions layer separates the representation of errors from the classes that detect them.
+
+## 8. Indirection - Verdict: Correct
+
+- `ProductService` sits between the user interface and `ProductDAO`; `ProductDAO` sits between the service and the file.
+- `PersistenceException` wraps `IOException` (`ProductDAO`, lines 55 and 111), so the upper layers handle one error category and not a file-system detail.
+- The validators sit between the services and the rules they apply.
+- Limitation: the service depends on the concrete DAO and not on an interface. This weakness is recorded as V-03 under Low Coupling and is not counted twice.
