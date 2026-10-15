@@ -6,6 +6,7 @@ import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Console;
 import com.gamezone.persistence.ReturnRepository;
+import com.gamezone.persistence.ReturnRepository.ReturnRecord;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -92,7 +93,7 @@ public class ReturnService {
             returnedProducts.add(product);
         }
 
-        List<Return> existingReturns = returnRepository.loadAll();
+        List<Return> existingReturns = loadAllReturns();
         String returnId = generateReturnId(existingReturns);
 
         double warrantyRefund = 0.0;
@@ -145,6 +146,56 @@ public class ReturnService {
         int nextNumber = existingReturns.size() + 1;
         return "RET" + String.format("%03d", nextNumber);
     }
+    
+        /**
+     * Loads every raw return record from the repository and resolves
+     * each one into a real Return object, skipping any record whose
+     * sale or products can no longer be found.
+     */
+    private List<Return> loadAllReturns() throws IOException {
+        List<Return> returns = new ArrayList<>();
+        for (ReturnRecord record : returnRepository.loadAll()) {
+            Return resolved = resolveReturn(record);
+            if (resolved != null) {
+                returns.add(resolved);
+            }
+        }
+        return returns;
+    }
+
+    /**
+     * Resolves a raw return record back into a real Return object,
+     * looking up its original sale and returned products. Returns null
+     * if the sale or every product can no longer be resolved.
+     */
+    private Return resolveReturn(ReturnRecord record) throws IOException {
+        Sale originalSale = saleService.findSaleById(record.getSaleId());
+        if (originalSale == null) {
+            return null;
+        }
+
+        List<Product> returnedProducts = new ArrayList<>();
+        for (String productId : record.getProductIds()) {
+            Product product = productService.findProductById(productId);
+            if (product == null) {
+                product = accessoryService.findById(productId);
+            }
+            if (product != null) {
+                returnedProducts.add(product);
+            }
+        }
+        if (returnedProducts.isEmpty()) {
+            return null;
+        }
+
+        Return resolved = new Return(record.getId(), record.getDate(), originalSale,
+                returnedProducts, record.getReason(), record.getWarrantyRefund());
+        if (record.isRefundCalculated()) {
+            resolved.calculateRefundAmount();
+        }
+        return resolved;
+    }
+    
 
     /**
      * Returns every return registered in the system.
@@ -153,7 +204,7 @@ public class ReturnService {
      * @throws IOException if the returns cannot be read from storage
      */
     public List<Return> viewAllReturns() throws IOException {
-        return returnRepository.loadAll();
+        return loadAllReturns();
     }
 
     /**
@@ -165,7 +216,7 @@ public class ReturnService {
      */
     public List<Return> viewReturnsByCustomer(String customerId) throws IOException {
         List<Return> result = new ArrayList<>();
-        for (Return r : returnRepository.loadAll()) {
+        for (Return r : loadAllReturns()) {
             if (r.getOriginalSale().getCustomer().getId().equals(customerId)) {
                 result.add(r);
             }
@@ -182,7 +233,7 @@ public class ReturnService {
      */
     public List<Return> viewReturnsBySale(String saleId) throws IOException {
         List<Return> result = new ArrayList<>();
-        for (Return r : returnRepository.loadAll()) {
+        for (Return r : loadAllReturns()) {
             if (r.getOriginalSale().getId().equals(saleId)) {
                 result.add(r);
             }
@@ -210,7 +261,7 @@ public class ReturnService {
 
     public double calculateMonthlyReturns(int month, int year) throws IOException {
         double totalReturns = 0.0;
-        for (Return r : returnRepository.loadAll()) {
+        for (Return r : loadAllReturns()) {
             if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
                 totalReturns += r.getRefundAmount();
             }

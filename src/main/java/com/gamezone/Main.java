@@ -47,7 +47,7 @@ public class Main {
         WarrantyRepository warrantyRepository = new WarrantyRepository();
         WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
         saleService.setWarrantyService(warrantyService);
-        ReturnRepository returnRepository = new ReturnRepository(saleService, productService, accessoryService);
+        ReturnRepository returnRepository = new ReturnRepository();
         ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService);
 
         // UI layer
