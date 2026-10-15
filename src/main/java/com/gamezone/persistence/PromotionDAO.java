@@ -1,5 +1,6 @@
 package com.gamezone.persistence;
 
+import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.model.BulkPurchaseDiscount;
 import com.gamezone.model.CategoryDiscount;
 import com.gamezone.model.PercentageDiscount;
@@ -48,7 +49,8 @@ public class PromotionDAO {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error saving promotions: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error al escribir el archivo " + FILE_PATH + " (operación de escritura)", e);
         }
     }
 
@@ -71,11 +73,12 @@ public class PromotionDAO {
                     Promotion p = parseLine(line);
                     if (p != null) promotions.add(p);
                 } catch (Exception e) {
-                    System.out.println("Skipping corrupted line: " + line);
+                    // Corrupted line: skipped so one bad row does not block the whole file.
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error reading promotions: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error al leer el archivo " + FILE_PATH + " (operación de lectura)", e);
         }
         return promotions;
     }
