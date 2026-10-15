@@ -1,8 +1,10 @@
 package com.gamezone.service;
 
 import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.model.Console;
 import com.gamezone.model.Product;
-import com.gamezone.persistence.ProductDAO;
+import com.gamezone.model.VideoGame;
+import com.gamezone.persistence.ProductRepository;
 import com.gamezone.validation.ProductValidator;
 import java.util.List;
 
@@ -11,9 +13,9 @@ import java.util.List;
  */
 public class ProductService {
 
-    private ProductDAO productDAO;
+    private ProductRepository productDAO;
 
-    public ProductService(ProductDAO productDAO) {
+    public ProductService(ProductRepository productDAO) {
         this.productDAO = productDAO;
     }
 
@@ -31,6 +33,40 @@ public class ProductService {
         ProductValidator.validateProductData(product.getId(), product.getTitle(),
                 product.getPrice(), product.getStock());
         productDAO.save(product);
+    }
+
+    /**
+     * Creates a video game from the given data, validates it and persists it.
+     *
+     * @param id        the unique id of the video game
+     * @param title     the title of the video game
+     * @param price     the price of the video game
+     * @param stock     the initial stock
+     * @param platform  the platform the game runs on
+     * @param genre     the genre of the game
+     * @param ageRating the age rating of the game
+     * @throws InvalidDataException if the resulting product data is not valid
+     */
+    public void registerVideoGame(String id, String title, double price, int stock,
+                                  String platform, String genre, String ageRating) {
+        registerProduct(new VideoGame(id, title, price, stock, platform, genre, ageRating));
+    }
+
+    /**
+     * Creates a console from the given data, validates it and persists it.
+     *
+     * @param id         the unique id of the console
+     * @param title      the title of the console
+     * @param price      the price of the console
+     * @param stock      the initial stock
+     * @param brand      the brand of the console
+     * @param model      the model of the console
+     * @param generation the generation of the console
+     * @throws InvalidDataException if the resulting product data is not valid
+     */
+    public void registerConsole(String id, String title, double price, int stock,
+                                String brand, String model, String generation) {
+        registerProduct(new Console(id, title, price, stock, brand, model, generation));
     }
 
     /**
@@ -54,7 +90,7 @@ public class ProductService {
         if (product == null) {
             return false;
         }
-        return product.getStock() >= quantity;
+        return product.hasEnoughStock(quantity);
     }
 
     /**

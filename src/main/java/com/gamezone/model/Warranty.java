@@ -54,6 +54,15 @@ public abstract class Warranty {
      * @return the warranty type name
      */
     public abstract String getWarrantyType();
+    
+        /**
+     * Returns the code used to identify this warranty type when it is
+     * stored on disk (not shown to the user).
+     *
+     * @return the storage type code
+     */
+    public abstract String getTypeCode();
+    
 
     /**
      * Returns the additional cost, in currency, that this warranty

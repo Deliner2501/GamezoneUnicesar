@@ -1,6 +1,6 @@
 package com.gamezone.persistence;
 
-import com.gamezone.model.ExtendedWarranty;
+import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.model.Warranty;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -24,8 +24,6 @@ public class WarrantyRepository {
 
     private static final String FILE_PATH = "data/warranties.csv";
     private static final String FIELD_SEPARATOR = ";";
-    private static final String EXTENDED_TYPE = "EXTENDED";
-    private static final String BASIC_TYPE = "BASIC";
 
     /**
      * A raw, unresolved warranty record as stored on disk: just ids
@@ -81,9 +79,9 @@ public class WarrantyRepository {
      * content of the file.
      *
      * @param warranties the full list of warranties to persist
-     * @throws IOException if the warranties cannot be written to disk
+     * @throws PersistenceException if the warranties cannot be written to disk
      */
-    public void saveAll(List<Warranty> warranties) throws IOException {
+    public void saveAll(List<Warranty> warranties) {
         File file = new File(FILE_PATH);
         File parent = file.getParentFile();
         if (parent != null) {
@@ -95,6 +93,9 @@ public class WarrantyRepository {
                 writer.write(toLine(warranty));
                 writer.newLine();
             }
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al escribir el archivo " + FILE_PATH + " (operación de escritura)", e);
         }
     }
 
@@ -104,9 +105,9 @@ public class WarrantyRepository {
      *
      * @return the list of all persisted warranty records, or an empty
      *         list if the file does not exist yet
-     * @throws IOException if the file cannot be read
+     * @throws PersistenceException if the file cannot be read
      */
-    public List<WarrantyRecord> loadAll() throws IOException {
+    public List<WarrantyRecord> loadAll() {
         List<WarrantyRecord> records = new ArrayList<>();
         File file = new File(FILE_PATH);
         if (!file.exists()) {
@@ -121,6 +122,9 @@ public class WarrantyRepository {
                 }
                 records.add(fromLine(line));
             }
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al leer el archivo " + FILE_PATH + " (operación de lectura)", e);
         }
         return records;
     }
@@ -130,7 +134,7 @@ public class WarrantyRepository {
      * Format: type;id;productId;saleId;startDate
      */
     private String toLine(Warranty warranty) {
-        String type = (warranty instanceof ExtendedWarranty) ? EXTENDED_TYPE : BASIC_TYPE;
+        String type = warranty.getTypeCode();
         return type + FIELD_SEPARATOR
                 + warranty.getId() + FIELD_SEPARATOR
                 + warranty.getProduct().getId() + FIELD_SEPARATOR

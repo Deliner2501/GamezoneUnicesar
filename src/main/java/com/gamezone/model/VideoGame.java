@@ -50,4 +50,13 @@ public class VideoGame extends Product {
                 + ", Age rating: " + ageRating + ", Price: " + getPrice()
                 + ", Stock: " + getStock();
     }
+        /**
+     * Returns the category of this product.
+     *
+     * @return {@link ProductCategory#VIDEOGAME}
+     */
+    @Override
+    public ProductCategory getCategory() {
+        return ProductCategory.VIDEOGAME;
+    }
 }

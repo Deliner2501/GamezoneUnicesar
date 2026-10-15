@@ -5,7 +5,6 @@ import com.gamezone.model.Person;
 import com.gamezone.model.Seller;
 import com.gamezone.persistence.PersonDAO;
 import com.gamezone.validation.PersonValidator;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,9 +24,9 @@ public class PersonService {
      * from persistence, so previously registered data is available
      * right after the application starts.
      *
-     * @throws IOException if the stored data cannot be read
+
      */
-    public PersonService() throws IOException {
+    public PersonService() {
         this.personDAO = new PersonDAO();
         this.customers = personDAO.loadCustomers();
         this.sellers = personDAO.loadSellers();
@@ -43,9 +42,8 @@ public class PersonService {
      * @param email the customer's email address
      * @throws com.gamezone.exceptions.InvalidDataException if any field is invalid
      * @throws com.gamezone.exceptions.BusinessRuleException if a customer with the same id already exists
-     * @throws IOException if the data cannot be saved
      */
-    public void registerCustomer(String name, String id, String phone, String email) throws IOException {
+    public void registerCustomer(String name, String id, String phone, String email) {
         PersonValidator.validatePersonData(id, name, email, phone);
         PersonValidator.validateUniquePerson(new ArrayList<Person>(customers), id);
 

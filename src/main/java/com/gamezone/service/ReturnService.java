@@ -1,11 +1,14 @@
 package com.gamezone.service;
 
+import com.gamezone.exceptions.BusinessRuleException;
+import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.exceptions.ResourceNotFoundException;
 import com.gamezone.model.Accessory;
 import com.gamezone.model.Product;
 import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
-import com.gamezone.model.Console;
 import com.gamezone.persistence.ReturnRepository;
+import com.gamezone.persistence.ReturnRepository.ReturnRecord;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -57,54 +60,101 @@ public class ReturnService {
      * @param productIds the ids of the products being returned
      * @param reason     the reason for the return
      * @return the registered return, with its refund amount already calculated
-     * @throws IllegalArgumentException if the sale is not found, the 30-day
-     *         window has passed, or a product does not belong to the sale
+     * @throws InvalidDataException if the sale id, the product list or the reason is empty
+     * @throws ResourceNotFoundException if the sale does not exist
+     * @throws BusinessRuleException if the 30-day window has passed or a
+     *         product does not belong to the sale
      * @throws IOException if the return cannot be persisted
      */
     public Return registerReturn(String saleId, List<String> productIds, String reason) throws IOException {
-        if (saleId == null || saleId.isBlank()) {
-            throw new IllegalArgumentException("Debe indicar el id de la venta original");
-        }
-        if (productIds == null || productIds.isEmpty()) {
-            throw new IllegalArgumentException("Debe indicar al menos un producto para devolver");
-        }
-        if (reason == null || reason.isBlank()) {
-            throw new IllegalArgumentException("Debe indicar el motivo de la devolución");
-        }
+        validateReturnRequest(saleId, productIds, reason);
 
-        Sale originalSale = saleService.findSaleById(saleId);
-        if (originalSale == null) {
-            throw new IllegalArgumentException("La venta indicada no existe: " + saleId);
-        }
+        Sale originalSale = findReturnableSale(saleId);
+        List<Product> returnedProducts = resolveReturnedProducts(originalSale, productIds);
 
-        if (!originalSale.canBeReturned()) {
-            throw new IllegalArgumentException(
-                    "No se puede registrar la devolución: han pasado más de 30 días desde la venta");
-        }
-
-        List<Product> returnedProducts = new ArrayList<>();
-        for (String productId : productIds) {
-            Product product = findProductInSale(originalSale, productId);
-            if (product == null) {
-                throw new IllegalArgumentException(
-                        "El producto " + productId + " no pertenece a la venta " + saleId);
-            }
-            returnedProducts.add(product);
-        }
-
-        List<Return> existingReturns = returnRepository.loadAll();
+        List<Return> existingReturns = loadAllReturns();
         String returnId = generateReturnId(existingReturns);
 
-        double warrantyRefund = 0.0;
-        for (Product product : returnedProducts) {
-            if (product instanceof Console) {
-                warrantyRefund += warrantyService.cancelWarranties(product.getId(), saleId);
-            }
-        }
+        double warrantyRefund = cancelConsoleWarranties(returnedProducts, saleId);
 
         Return newReturn = new Return(returnId, LocalDate.now(), originalSale, returnedProducts, reason, warrantyRefund);
         newReturn.calculateRefundAmount();
 
+        restoreStockOf(returnedProducts);
+
+        existingReturns.add(newReturn);
+        returnRepository.saveAll(existingReturns);
+
+        return newReturn;
+    }
+
+    /**
+     * Checks that the sale id, the product list and the reason were provided.
+     */
+    private void validateReturnRequest(String saleId, List<String> productIds, String reason) {
+        if (saleId == null || saleId.isBlank()) {
+            throw new InvalidDataException("id de la venta", "no puede estar vacío");
+        }
+        if (productIds == null || productIds.isEmpty()) {
+            throw new InvalidDataException("productos", "debe indicar al menos un producto para devolver");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new InvalidDataException("motivo", "no puede estar vacío");
+        }
+    }
+
+    /**
+     * Finds the original sale and checks that it exists and is still
+     * inside the 30-day return window.
+     */
+    private Sale findReturnableSale(String saleId) throws IOException {
+        Sale originalSale = saleService.findSaleById(saleId);
+        if (originalSale == null) {
+            throw new ResourceNotFoundException("venta", saleId);
+        }
+        if (!originalSale.canBeReturned()) {
+            throw new BusinessRuleException(
+                    "No se puede registrar la devolución: han pasado más de 30 días desde la venta");
+        }
+        return originalSale;
+    }
+
+    /**
+     * Resolves the indicated product ids into the products of the sale,
+     * rejecting any id that does not belong to it.
+     */
+    private List<Product> resolveReturnedProducts(Sale originalSale, List<String> productIds) {
+        List<Product> returnedProducts = new ArrayList<>();
+        for (String productId : productIds) {
+            Product product = findProductInSale(originalSale, productId);
+            if (product == null) {
+                throw new BusinessRuleException(
+                        "El producto " + productId + " no pertenece a la venta " + originalSale.getId());
+            }
+            returnedProducts.add(product);
+        }
+        return returnedProducts;
+    }
+
+    /**
+     * Cancels the warranties of every returned console and returns the
+     * total reimbursable warranty cost.
+     */
+    private double cancelConsoleWarranties(List<Product> returnedProducts, String saleId) throws IOException {
+        double warrantyRefund = 0.0;
+        for (Product product : returnedProducts) {
+            if (product.requiresWarranty()) {
+                warrantyRefund += warrantyService.cancelWarranties(product.getId(), saleId);
+            }
+        }
+        return warrantyRefund;
+    }
+
+    /**
+     * Restores the stock of every returned product, routing accessories
+     * to the accessory service and everything else to the product service.
+     */
+    private void restoreStockOf(List<Product> returnedProducts) {
         for (Product product : returnedProducts) {
             if (product instanceof Accessory) {
                 accessoryService.restoreStock(product.getId(), 1);
@@ -112,11 +162,6 @@ public class ReturnService {
                 productService.restoreStock(product.getId(), 1);
             }
         }
-
-        existingReturns.add(newReturn);
-        returnRepository.saveAll(existingReturns);
-
-        return newReturn;
     }
 
     /**
@@ -145,6 +190,56 @@ public class ReturnService {
         int nextNumber = existingReturns.size() + 1;
         return "RET" + String.format("%03d", nextNumber);
     }
+    
+        /**
+     * Loads every raw return record from the repository and resolves
+     * each one into a real Return object, skipping any record whose
+     * sale or products can no longer be found.
+     */
+    private List<Return> loadAllReturns() throws IOException {
+        List<Return> returns = new ArrayList<>();
+        for (ReturnRecord record : returnRepository.loadAll()) {
+            Return resolved = resolveReturn(record);
+            if (resolved != null) {
+                returns.add(resolved);
+            }
+        }
+        return returns;
+    }
+
+    /**
+     * Resolves a raw return record back into a real Return object,
+     * looking up its original sale and returned products. Returns null
+     * if the sale or every product can no longer be resolved.
+     */
+    private Return resolveReturn(ReturnRecord record) throws IOException {
+        Sale originalSale = saleService.findSaleById(record.getSaleId());
+        if (originalSale == null) {
+            return null;
+        }
+
+        List<Product> returnedProducts = new ArrayList<>();
+        for (String productId : record.getProductIds()) {
+            Product product = productService.findProductById(productId);
+            if (product == null) {
+                product = accessoryService.findById(productId);
+            }
+            if (product != null) {
+                returnedProducts.add(product);
+            }
+        }
+        if (returnedProducts.isEmpty()) {
+            return null;
+        }
+
+        Return resolved = new Return(record.getId(), record.getDate(), originalSale,
+                returnedProducts, record.getReason(), record.getWarrantyRefund());
+        if (record.isRefundCalculated()) {
+            resolved.calculateRefundAmount();
+        }
+        return resolved;
+    }
+    
 
     /**
      * Returns every return registered in the system.
@@ -153,7 +248,7 @@ public class ReturnService {
      * @throws IOException if the returns cannot be read from storage
      */
     public List<Return> viewAllReturns() throws IOException {
-        return returnRepository.loadAll();
+        return loadAllReturns();
     }
 
     /**
@@ -165,7 +260,7 @@ public class ReturnService {
      */
     public List<Return> viewReturnsByCustomer(String customerId) throws IOException {
         List<Return> result = new ArrayList<>();
-        for (Return r : returnRepository.loadAll()) {
+        for (Return r : loadAllReturns()) {
             if (r.getOriginalSale().getCustomer().getId().equals(customerId)) {
                 result.add(r);
             }
@@ -182,7 +277,7 @@ public class ReturnService {
      */
     public List<Return> viewReturnsBySale(String saleId) throws IOException {
         List<Return> result = new ArrayList<>();
-        for (Return r : returnRepository.loadAll()) {
+        for (Return r : loadAllReturns()) {
             if (r.getOriginalSale().getId().equals(saleId)) {
                 result.add(r);
             }
@@ -210,7 +305,7 @@ public class ReturnService {
 
     public double calculateMonthlyReturns(int month, int year) throws IOException {
         double totalReturns = 0.0;
-        for (Return r : returnRepository.loadAll()) {
+        for (Return r : loadAllReturns()) {
             if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
                 totalReturns += r.getRefundAmount();
             }
@@ -222,3 +317,4 @@ public class ReturnService {
         return calculateMonthlySales(month, year) - calculateMonthlyReturns(month, year);
     }
 }
+

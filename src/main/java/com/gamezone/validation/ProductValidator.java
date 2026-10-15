@@ -50,7 +50,7 @@ public class ProductValidator {
      * @throws BusinessRuleException if the available stock is insufficient
      */
     public static void validateStockAvailability(Product product, int requestedQuantity) {
-        if (product.getStock() < requestedQuantity) {
+                if (!product.hasEnoughStock(requestedQuantity)) {
             throw new BusinessRuleException("Stock insuficiente para el producto '"
                     + product.getTitle() + "': disponible " + product.getStock()
                     + ", solicitado " + requestedQuantity);

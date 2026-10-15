@@ -96,3 +96,43 @@ He explained to me the Conventional Commits convention that the workshop require
 ## Phase 2 - Correction (feature/grasp-refactor)
 
 No entries yet.
+
+### Entry 1
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand the consolidated audit and in what order my violations had to be corrected.
+- **Query:** I pasted the lines of consolidated-audit.md assigned to Developer 1 and the frontier findings, and asked what each one required and what depended on what.
+- **Response summary:** It explained which violations were mine (V-08 to V-14), which prerequisites I owed to the Leader and Developer 2 (FF-01, FF-02, FF-05, FF-06) and why V-09 and V-14 stay blocked until FF-03 and FF-07 are done.
+- **Decision:** Accepted the order: prerequisites first so my teammates are unblocked.
+- **Related commit:** -
+
+### Entry 2
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand how to remove instanceof checks and duplicated rules in the Product, Promotion and Accessory hierarchies without changing behavior.
+- **Query:** I asked why an abstract method in the base class solves the instanceof problem, how to keep the CSV format identical, and what exactly to change in each class.
+- **Response summary:** It explained Polymorphism and Information Expert for these cases and proposed the changes (requiresWarranty, registerVideoGame/registerConsole, ProductCategory with getCategory, toCsvLine, getTypeCode, hasEnoughStock), showing the before and after of each file.
+- **Decision:** Applied each proposal myself in its own commit and checked BUILD SUCCESS. Left out the parts that belong to Developer 2 and the Leader. When a method was pasted in the wrong place in CategoryDiscount, I replaced the class with the complete version it gave me.
+- **Related commit:** 0cfe78f, 3a561dd, 1d908d5, 297f07d, f71384e, 53c8503, 0353999
+
+### Entry 3
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand how to correct V-10, V-11 and V-12 in ProductDAO and ProductService.
+- **Query:** I pasted ProductDAO and Main and asked how an injected logger, per-type CSV mappers and a repository interface fit together. Replacing the code piece by piece was giving me errors, so I asked for the complete classes.
+- **Response summary:** It explained the roles of the logger, the mappers and the interface, and gave the complete ProductDAO and ProductService for each commit, keeping the out-of-scope defects (F-02, F-03) untouched.
+- **Decision:** Accepted. I built the project before each commit and used git log to check that nobody else had modified ProductService.
+- **Related commit:** 96fc2e0, c41916a, c3e9a89
+
+### Entry 4
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand Git errors during the work.
+- **Query:** I pasted the output of rejected pushes and the vim screen of a merge and asked what was happening.
+- **Response summary:** It explained that the remote had new commits, that git pull was needed first and how to leave vim.
+- **Decision:** Accepted.
+- **Related commit:** -

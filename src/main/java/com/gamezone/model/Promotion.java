@@ -60,5 +60,13 @@ public abstract class Promotion {
      * @param sale the sale to evaluate
      * @return the discount amount in currency
      */
-    public abstract double calculateDiscount(Sale sale);
+       public abstract double calculateDiscount(Sale sale);
+
+    /**
+     * Returns the CSV line used to persist this promotion, starting with
+     * its type discriminator. Each subclass must implement this on its own.
+     *
+     * @return the CSV line representing this promotion
+     */
+    public abstract String toCsvLine();
 }

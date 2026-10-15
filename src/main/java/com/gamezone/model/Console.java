@@ -44,10 +44,29 @@ public class Console extends Product {
      *
      * @return the full description of the console
      */
+        /**
+     * Indicates that consoles are always sold with a warranty.
+     *
+     * @return true
+     */
+    @Override
+    public boolean requiresWarranty() {
+        return true;
+    }
+    
     @Override
     public String getFullDescription() {
         return getTitle() + " - Brand: " + brand + ", Model: " + model
                 + ", Generation: " + generation + ", Price: " + getPrice()
                 + ", Stock: " + getStock();
+    }
+        /**
+     * Returns the category of this product.
+     *
+     * @return {@link ProductCategory#VIDEOGAME}
+     */
+    @Override
+    public ProductCategory getCategory() {
+        return ProductCategory.VIDEOGAME;
     }
 }

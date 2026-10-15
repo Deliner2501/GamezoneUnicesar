@@ -39,6 +39,18 @@ public class PercentageDiscount extends Promotion {
      */
     @Override
     public double calculateDiscount(Sale sale) {
-        return sale.calculateTotal() * (percentage / 100.0);
+            return sale.calculateTotal() * (percentage / 100.0);
     }
+
+    /**
+     * Returns the CSV line that represents this promotion.
+     *
+     * @return the line in the format PERCENTAGE,id,name,start,end,percentage
+     */
+    @Override
+    public String toCsvLine() {
+        return "PERCENTAGE," + getId() + "," + getName() + ","
+                + getStartDate() + "," + getEndDate() + "," + percentage;
+    }
+    
 }

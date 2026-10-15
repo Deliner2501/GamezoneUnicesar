@@ -2,10 +2,6 @@ package com.gamezone.persistence;
 
 import com.gamezone.model.Product;
 import com.gamezone.model.Return;
-import com.gamezone.model.Sale;
-import com.gamezone.service.AccessoryService;
-import com.gamezone.service.ProductService;
-import com.gamezone.service.SaleService;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -14,14 +10,16 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Handles saving and loading Return data to and from a text file.
- * Since a return references an original sale and a list of returned
- * products, this class relies on SaleService and ProductService to
- * resolve those references back into real objects when a return is
- * loaded from disk.
+ * To keep the persistence layer independent from the service layer,
+ * this repository does not resolve sale or product references on its
+ * own: it only reads and writes raw identifiers. Turning a stored
+ * record back into a real Return object is the responsibility of
+ * ReturnService.
  */
 public class ReturnRepository {
 
@@ -29,26 +27,72 @@ public class ReturnRepository {
     private static final String FIELD_SEPARATOR = ";";
     private static final String PRODUCT_SEPARATOR = ",";
 
-    private SaleService saleService;
-    private ProductService productService;
-    private AccessoryService accessoryService;
-
     /**
-     * Creates a ReturnRepository that uses the given SaleService,
-     * ProductService and AccessoryService to resolve sale, product
-     * and accessory references when loading returns.
-     *
-     * @param saleService      the service used to look up the original sale by id
-     * @param productService   the service used to look up returned products by id
-     * @param accessoryService the service used to look up returned accessories by id
+     * A raw, unresolved return record as stored on disk: just ids,
+     * dates and amounts, with no references to actual Sale or Product
+     * objects.
      */
-    public ReturnRepository(SaleService saleService, ProductService productService,
-                             AccessoryService accessoryService) {
-        this.saleService = saleService;
-        this.productService = productService;
-        this.accessoryService = accessoryService;
+    public static class ReturnRecord {
+        private String id;
+        private LocalDate date;
+        private String saleId;
+        private List<String> productIds;
+        private String reason;
+        private double warrantyRefund;
+        private boolean refundCalculated;
+
+        /**
+         * Creates a raw return record.
+         *
+         * @param id               the return id
+         * @param date             the date the return was registered
+         * @param saleId           the id of the original sale
+         * @param productIds       the ids of the returned products
+         * @param reason           the reason for the return
+         * @param warrantyRefund   the warranty amount refunded with this return
+         * @param refundCalculated whether the file stored a refund amount, which
+         *                         means the refund must be recalculated when the
+         *                         return is rebuilt
+         */
+        public ReturnRecord(String id, LocalDate date, String saleId, List<String> productIds,
+                            String reason, double warrantyRefund, boolean refundCalculated) {
+            this.id = id;
+            this.date = date;
+            this.saleId = saleId;
+            this.productIds = productIds;
+            this.reason = reason;
+            this.warrantyRefund = warrantyRefund;
+            this.refundCalculated = refundCalculated;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public LocalDate getDate() {
+            return date;
+        }
+
+        public String getSaleId() {
+            return saleId;
+        }
+
+        public List<String> getProductIds() {
+            return productIds;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+
+        public double getWarrantyRefund() {
+            return warrantyRefund;
+        }
+
+        public boolean isRefundCalculated() {
+            return refundCalculated;
+        }
     }
-    
 
     /**
      * Persists the complete list of returns, replacing the previous
@@ -73,17 +117,18 @@ public class ReturnRepository {
     }
 
     /**
-     * Loads and returns every return stored in the returns file.
+     * Loads and returns every return record stored in the returns file,
+     * without resolving sale or product references.
      *
-     * @return the list of all persisted returns, or an empty list
-     *         if the file does not exist yet
+     * @return the list of all persisted return records, or an empty
+     *         list if the file does not exist yet
      * @throws IOException if the file cannot be read
      */
-    public List<Return> loadAll() throws IOException {
-        List<Return> returns = new ArrayList<>();
+    public List<ReturnRecord> loadAll() throws IOException {
+        List<ReturnRecord> records = new ArrayList<>();
         File file = new File(FILE_PATH);
         if (!file.exists()) {
-            return returns;
+            return records;
         }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -92,13 +137,10 @@ public class ReturnRepository {
                 if (line.isBlank()) {
                     continue;
                 }
-                Return r = fromLine(line);
-                if (r != null) {
-                    returns.add(r);
-                }
+                records.add(fromLine(line));
             }
         }
-        return returns;
+        return records;
     }
 
     /**
@@ -125,47 +167,24 @@ public class ReturnRepository {
     }
 
     /**
-     * Reconstructs a Return from a stored line of text, resolving the
-     * original sale and the returned products back into real objects.
+     * Parses a stored line of text into a raw return record.
      */
-    private Return fromLine(String line) throws IOException {
+    private ReturnRecord fromLine(String line) {
         String[] parts = line.split(FIELD_SEPARATOR, -1);
         String id = parts[0];
         LocalDate date = LocalDate.parse(parts[1]);
         String saleId = parts[2];
 
-        Sale originalSale = saleService.findSaleById(saleId);
-        if (originalSale == null) {
-            System.out.println("Skipping return " + id + ": original sale not found");
-            return null;
-        }
-
-        List<Product> returnedProducts = new ArrayList<>();
+        List<String> productIds = new ArrayList<>();
         if (parts.length > 3 && !parts[3].isBlank()) {
-            String[] productIds = parts[3].split(PRODUCT_SEPARATOR);
-            for (String productId : productIds) {
-                Product product = productService.findProductById(productId);
-                if (product == null) {
-                    product = accessoryService.findById(productId);
-                }
-                if (product != null) {
-                    returnedProducts.add(product);
-                }
-            }
-        }
-        if (returnedProducts.isEmpty()) {
-            System.out.println("Skipping return " + id + ": no returned products could be resolved");
-            return null;
+            productIds.addAll(Arrays.asList(parts[3].split(PRODUCT_SEPARATOR)));
         }
 
         String reason = parts.length > 4 ? parts[4] : "";
         double warrantyRefund = (parts.length > 6 && !parts[6].isBlank())
                 ? Double.parseDouble(parts[6]) : 0.0;
+        boolean refundCalculated = parts.length > 5 && !parts[5].isBlank();
 
-        Return r = new Return(id, date, originalSale, returnedProducts, reason, warrantyRefund);
-        if (parts.length > 5 && !parts[5].isBlank()) {
-            r.calculateRefundAmount();
-        }
-        return r;
+        return new ReturnRecord(id, date, saleId, productIds, reason, warrantyRefund, refundCalculated);
     }
 }
