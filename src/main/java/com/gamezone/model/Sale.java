@@ -227,31 +227,18 @@ public double getAdditionalCost() {
     return additionalCost;
 }
 
+    
     /**
      * Builds a readable receipt for this sale, showing the subtotal,
-     * the discount applied (if any), and the final total.
+     * the discount applied (if any), and the final total. The actual
+     * formatting is delegated to {@link com.gamezone.ui.SaleReceiptFormatter}
+     * (GRASP audit finding V-01): a domain class should not be
+     * responsible for presentation text.
      *
      * @return a formatted, multi-line receipt
      */
     public String generateReceipt() {
-        StringBuilder receipt = new StringBuilder();
-        receipt.append("Recibo de venta ").append(id).append("\n");
-        receipt.append("Fecha: ").append(date).append("\n");
-        receipt.append("Cliente: ").append(customer.getName()).append("\n");
-        receipt.append("Vendedor: ").append(seller.getName()).append("\n");
-        receipt.append("Productos: ").append(products.size()).append("\n");
-        receipt.append("Subtotal: ").append(total).append("\n");
-        if (additionalCost > 0) {
-            receipt.append("Cargos adicionales (garantías extendidas): ").append(additionalCost).append("\n");
-        }
-        if (appliedPromotionName != null) {
-            receipt.append("Descuento aplicado (").append(appliedPromotionName)
-                    .append("): -").append(discountAmount).append("\n");
-        } else {
-            receipt.append("Descuento aplicado: ninguno\n");
-        }
-        receipt.append("Total final: ").append(getFinalTotal());
-        return receipt.toString();
+        return com.gamezone.ui.SaleReceiptFormatter.format(this);
     }
 
     /**
