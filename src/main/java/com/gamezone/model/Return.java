@@ -61,6 +61,19 @@ public class Return {
     public double getWarrantyRefund() { return warrantyRefund; }
 
     /**
+     * Returns the discount rate of the original sale, asking the sale
+     * itself. A sale with a zero subtotal has no discount rate.
+     *
+     * @return the discount rate, or 0.0 if the original sale has a zero subtotal
+     */
+    private double originalDiscountRate() {
+        if (originalSale.getTotal() > 0) {
+            return originalSale.getDiscountRate();
+        }
+        return 0.0;
+    }
+
+    /**
      * Calculates the refund amount by summing, for each returned
      * product, the price proportionally reduced by the discount rate
      * applied to the original sale, plus the reimbursable cost of any
@@ -70,11 +83,7 @@ public class Return {
      * @return the calculated refund amount
      */
     public double calculateRefundAmount() {
-        double subtotal = originalSale.getTotal();
-        double discountRate = 0.0;
-        if (subtotal > 0) {
-            discountRate = originalSale.getDiscountAmount() / subtotal;
-        }
+        double discountRate = originalDiscountRate();
         double sum = 0.0;
         for (Product product : returnedProducts) {
             sum += product.getPrice() * (1 - discountRate);
@@ -97,11 +106,7 @@ public class Return {
         if (refundAmount == 0.0) {
             calculateRefundAmount();
         }
-        double subtotal = originalSale.getTotal();
-        double discountRate = 0.0;
-        if (subtotal > 0) {
-            discountRate = originalSale.getDiscountAmount() / subtotal;
-        }
+        double discountRate = originalDiscountRate();
         StringBuilder receipt = new StringBuilder();
         receipt.append("Recibo de devolución ").append(id).append("\n");
         receipt.append("Fecha: ").append(date).append("\n");
