@@ -8,10 +8,12 @@ import com.gamezone.model.Warranty;
 import com.gamezone.persistence.SaleDAO;
 import com.gamezone.persistence.WarrantyRepository;
 import com.gamezone.persistence.WarrantyRepository.WarrantyRecord;
+import com.gamezone.exceptions.InvalidDataException;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * Contains the business logic for assigning and consulting warranties.
@@ -55,10 +57,10 @@ public class WarrantyService {
      */
     public BasicWarranty assignBasicWarranty(Product product, Sale sale, LocalDate startDate) throws IOException {
         if (product == null || sale == null) {
-            throw new IllegalArgumentException("Debe indicar el producto y la venta para asignar la garantía");
+            throw new InvalidDataException("producto/venta", "debe indicar el producto y la venta para asignar la garantía");
         }
         if (startDate == null) {
-            throw new IllegalArgumentException("Debe indicar la fecha de inicio de la garantía");
+            throw new InvalidDataException("fecha de inicio", "debe indicar la fecha de inicio de la garantía");
         }
 
         List<Warranty> existingWarranties = loadAllWarranties();
@@ -158,7 +160,7 @@ public class WarrantyService {
      */
     public List<Warranty> listWarrantiesExpiringSoon(int daysAhead) throws IOException {
         if (daysAhead < 0) {
-            throw new IllegalArgumentException("El número de días de anticipación no puede ser negativo");
+            throw new InvalidDataException("días de anticipación", "no puede ser negativo");
         }
 
         List<Warranty> result = new ArrayList<>();
@@ -230,13 +232,13 @@ public class WarrantyService {
     private Warranty resolveWarranty(WarrantyRecord record) throws IOException {
         Product product = productService.findProductById(record.getProductId());
         if (product == null) {
-            System.out.println("Skipping warranty " + record.getId() + ": product not found");
+            // Orphan record: the product no longer exists, so the warranty is skipped.
             return null;
         }
 
         Sale sale = findSaleById(record.getSaleId());
         if (sale == null) {
-            System.out.println("Skipping warranty " + record.getId() + ": sale not found");
+            // Orphan record: the sale no longer exists, so the warranty is skipped.
             return null;
         }
 
