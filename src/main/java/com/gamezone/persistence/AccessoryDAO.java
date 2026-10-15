@@ -96,23 +96,7 @@ public class AccessoryDAO {
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_PATH))) {
             for (Accessory a : accessories) {
-                String consoles = String.join(CONSOLE_LIST_SEPARATOR, a.getCompatibleConsoleIds());
-                if (a instanceof Controller) {
-                    Controller c = (Controller) a;
-                    writer.println("CONTROLLER," + c.getId() + "," + c.getTitle() + ","
-                            + c.getPrice() + "," + c.getStock() + ","
-                            + c.getConnectionType() + "," + consoles);
-                } else if (a instanceof Cable) {
-                    Cable c = (Cable) a;
-                    writer.println("CABLE," + c.getId() + "," + c.getTitle() + ","
-                            + c.getPrice() + "," + c.getStock() + ","
-                            + c.getLengthInMeters() + "," + c.getConnectorType() + "," + consoles);
-                } else if (a instanceof Memory) {
-                    Memory m = (Memory) a;
-                    writer.println("MEMORY," + m.getId() + "," + m.getTitle() + ","
-                            + m.getPrice() + "," + m.getStock() + ","
-                            + m.getCapacityInGigabytes() + "," + m.getMemoryType() + "," + consoles);
-                }
+                writer.println(a.toCsvLine());
             }
         } catch (IOException e) {
             throw new PersistenceException(
