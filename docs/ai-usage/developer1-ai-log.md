@@ -156,4 +156,4 @@ No entries yet.
 - **Query:** I pasted Sale and Return and asked whether the new method behaves like the old formula and what to change in Return.
 - **Response summary:** It pointed out that getDiscountRate divides by zero when the subtotal is zero while the old code guarded that case, so Return keeps the guard. It also advised keeping both per-item expressions to avoid changing printed decimals, and gave the complete Return class.
 - **Decision:** Accepted. Built the project before the commit. I will tell the Leader that his JavaDoc and his code differ for a zero subtotal.
-- **Related commit:** V-09 commit
+- **Related commit:** d3a4497
