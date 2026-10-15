@@ -14,7 +14,7 @@ public class CategoryDiscount extends Promotion {
     public CategoryDiscount(String id, String name, LocalDate startDate, LocalDate endDate,
                              double percentage, String targetCategory) {
         super(id, name, startDate, endDate);
-                if (ProductCategory.fromText(targetCategory) == null) {
+        if (ProductCategory.fromText(targetCategory) == null) {
             throw new IllegalArgumentException(
                     "Target category must be VIDEOGAME, CONSOLE or ACCESSORY");
         }
@@ -69,8 +69,20 @@ public class CategoryDiscount extends Promotion {
         return categorySubtotal * (percentage / 100.0);
     }
 
-        private boolean matchesCategory(Product product) {
+    private boolean matchesCategory(Product product) {
         ProductCategory target = ProductCategory.fromText(targetCategory);
         return target != null && product.getCategory() == target;
+    }
+
+    /**
+     * Returns the CSV line that represents this promotion.
+     *
+     * @return the line in the format CATEGORY,id,name,start,end,percentage,category
+     */
+    @Override
+    public String toCsvLine() {
+        return "CATEGORY," + getId() + "," + getName() + ","
+                + getStartDate() + "," + getEndDate() + ","
+                + percentage + "," + targetCategory;
     }
 }
