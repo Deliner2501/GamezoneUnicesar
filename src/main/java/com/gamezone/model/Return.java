@@ -1,6 +1,8 @@
 package com.gamezone.model;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,7 +37,7 @@ public class Return {
         this.id = id;
         this.date = date;
         this.originalSale = originalSale;
-        this.returnedProducts = returnedProducts;
+        this.returnedProducts = new ArrayList<>(returnedProducts);
         this.reason = reason;
         this.warrantyRefund = warrantyRefund;
         this.refundAmount = 0.0;
@@ -44,7 +46,16 @@ public class Return {
     public String getId() { return id; }
     public LocalDate getDate() { return date; }
     public Sale getOriginalSale() { return originalSale; }
-    public List<Product> getReturnedProducts() { return returnedProducts; }
+
+    /**
+     * Returns an unmodifiable view of the products being returned.
+     *
+     * @return the unmodifiable list of returned products
+     */
+    public List<Product> getReturnedProducts() {
+        return Collections.unmodifiableList(returnedProducts);
+    }
+
     public String getReason() { return reason; }
     public double getRefundAmount() { return refundAmount; }
     public double getWarrantyRefund() { return warrantyRefund; }
