@@ -1,9 +1,7 @@
 package com.gamezone.persistence;
 
 import com.gamezone.exceptions.PersistenceException;
-import com.gamezone.model.Console;
 import com.gamezone.model.Product;
-import com.gamezone.model.VideoGame;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +15,8 @@ public class ProductDAO {
     private static final String FILE_PATH = "data/products.csv";
 
     private final DataLogger logger;
+    private final List<ProductCsvMapper> mappers =
+            List.of(new VideoGameCsvMapper(), new ConsoleCsvMapper());
 
     /**
      * Creates a DAO that reports warnings to the console.
@@ -112,16 +112,11 @@ public class ProductDAO {
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_PATH))) {
             for (Product p : products) {
-                if (p instanceof VideoGame) {
-                    VideoGame vg = (VideoGame) p;
-                    writer.println("VIDEOGAME," + vg.getId() + "," + vg.getTitle() + ","
-                            + vg.getPrice() + "," + vg.getStock() + ","
-                            + vg.getPlatform() + "," + vg.getGenre() + "," + vg.getAgeRating());
-                } else if (p instanceof Console) {
-                    Console c = (Console) p;
-                    writer.println("CONSOLE," + c.getId() + "," + c.getTitle() + ","
-                            + c.getPrice() + "," + c.getStock() + ","
-                            + c.getBrand() + "," + c.getModel() + "," + c.getGeneration());
+                for (ProductCsvMapper mapper : mappers) {
+                    if (mapper.getCategory() == p.getCategory()) {
+                        writer.println(mapper.toCsvLine(p));
+                        break;
+                    }
                 }
             }
         } catch (IOException e) {
@@ -138,10 +133,10 @@ public class ProductDAO {
         double price = Double.parseDouble(parts[3]);
         int stock = Integer.parseInt(parts[4]);
 
-        if (type.equals("VIDEOGAME")) {
-            return new VideoGame(id, title, price, stock, parts[5], parts[6], parts[7]);
-        } else if (type.equals("CONSOLE")) {
-            return new Console(id, title, price, stock, parts[5], parts[6], parts[7]);
+        for (ProductCsvMapper mapper : mappers) {
+            if (mapper.getTypeCode().equals(type)) {
+                return mapper.create(id, title, price, stock, parts);
+            }
         }
         return null;
     }
