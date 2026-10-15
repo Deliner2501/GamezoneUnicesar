@@ -16,6 +16,24 @@ public class ProductDAO {
 
     private static final String FILE_PATH = "data/products.csv";
 
+    private final DataLogger logger;
+
+    /**
+     * Creates a DAO that reports warnings to the console.
+     */
+    public ProductDAO() {
+        this(new ConsoleDataLogger());
+    }
+
+    /**
+     * Creates a DAO that reports warnings to the given logger.
+     *
+     * @param logger the logger that receives the warnings
+     */
+    public ProductDAO(DataLogger logger) {
+        this.logger = logger;
+    }
+
     /**
      * Saves a single product by appending it to the file.
      *
@@ -46,8 +64,8 @@ public class ProductDAO {
                 try {
                     Product p = parseLine(line);
                     if (p != null) products.add(p);
-                } catch (Exception e) {
-                    System.out.println("Skipping corrupted line: " + line);
+                } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+                    logger.warn("Skipping corrupted line: " + line);
                 }
             }
         } catch (IOException e) {
