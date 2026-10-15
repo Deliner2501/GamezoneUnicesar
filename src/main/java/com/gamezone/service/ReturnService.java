@@ -7,7 +7,6 @@ import com.gamezone.model.Accessory;
 import com.gamezone.model.Product;
 import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
-import com.gamezone.model.Console;
 import com.gamezone.persistence.ReturnRepository;
 import com.gamezone.persistence.ReturnRepository.ReturnRecord;
 import java.io.IOException;
@@ -144,7 +143,7 @@ public class ReturnService {
     private double cancelConsoleWarranties(List<Product> returnedProducts, String saleId) throws IOException {
         double warrantyRefund = 0.0;
         for (Product product : returnedProducts) {
-            if (product instanceof Console) {
+            if (product.requiresWarranty()) {
                 warrantyRefund += warrantyService.cancelWarranties(product.getId(), saleId);
             }
         }
