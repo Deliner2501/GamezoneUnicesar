@@ -11,7 +11,6 @@ import com.gamezone.model.Warranty;
 import com.gamezone.exceptions.BusinessRuleException;
 import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.exceptions.ResourceNotFoundException;
-import com.gamezone.persistence.ProductDAO;
 import com.gamezone.persistence.AccessoryDAO;
 import com.gamezone.persistence.SaleDAO;
 import com.gamezone.validation.ProductValidator;
@@ -33,7 +32,7 @@ import java.util.Map;
 public class SaleService {
 
     private SaleDAO saleDAO;
-    private ProductDAO productDAO;
+    private ProductService productService;
     private AccessoryDAO accessoryDAO;
     private PromotionService promotionService;
     private WarrantyService warrantyService;
@@ -43,15 +42,14 @@ public class SaleService {
      * Creates a SaleService with its required collaborators.
      *
      * @param saleDAO       the DAO used to persist and query sales
-     * @param productDAO    the DAO used to look up and update product stock
      * @param personService the service used to resolve customers and sellers by id
      * @param accessoryDAO  the DAO used to look up and update accessory stock
      * @param promotionService the service used to find and apply the best available promotion
      */
-    public SaleService(SaleDAO saleDAO, ProductDAO productDAO, AccessoryDAO accessoryDAO,
+    public SaleService(SaleDAO saleDAO, ProductService productService, AccessoryDAO accessoryDAO,
                         PromotionService promotionService, PersonService personService) {
         this.saleDAO = saleDAO;
-        this.productDAO = productDAO;
+        this.productService = productService;
         this.accessoryDAO = accessoryDAO;
         this.promotionService = promotionService;
         this.personService = personService;
@@ -122,7 +120,7 @@ public class SaleService {
                         "debe ser mayor que cero para el ítem " + itemId);
             }
 
-            Product product = productDAO.findById(itemId);
+            Product product = productService.findProductById(itemId);
             if (product != null) {
                 ProductValidator.validateStockAvailability(product, quantity);
                 resolvedProducts.put(product, quantity);
@@ -205,8 +203,7 @@ public class SaleService {
         for (Map.Entry<Product, Integer> entry : resolvedProducts.entrySet()) {
             Product product = entry.getKey();
             int quantity = entry.getValue();
-            product.reduceStock(quantity);
-            productDAO.update(product);
+            productService.reduceStock(product.getId(), quantity);
         }
         for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
             Accessory accessory = entry.getKey();
