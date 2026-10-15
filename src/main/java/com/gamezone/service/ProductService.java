@@ -88,7 +88,7 @@ public class ProductService {
         if (product == null) {
             return false;
         }
-        return product.getStock() >= quantity;
+               return product.hasEnoughStock(quantity);
     }
 
     /**

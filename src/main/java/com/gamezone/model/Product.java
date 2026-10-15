@@ -28,11 +28,22 @@ public abstract class Product {
      * @param quantity the amount to subtract from the current stock
      * @throws IllegalArgumentException if the quantity exceeds the current stock
      */
-    public void reduceStock(int quantity) {
-        if (quantity > this.stock) {
+        public void reduceStock(int quantity) {
+        if (!hasEnoughStock(quantity)) {
             throw new IllegalArgumentException("Insufficient stock for product: " + id);
         }
         this.stock -= quantity;
+    }
+
+    /**
+     * Checks whether this product has at least the given quantity in stock.
+     * This is the single source of the "enough stock" rule.
+     *
+     * @param quantity the quantity requested
+     * @return true if the current stock covers the quantity, false otherwise
+     */
+    public boolean hasEnoughStock(int quantity) {
+        return this.stock >= quantity;
     }
     
     /**
