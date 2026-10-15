@@ -66,4 +66,11 @@ public void increaseStock(int quantity) {
      * @return the full description of the product
      */
     public abstract String getFullDescription();
+        /**
+     * Returns the category this product belongs to. Each subclass
+     * must implement this on its own.
+     *
+     * @return the category of the product
+     */
+    public abstract ProductCategory getCategory();
 }

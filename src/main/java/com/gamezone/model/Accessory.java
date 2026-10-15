@@ -56,4 +56,13 @@ public abstract class Accessory extends Product {
     public boolean isCompatibleWith(String consoleId) {
         return compatibleConsoleIds.contains(consoleId);
     }
+        /**
+     * Returns the category of this product.
+     *
+     * @return {@link ProductCategory#VIDEOGAME}
+     */
+    @Override
+    public ProductCategory getCategory() {
+        return ProductCategory.VIDEOGAME;
+    }
 }
