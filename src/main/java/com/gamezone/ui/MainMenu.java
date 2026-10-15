@@ -384,13 +384,11 @@ public class MainMenu {
         String email = askInput("Correo electrónico:");
         if (email == null) return;
 
-        try {
-            personService.registerCustomer(name, id, phone, email);
-            JOptionPane.showMessageDialog(null, "Cliente registrado exitosamente.",
-                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-        } catch (IOException e) {
-            showPersistenceError();
-        }
+        personService.registerCustomer(name, id, phone, email);
+        JOptionPane.showMessageDialog(null, "Cliente registrado exitosamente.",
+                "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
+
+        
     }
 
     private void listCustomers() {

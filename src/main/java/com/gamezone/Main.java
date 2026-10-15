@@ -15,8 +15,6 @@ import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
 import com.gamezone.service.WarrantyService;
 import com.gamezone.ui.MainMenu;
-import java.io.IOException;
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 /**
@@ -32,35 +30,28 @@ public class Main {
      * @param args command-line arguments (not used)
      */
     public static void main(String[] args) {
-        try {
-            // Persistence layer
-            PersonDAO personDAO = new PersonDAO();
-            ProductDAO productDAO = new ProductDAO();
-            AccessoryDAO accessoryDAO = new AccessoryDAO();
-            PromotionDAO promotionDAO = new PromotionDAO();
-            SaleDAO saleDAO = new SaleDAO(personDAO, productDAO);
+        // Persistence layer
+        PersonDAO personDAO = new PersonDAO();
+        ProductDAO productDAO = new ProductDAO();
+        AccessoryDAO accessoryDAO = new AccessoryDAO();
+        PromotionDAO promotionDAO = new PromotionDAO();
+        SaleDAO saleDAO = new SaleDAO(personDAO, productDAO);
 
-            // Service layer
-            // Service layer
-            PersonService personService = new PersonService();
-            ProductService productService = new ProductService(productDAO);
-            AccessoryService accessoryService = new AccessoryService(accessoryDAO);
-            PromotionService promotionService = new PromotionService(promotionDAO);
-            SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, promotionService, personService);
-            WarrantyRepository warrantyRepository = new WarrantyRepository();
-            WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
-            saleService.setWarrantyService(warrantyService);
-            ReturnRepository returnRepository = new ReturnRepository(saleService, productService, accessoryService);
-            ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService);
+        // Service layer
+        // Service layer
+        PersonService personService = new PersonService();
+        ProductService productService = new ProductService(productDAO);
+        AccessoryService accessoryService = new AccessoryService(accessoryDAO);
+        PromotionService promotionService = new PromotionService(promotionDAO);
+        SaleService saleService = new SaleService(saleDAO, productDAO, accessoryDAO, promotionService, personService);
+        WarrantyRepository warrantyRepository = new WarrantyRepository();
+        WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
+        saleService.setWarrantyService(warrantyService);
+        ReturnRepository returnRepository = new ReturnRepository(saleService, productService, accessoryService);
+        ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService);
 
-            // UI layer
-            MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService);
-            SwingUtilities.invokeLater(mainMenu::start);
-
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(null,
-                    "Error fatal al iniciar la aplicación: " + e.getMessage(),
-                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-        }
+        // UI layer
+        MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService);
+        SwingUtilities.invokeLater(mainMenu::start);
     }
 }

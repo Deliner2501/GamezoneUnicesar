@@ -32,10 +32,8 @@ public class PersonDAO {
      * @param customers the list of customers to save
      * @throws InvalidDataException if the list is null
      * @throws PersistenceException if the file cannot be written
-     * @throws IOException declared for API compatibility; write failures
-     *         are now wrapped as PersistenceException instead
      */
-    public void saveCustomers(List<Customer> customers) throws IOException {
+    public void saveCustomers(List<Customer> customers) {
         if (customers == null) {
             throw new InvalidDataException("lista de clientes", "no puede ser nula");
         }
@@ -63,10 +61,8 @@ public class PersonDAO {
      *
      * @return the list of persisted customers, or an empty list if the file does not exist yet
      * @throws PersistenceException if the file cannot be read
-     * @throws IOException declared for API compatibility; read failures
-     *         are now wrapped as PersistenceException instead
      */
-    public List<Customer> loadCustomers() throws IOException {
+    public List<Customer> loadCustomers() {
         List<Customer> customers = new ArrayList<>();
         File file = new File(CUSTOMERS_FILE);
 
@@ -94,10 +90,9 @@ public class PersonDAO {
      * @param sellers the list of sellers to save
      * @throws InvalidDataException if the list is null
      * @throws PersistenceException if the file cannot be written
-     * @throws IOException declared for API compatibility; write failures
-     *         are now wrapped as PersistenceException instead
      */
-    public void saveSellers(List<Seller> sellers) throws IOException {
+    public void saveSellers(List<Seller> sellers) {
+
         if (sellers == null) {
             throw new InvalidDataException("lista de vendedores", "no puede ser nula");
         }
@@ -129,10 +124,8 @@ public class PersonDAO {
      *
      * @return the list of persisted sellers, or an empty list if the file does not exist yet
      * @throws PersistenceException if the file cannot be read
-     * @throws IOException declared for API compatibility; read failures
-     *         are now wrapped as PersistenceException instead
      */
-    public List<Seller> loadSellers() throws IOException {
+    public List<Seller> loadSellers() {
         List<Seller> sellers = new ArrayList<>();
         File file = new File(SELLERS_FILE);
 
