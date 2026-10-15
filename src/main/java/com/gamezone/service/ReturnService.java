@@ -68,6 +68,31 @@ public class ReturnService {
      * @throws IOException if the return cannot be persisted
      */
     public Return registerReturn(String saleId, List<String> productIds, String reason) throws IOException {
+        validateReturnRequest(saleId, productIds, reason);
+
+        Sale originalSale = findReturnableSale(saleId);
+        List<Product> returnedProducts = resolveReturnedProducts(originalSale, productIds);
+
+        List<Return> existingReturns = loadAllReturns();
+        String returnId = generateReturnId(existingReturns);
+
+        double warrantyRefund = cancelConsoleWarranties(returnedProducts, saleId);
+
+        Return newReturn = new Return(returnId, LocalDate.now(), originalSale, returnedProducts, reason, warrantyRefund);
+        newReturn.calculateRefundAmount();
+
+        restoreStockOf(returnedProducts);
+
+        existingReturns.add(newReturn);
+        returnRepository.saveAll(existingReturns);
+
+        return newReturn;
+    }
+
+    /**
+     * Checks that the sale id, the product list and the reason were provided.
+     */
+    private void validateReturnRequest(String saleId, List<String> productIds, String reason) {
         if (saleId == null || saleId.isBlank()) {
             throw new InvalidDataException("id de la venta", "no puede estar vacío");
         }
@@ -77,40 +102,60 @@ public class ReturnService {
         if (reason == null || reason.isBlank()) {
             throw new InvalidDataException("motivo", "no puede estar vacío");
         }
+    }
 
+    /**
+     * Finds the original sale and checks that it exists and is still
+     * inside the 30-day return window.
+     */
+    private Sale findReturnableSale(String saleId) throws IOException {
         Sale originalSale = saleService.findSaleById(saleId);
         if (originalSale == null) {
             throw new ResourceNotFoundException("venta", saleId);
         }
-
         if (!originalSale.canBeReturned()) {
             throw new BusinessRuleException(
                     "No se puede registrar la devolución: han pasado más de 30 días desde la venta");
         }
+        return originalSale;
+    }
 
+    /**
+     * Resolves the indicated product ids into the products of the sale,
+     * rejecting any id that does not belong to it.
+     */
+    private List<Product> resolveReturnedProducts(Sale originalSale, List<String> productIds) {
         List<Product> returnedProducts = new ArrayList<>();
         for (String productId : productIds) {
             Product product = findProductInSale(originalSale, productId);
             if (product == null) {
                 throw new BusinessRuleException(
-                        "El producto " + productId + " no pertenece a la venta " + saleId);
+                        "El producto " + productId + " no pertenece a la venta " + originalSale.getId());
             }
             returnedProducts.add(product);
         }
+        return returnedProducts;
+    }
 
-        List<Return> existingReturns = loadAllReturns();
-        String returnId = generateReturnId(existingReturns);
-
+    /**
+     * Cancels the warranties of every returned console and returns the
+     * total reimbursable warranty cost.
+     */
+    private double cancelConsoleWarranties(List<Product> returnedProducts, String saleId) throws IOException {
         double warrantyRefund = 0.0;
         for (Product product : returnedProducts) {
             if (product instanceof Console) {
                 warrantyRefund += warrantyService.cancelWarranties(product.getId(), saleId);
             }
         }
+        return warrantyRefund;
+    }
 
-        Return newReturn = new Return(returnId, LocalDate.now(), originalSale, returnedProducts, reason, warrantyRefund);
-        newReturn.calculateRefundAmount();
-
+    /**
+     * Restores the stock of every returned product, routing accessories
+     * to the accessory service and everything else to the product service.
+     */
+    private void restoreStockOf(List<Product> returnedProducts) {
         for (Product product : returnedProducts) {
             if (product instanceof Accessory) {
                 accessoryService.restoreStock(product.getId(), 1);
@@ -118,11 +163,6 @@ public class ReturnService {
                 productService.restoreStock(product.getId(), 1);
             }
         }
-
-        existingReturns.add(newReturn);
-        returnRepository.saveAll(existingReturns);
-
-        return newReturn;
     }
 
     /**
