@@ -32,21 +32,7 @@ public class PromotionDAO {
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_PATH))) {
             for (Promotion p : promotions) {
-                if (p instanceof PercentageDiscount) {
-                    PercentageDiscount pd = (PercentageDiscount) p;
-                    writer.println("PERCENTAGE," + pd.getId() + "," + pd.getName() + ","
-                            + pd.getStartDate() + "," + pd.getEndDate() + "," + pd.getPercentage());
-                } else if (p instanceof CategoryDiscount) {
-                    CategoryDiscount cd = (CategoryDiscount) p;
-                    writer.println("CATEGORY," + cd.getId() + "," + cd.getName() + ","
-                            + cd.getStartDate() + "," + cd.getEndDate() + ","
-                            + cd.getPercentage() + "," + cd.getTargetCategory());
-                } else if (p instanceof BulkPurchaseDiscount) {
-                    BulkPurchaseDiscount bd = (BulkPurchaseDiscount) p;
-                    writer.println("BULK," + bd.getId() + "," + bd.getName() + ","
-                            + bd.getStartDate() + "," + bd.getEndDate() + ","
-                            + bd.getMinQuantity() + "," + bd.getPercentage());
-                }
+                writer.println(p.toCsvLine());
             }
         } catch (IOException e) {
             throw new PersistenceException(
