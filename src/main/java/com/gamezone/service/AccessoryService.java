@@ -202,11 +202,6 @@ public class AccessoryService {
 
     private boolean matchesType(Accessory accessory, String type) {
         if (type == null) return false;
-        return switch (type.toUpperCase()) {
-            case "CONTROLLER" -> accessory instanceof Controller;
-            case "CABLE" -> accessory instanceof Cable;
-            case "MEMORY" -> accessory instanceof Memory;
-            default -> false;
-        };
+        return accessory.getTypeCode().equalsIgnoreCase(type);
     }
 }
