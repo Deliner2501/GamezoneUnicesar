@@ -1,5 +1,8 @@
 package com.gamezone.service;
 
+import com.gamezone.exceptions.BusinessRuleException;
+import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.exceptions.ResourceNotFoundException;
 import com.gamezone.model.Accessory;
 import com.gamezone.model.Product;
 import com.gamezone.model.Return;
@@ -58,28 +61,30 @@ public class ReturnService {
      * @param productIds the ids of the products being returned
      * @param reason     the reason for the return
      * @return the registered return, with its refund amount already calculated
-     * @throws IllegalArgumentException if the sale is not found, the 30-day
-     *         window has passed, or a product does not belong to the sale
+     * @throws InvalidDataException if the sale id, the product list or the reason is empty
+     * @throws ResourceNotFoundException if the sale does not exist
+     * @throws BusinessRuleException if the 30-day window has passed or a
+     *         product does not belong to the sale
      * @throws IOException if the return cannot be persisted
      */
     public Return registerReturn(String saleId, List<String> productIds, String reason) throws IOException {
         if (saleId == null || saleId.isBlank()) {
-            throw new IllegalArgumentException("Debe indicar el id de la venta original");
+            throw new InvalidDataException("id de la venta", "no puede estar vacío");
         }
         if (productIds == null || productIds.isEmpty()) {
-            throw new IllegalArgumentException("Debe indicar al menos un producto para devolver");
+            throw new InvalidDataException("productos", "debe indicar al menos un producto para devolver");
         }
         if (reason == null || reason.isBlank()) {
-            throw new IllegalArgumentException("Debe indicar el motivo de la devolución");
+            throw new InvalidDataException("motivo", "no puede estar vacío");
         }
 
         Sale originalSale = saleService.findSaleById(saleId);
         if (originalSale == null) {
-            throw new IllegalArgumentException("La venta indicada no existe: " + saleId);
+            throw new ResourceNotFoundException("venta", saleId);
         }
 
         if (!originalSale.canBeReturned()) {
-            throw new IllegalArgumentException(
+            throw new BusinessRuleException(
                     "No se puede registrar la devolución: han pasado más de 30 días desde la venta");
         }
 
@@ -87,7 +92,7 @@ public class ReturnService {
         for (String productId : productIds) {
             Product product = findProductInSale(originalSale, productId);
             if (product == null) {
-                throw new IllegalArgumentException(
+                throw new BusinessRuleException(
                         "El producto " + productId + " no pertenece a la venta " + saleId);
             }
             returnedProducts.add(product);
@@ -273,3 +278,4 @@ public class ReturnService {
         return calculateMonthlySales(month, year) - calculateMonthlyReturns(month, year);
     }
 }
+
