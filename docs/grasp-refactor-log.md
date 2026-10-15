@@ -5,3 +5,6 @@
 | `Sale`, `SaleReceiptFormatter` (new) | Extracted `generateReceipt()`'s body into a new `SaleReceiptFormatter.format(Sale)` Pure Fabrication; `Sale.generateReceipt()` now delegates to it | V-01 | Pure Fabrication / Protected Variations | `refactor: extract receipt formatting to SaleReceiptFormatter (V-01)` | Technical Leader |
 | `SaleDAO` | Wrapped `IOException` as `PersistenceException` in `findByCustomer`/`findBySeller`, consistent with `save`/`findAll` | V-02 | Protected Variations | `fix: wrap IOException as PersistenceException in SaleDAO findByCustomer/findBySeller (V-02)` | Technical Leader |
 | `Product`, `Console` | Added `Product.requiresWarranty()` (default `false`) and overrode it in `Console` (`true`), so callers can ask the product instead of testing `instanceof Console`. Prerequisite for the Leader's and Developer 2's fixes | V-04, V-07, V-29 (FF-01) | Polymorphism | `refactor: add Product.requiresWarranty to replace instanceof Console checks (V-04, V-07, V-29)` | Developer 1 |
+
+| `Customer` | `getPurchaseHistory()` now returns `Collections.unmodifiableList(purchaseHistory)` instead of the live internal list, so callers can only add purchases through `addPurchase` | V-15 | Protected Variations | `refactor: return unmodifiable purchase history from Customer (V-15)` | Developer 2 |
+
