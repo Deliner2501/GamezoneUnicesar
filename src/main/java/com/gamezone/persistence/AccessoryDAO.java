@@ -4,6 +4,7 @@ import com.gamezone.model.Accessory;
 import com.gamezone.model.Cable;
 import com.gamezone.model.Controller;
 import com.gamezone.model.Memory;
+import com.gamezone.exceptions.PersistenceException;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,11 +51,12 @@ public class AccessoryDAO {
                     Accessory a = parseLine(line);
                     if (a != null) accessories.add(a);
                 } catch (Exception e) {
-                    System.out.println("Skipping corrupted line: " + line);
+                    // Corrupted line: skipped so one bad row does not block the whole file.
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error reading accessories: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error al leer el archivo " + FILE_PATH + " (operación de lectura)", e);
         }
         return accessories;
     }
@@ -113,10 +115,12 @@ public class AccessoryDAO {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error saving accessories: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error al escribir el archivo " + FILE_PATH + " (operación de escritura)", e);
         }
     }
 
+    
     private Accessory parseLine(String line) {
         String[] parts = line.split(",", -1);
         String type = parts[0];
