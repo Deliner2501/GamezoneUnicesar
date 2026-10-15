@@ -32,6 +32,16 @@ public class ExtendedWarranty extends Warranty {
     public String getWarrantyType() {
         return "Garantía Extendida";
     }
+    
+        /**
+     * Returns the code used to identify this warranty type in storage.
+     *
+     * @return "EXTENDED"
+     */
+    @Override
+    public String getTypeCode() {
+        return "EXTENDED";
+    }
 
     /**
      * Returns the additional cost of an extended warranty: 10% of the
