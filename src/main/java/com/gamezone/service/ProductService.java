@@ -1,21 +1,21 @@
 package com.gamezone.service;
 
 import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.model.Console;
 import com.gamezone.model.Product;
-import com.gamezone.persistence.ProductDAO;
+import com.gamezone.model.VideoGame;
+import com.gamezone.persistence.ProductRepository;
 import com.gamezone.validation.ProductValidator;
 import java.util.List;
-import com.gamezone.model.Console;
-import com.gamezone.model.VideoGame;
 
 /**
  * Contains the business rules for managing products.
  */
 public class ProductService {
 
-    private ProductDAO productDAO;
+    private ProductRepository productDAO;
 
-    public ProductService(ProductDAO productDAO) {
+    public ProductService(ProductRepository productDAO) {
         this.productDAO = productDAO;
     }
 
@@ -34,7 +34,8 @@ public class ProductService {
                 product.getPrice(), product.getStock());
         productDAO.save(product);
     }
-        /**
+
+    /**
      * Creates a video game from the given data, validates it and persists it.
      *
      * @param id        the unique id of the video game
@@ -67,6 +68,7 @@ public class ProductService {
                                 String brand, String model, String generation) {
         registerProduct(new Console(id, title, price, stock, brand, model, generation));
     }
+
     /**
      * Returns the list of all currently available products.
      *
@@ -88,7 +90,7 @@ public class ProductService {
         if (product == null) {
             return false;
         }
-               return product.hasEnoughStock(quantity);
+        return product.hasEnoughStock(quantity);
     }
 
     /**
