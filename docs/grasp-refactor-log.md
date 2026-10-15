@@ -1,5 +1,61 @@
 # GRASP Refactor Log — Phase 2
 
+# GRASP Refactor Log — Phase 2
+
+## No-Regression Verification Strategy
+
+Defined by the Technical Leader before corrections began, per the team's
+answer to orienting question 4 in `docs/grasp-analysis.md`. This
+complements the per-member checklists (e.g.
+`docs/grasp-refactor-verification-dev2.md`) with the full-system
+checklist that is the Leader's responsibility to run as baseline and as
+final verification.
+
+1. **Baseline on `develop`.** Before any Phase 2 correction is merged,
+   every menu operation in the system is exercised on `develop` (commit
+   `9c86d20`, Phase 1 merged, no Phase 2 changes yet) and the result is
+   recorded below as the reference.
+2. **Re-check after every Phase 2 Pull Request.** `mvn clean compile`
+   must pass, and the checklist rows for the operations touched by that
+   PR are re-run and compared against the baseline: same inputs, same
+   results, same messages.
+3. **Data files are part of the behavior.** `data/*.txt` and `data/*.csv`
+   are compared before and after each scenario; only the lines created by
+   the test scenario itself may differ.
+4. **Final full-system run.** Once every Phase 2 Pull Request is merged
+   to `develop`, the Technical Leader re-runs this entire checklist one
+   more time on `develop` and records the final column below as closing
+   evidence for the oral defense.
+
+## Baseline Checklist (run on `develop`, commit `9c86d20`, before Phase 2)
+
+| # | Flow | Steps | Expected result | Baseline (pre-correction) | Final (post-correction, pending) |
+|---|---|---|---|---|---|
+| 1 | Register video game | Products > register a video game with valid data | Success dialog; appears in product listing | Pass | — |
+| 2 | Register console | Products > register a console with valid data | Success dialog; appears in product listing | Pass | — |
+| 3 | Register customer | Persons > register a customer with valid data | Success dialog; appears in customer listing | Pass | — |
+| 4 | Register full sale | Sales > register a sale with one console, one video game, one accessory, best promotion auto-applied, extended warranty accepted for the console | Success dialog; receipt shows subtotal, warranty additional cost, discount, final total | Pass | — |
+| 5 | List all sales | Sales > list all sales | Receipt-formatted list, same text as before (`Sale.generateReceipt`, now via `SaleReceiptFormatter`) | Pass | — |
+| 6 | Sales by customer / seller | Sales > consult purchase history of the customer from step 4; consult sales of the seller | Same sale appears in both listings | Pass | — |
+| 7 | Register accessory (controller) | Accessories > register a controller, mark it compatible with the console from step 2 | Success dialog; appears in accessory listing | Pass | — |
+| 8 | List accessories by type / compatible with console | Accessories > list by type; list compatible with the console | Correct filtered lists | Pass | — |
+| 9 | Register promotion (percentage) | Promotions > register a percentage discount | Success dialog; appears in promotion listing | Pass | — |
+| 10 | List active promotions | Promotions > list active promotions | Only currently-active promotions shown | Pass | — |
+| 11 | Register return | Returns > register a return for the sale from step 4, within the 30-day window | Success dialog; refund includes proportional discount and warranty reimbursement; stock restored for product and accessory; console's warranty canceled | Pass | — |
+| 12 | View returns (all / by customer / by sale) | Returns > each listing option | Return from step 11 appears consistently in all three | Pass | — |
+| 13 | Monthly balance | Returns > consult monthly balance for the current month | Shows total sales, total returns, net balance, consistent with steps 4 and 11 | Pass | — |
+| 14 | Warranty queries | Warranties > consult by product/sale from step 4; list all; list active; list expiring soon | Warranty and extended warranty both appear, with correct status | Pass | — |
+| 15 | Invalid-data paths | Try registering a product with a non-numeric price, a sale with an unknown customer id, a promotion with 150% | Each shows the corresponding error dialog; nothing is saved | Pass | — |
+| 16 | Data file diff | `git diff -- data/` after the full scenario above | Only the lines created by this run are added; no existing line changed or disappeared | Pass | — |
+
+**Build check (baseline):** `mvn clean compile` on `develop` at `9c86d20` → `BUILD SUCCESS`.
+
+**Note:** the "Final" column stays as `—` until every Phase 2 Pull Request
+(mine and both teammates') is merged to `develop`. I will re-run every
+row then and fill it in as the closing evidence, per step 4 above.
+
+---
+
 | Class | Change made | Violation ID | Pattern applied | Commit/PR | Responsible |
 |---|---|---|---|---|---|
 | `Sale`, `SaleReceiptFormatter` (new) | Extracted `generateReceipt()`'s body into a new `SaleReceiptFormatter.format(Sale)` Pure Fabrication; `Sale.generateReceipt()` now delegates to it | V-01 | Pure Fabrication / Protected Variations | `refactor: extract receipt formatting to SaleReceiptFormatter (V-01)` | Technical Leader |
