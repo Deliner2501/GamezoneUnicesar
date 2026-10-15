@@ -136,3 +136,14 @@ No entries yet.
 - **Response summary:** It explained that the remote had new commits, that git pull was needed first and how to leave vim.
 - **Decision:** Accepted.
 - **Related commit:** -
+
+
+### Entry 5
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Correct V-14 and review my earlier changes.
+- **Query:** I pasted Return and Accessory and asked for the complete classes, to avoid errors when replacing pieces.
+- **Response summary:** It explained why unmodifiable views and defensive copies protect the internal lists, and noticed that Accessory.getCategory returned VIDEOGAME instead of ACCESSORY, an error from my earlier change. It gave the complete classes.
+- **Decision:** Accepted. I fixed the category in its own fix commit and applied V-14 in a second commit, building the project before each one.
+- **Related commit:** 1b7d364, ec4d9c2
