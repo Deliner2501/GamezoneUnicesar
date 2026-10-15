@@ -48,6 +48,16 @@ public void increaseStock(int quantity) {
     }
     this.stock += quantity;
 }
+    /**
+     * Indicates whether this product is sold with a warranty. Products
+     * have no warranty by default; subclasses that do must override this.
+     *
+     * @return true if the product requires a warranty, false otherwise
+     */
+    public boolean requiresWarranty() {
+        return false;
+    }
+
 
     /**
      * Returns a full description integrating this product's specific
