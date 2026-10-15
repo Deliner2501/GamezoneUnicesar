@@ -86,10 +86,10 @@ public abstract class Accessory extends Product {
         /**
      * Returns the category of this product.
      *
-     * @return {@link ProductCategory#VIDEOGAME}
+         * @return {@link ProductCategory#ACCESSORY}
      */
     @Override
     public ProductCategory getCategory() {
-        return ProductCategory.VIDEOGAME;
+        return ProductCategory.ACCESSORY;
     }
 }
