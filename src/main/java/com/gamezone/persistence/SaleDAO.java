@@ -94,36 +94,50 @@ public class SaleDAO {
         return sales;
     }
 
-    /**
+        /**
      * Returns every sale made by the customer with the given id.
      *
      * @param customerId the id of the customer
      * @return the list of sales made by that customer
-     * @throws IOException if the sales file cannot be read
+     * @throws PersistenceException if the sales file cannot be read
+     * @throws IOException declared for API compatibility; read failures
+     *         are now wrapped as PersistenceException instead
      */
     public List<Sale> findByCustomer(String customerId) throws IOException {
         List<Sale> result = new ArrayList<>();
-        for (Sale sale : findAll()) {
-            if (sale.getCustomer().getId().equals(customerId)) {
-                result.add(sale);
+        try {
+            for (Sale sale : findAll()) {
+                if (sale.getCustomer().getId().equals(customerId)) {
+                    result.add(sale);
+                }
             }
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al leer el archivo " + FILE_PATH + " (operación de lectura)", e);
         }
         return result;
     }
 
-    /**
+        /**
      * Returns every sale attended by the seller with the given id.
      *
      * @param sellerId the id of the seller
      * @return the list of sales attended by that seller
-     * @throws IOException if the sales file cannot be read
+     * @throws PersistenceException if the sales file cannot be read
+     * @throws IOException declared for API compatibility; read failures
+     *         are now wrapped as PersistenceException instead
      */
     public List<Sale> findBySeller(String sellerId) throws IOException {
         List<Sale> result = new ArrayList<>();
-        for (Sale sale : findAll()) {
-            if (sale.getSeller().getId().equals(sellerId)) {
-                result.add(sale);
+        try {
+            for (Sale sale : findAll()) {
+                if (sale.getSeller().getId().equals(sellerId)) {
+                    result.add(sale);
+                }
             }
+        } catch (IOException e) {
+            throw new PersistenceException(
+                    "Error al leer el archivo " + FILE_PATH + " (operación de lectura)", e);
         }
         return result;
     }
