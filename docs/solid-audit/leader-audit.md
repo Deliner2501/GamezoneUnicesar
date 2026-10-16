@@ -367,3 +367,145 @@ registered again here, to avoid counting the same fragment twice.
   to Developer 1 (`restoreStock` is mine, `reduceStock` too). The change in
   `SaleService` and `Main` is mine. Frontier finding, to consolidate with
   both developers.
+
+  
+---
+
+## 4. UI layer: `MainMenu`, the seven area menus, `MenuDialogs`, `SaleReceiptFormatter`
+
+The area menus are `ProductMenu`, `PersonMenu`, `SaleMenu`, `AccessoryMenu`,
+`PromotionMenu`, `ReturnMenu` and `WarrantyMenu`. They share the same shape
+(constructor receiving one service, a public `show()`, an options array and
+a switch), so they are audited together; findings that apply to a specific
+one name the class and line.
+
+### 4.1 `MainMenu`
+
+#### SRP — Correct
+
+`MainMenu` has one reason to change: the top-level navigation of the
+application. After Requirement 7 it only shows the main options (lines
+69–91), delegates to the area menus (lines 94–100) and routes exceptions to
+`MenuDialogs` (lines 103–116); the area logic and the dialog code live
+elsewhere.
+
+#### OCP — Violation (V-06)
+
+**V-06 — Adding a new menu area requires editing `MainMenu` in three
+places (and its constructor builds concrete menus)**
+- **Principle:** Open/Closed Principle (related to DIP)
+- **Module:** `MainMenu`:
+  - Constructor lines 49–60: `new ProductMenu(productService)`,
+    `new PersonMenu(personService)`, `new SaleMenu(saleService,
+    productService)`, `new AccessoryMenu(...)`, `new PromotionMenu(...)`,
+    `new ReturnMenu(...)`, `new WarrantyMenu(...)`; it receives the seven
+    services (lines 49–52) only to pass them on, it uses none of them.
+  - `options` array, lines 69–78 (labels in a fixed order).
+  - `switch (choice)`, lines 93–101: `case 0 -> productMenuView.show()` …
+    `case 6 -> warrantyMenuView.show()`, `case 7, -1 -> running = false`.
+- **Evidence:** the quoted lines. The position of a label in the array and
+  the number of its `case` are coupled by hand, and the high-level class
+  knows every concrete menu and every service needed to build it.
+- **Explanation:** The class is not closed for modification: a new area
+  (for example "Reports") means changing the constructor, the array and the
+  switch, and inserting an item in the middle would silently shift every
+  later `case`. Because `MainMenu` also instantiates the concrete menus, it
+  is a high-level class tied to the details of all of them (DIP smell). It is
+  registered once, because a single change solves both.
+- **Consequence:** Each new area touches the main navigation class and risks
+  breaking the existing ones; the class also cannot be built in a test
+  without the whole service layer.
+- **Proposed solution:** Create a small interface in the `ui` package (for
+  example `AreaMenu` with `String getTitle()` and `void show()`), make the
+  seven menus implement it, build them in `Main` (the composition root) and
+  pass a `List<AreaMenu>` to `MainMenu`. `MainMenu` builds the option labels
+  from the titles, appends "Salir" and opens the selected menu by index.
+  Labels, order, exception handling and messages stay identical.
+- **Code of another member:** No — `MainMenu`, the seven menus (all
+  mine since Requirement 7) and `Main` are in my scope.
+
+#### LSP — Not applicable
+
+`public class MainMenu` (line 27) has no `extends`/`implements` and is not
+extended, so there is no substitution relationship.
+
+#### ISP — Not applicable
+
+`MainMenu` declares and implements no interface. After V-06 the new
+`AreaMenu` interface has only two methods and every implementer uses both.
+
+#### DIP — Correct (the construction problem is covered by V-06)
+
+Apart from the instantiation reported in V-06, `MainMenu` depends on the
+service layer only through the menus (it never touches a DAO or a model
+class) and respects the direction `ui → service`.
+
+### 4.2 The seven area menus
+
+#### SRP — Correct
+
+Each menu handles one feature area: for example `SaleMenu` only registers
+and lists sales (`registerSale` line 70 to `printSales` line 153), and
+`ProductMenu`, `PersonMenu`, `AccessoryMenu`, `PromotionMenu`, `ReturnMenu`
+and `WarrantyMenu` are built the same way (single area per class, constructor
+with its own service). Dialog code is delegated to `MenuDialogs`.
+
+#### OCP — Correct
+
+Adding an operation to an area means editing only that area's class (its
+options array and switch, for example `SaleMenu` lines 41–67), which is the
+one class that is responsible for that area; no other class is touched. The
+warranty question is not type-based: `SaleMenu` line 100 asks
+`product.requiresWarranty()` instead of checking `instanceof Console`.
+
+#### LSP — Not applicable
+
+None of the seven menus extends a class or is extended (each declared as
+`public class XxxMenu` without `extends`), so there is nothing to substitute.
+After V-06 they will implement `AreaMenu` identically (`show()` and
+`getTitle()`).
+
+#### ISP — Not applicable
+
+They declare and implement no interface today. `SaleMenu` uses a single
+method of `ProductService` (`findProductById`, line 99); since it depends on
+a concrete class, this wide-dependency symptom is the same one analysed
+under DIP (V-05) for `SaleService`, and is not counted again.
+
+#### DIP — Correct
+
+Each menu depends on exactly the service(s) of its own area
+(`ProductMenu(ProductService)` line 24, `SaleMenu(SaleService,
+ProductService)` line 32, and so on), in the allowed direction
+`ui → service`, and none reaches a DAO or a persistence detail. Unlike
+`SaleService` (V-05), a menu has one cohesive dependency and no persistence
+detail, so no abstraction is needed to protect it.
+
+### 4.3 `MenuDialogs`
+
+- **SRP — Correct.** All members are Swing dialog helpers (`askInput` line
+  89, `showList` line 100, `formatEntries` line 120, and five `showXxx`
+  error dialogs, lines 34–79). They change for one reason: how dialogs look
+  and read to the user.
+- **OCP — Correct.** `MainMenu` can receive a new `GameZoneException`
+  subtype without edits because `showGenericError` (line 76) and the
+  `catch (GameZoneException e)` (MainMenu line 111) already cover it.
+- **LSP — Not applicable.** `public final class` (line 20), private
+  constructor, no inheritance.
+- **ISP — Not applicable.** No interface is declared or implemented.
+- **DIP — Correct.** It is a UI helper that uses Swing (`JOptionPane`),
+  which is the UI technology itself; it depends on no service,
+  persistence or model class, only on the exception types it translates.
+
+### 4.4 `SaleReceiptFormatter`
+
+- **SRP — Correct.** One responsibility: build the receipt text
+  (`format(Sale)`, lines 25–44).
+- **OCP — Correct.** `Sale` stays closed for presentation changes; the
+  receipt layout is changed only here.
+- **LSP — Not applicable.** `public final class` (line 11), private
+  constructor, no inheritance.
+- **ISP — Not applicable.** No interface; it uses only getters of `Sale`.
+- **DIP — Correct.** It depends on the model (`Sale`), which is the
+  allowed direction `ui → model`. The inverse dependency, `Sale` →
+  `SaleReceiptFormatter`, is reported in V-01.
