@@ -1,0 +1,112 @@
+# SOLID Audit — Team Orienting Questions
+
+This document answers the five orienting questions required by
+Requirement 8, discussed as a team and assigned as follows: the Technical
+Leader answers questions 1 and 5 (criteria and evidence for the audit, and
+correction order and coordination, both tied to the consolidation and
+Phase 2 coordination role); Developer 1 and Developer 2 answer questions 2,
+3 and 4 (findings from their own audit work).
+
+## 1. What criterion did the team use to decide whether a code fragment violates a SOLID principle, complies with it, or the principle does not apply? What minimum evidence must support each verdict?
+
+A fragment is marked **Violation** only when it can be tied to a concrete,
+checkable symptom of the principle being broken, not to a stylistic
+preference. For each principle the team looked for its specific failure
+signature:
+
+- **SRP:** a class that has more than one reason to change, shown by members
+  that belong to different axes of change (for example file access,
+  serialization format and reference resolution in the same class).
+- **OCP:** adding a new kind of item or area requires editing existing code,
+  shown by type-based branching (`instanceof`, parallel collections per
+  type) or by hard-coded lists coupled by position (an options array and a
+  `switch` that must be kept in sync).
+- **LSP:** a subtype cannot replace its base type, because it throws where the
+  base type does not, narrows a precondition or changes the contract.
+- **ISP:** a client is forced to depend on interface methods it does not use.
+  Because the project has few interfaces, this was only reported when an
+  interface exists or is introduced; a client that depends on a few methods
+  of a concrete class was not counted as an ISP violation.
+- **DIP:** a high-level class depends on a concrete low-level class or on a
+  layer above it instead of an abstraction, for example a model class that
+  references the UI layer, or a service that holds a concrete DAO.
+  Same-layer service-to-service dependencies with a single implementation and
+  no expected variation were not counted, and the composition root (`Main`)
+  is the intended place where concrete classes are chosen.
+
+A verdict of **Correct** requires naming the class, method and place where
+the principle is met, with a one-line justification (for example "`Sale`
+sums `product.getPrice()` without checking the item type: OCP is met").
+
+A verdict of **Not applicable** requires explaining why the principle has no
+point of application in the audited code (for example "`SaleDAO` neither
+extends a class nor implements an interface, so there is no substitution
+relationship for LSP").
+
+For a **Violation**, the minimum evidence accepted into the consolidation is:
+the exact class and method, the line numbers or code fragment quoted from the
+current state of `develop`, a one- or two-sentence explanation of why the
+fragment breaks the principle, and the concrete consequence it causes (what
+becomes harder or more fragile, not just "bad practice"). A finding without
+at least the class/method and a quoted fragment is returned to its author
+before it is consolidated. A single fragment gets a single ID, tagged with
+the principle whose proposed solution fixes it most directly, and a related
+principle is noted in parentheses only as context.
+
+## 2. Some violations show up at the boundary between two members' code, for example when one member's class depends inappropriately on another member's class. What findings of this kind did the team identify? How were they registered in the consolidation and who was assigned to correct them? Present at least one concrete case or, if there were none, explain how the team verified none exist.
+
+_To be answered by Developer 1 and Developer 2._
+
+## 3. Some violations were already fixed by the GRASP refactoring of Requirement 7, and some GRASP fixes may have solved or introduced SOLID problems. What cases did the team find? Present at least one concrete case of each kind.
+
+_To be answered by Developer 1 and Developer 2._
+
+## 4. The correction must preserve the external behavior of the system. What strategy does the team follow to guarantee that all the menu operations keep working the same? What evidence is shown at the end to demonstrate that nothing was broken?
+
+_To be answered by Developer 1 and Developer 2._
+
+## 5. In what order are violations corrected, and why? When a correction involves more than one member's code, how is the work coordinated, especially when several members must change the same files on the shared integration branch?
+
+Violations are corrected in Phase 2 in this order:
+
+1. **Prerequisite abstractions first.** The interfaces that other members'
+   corrections depend on are created and merged to `develop` before anything
+   else, because they unblock the rest: the `PersonRepository` and
+   `AccessoryRepository` interfaces (Developer 2) are needed by the Leader's
+   V-03 and V-05. Whoever owns the prerequisite class makes that change first,
+   in a small Pull Request, and notifies the dependent member.
+2. **Violations entirely within one member's own code, in parallel.** These
+   need nobody else, so each member can progress at the same time. For the
+   Leader these are V-01 (remove the model-to-UI dependency), V-06 (the
+   `AreaMenu` abstraction) and V-02 (extract the sale line mapper).
+3. **Dependent violations last, after the prerequisite is on `develop`.**
+   The dependent member merges the updated `develop` into their branch and
+   then applies their own fix. For the Leader this means V-04 (the item
+   source abstraction, which also uses the accessory repository) and
+   V-03/V-05 (wiring `SaleRepository`, `PersonRepository` and
+   `AccessoryRepository`) at the end, after V-02, because the mapper
+   extracted in V-02 is what receives those abstractions.
+4. **No order may break the build or change behavior mid-sequence.** Every
+   commit must compile with `mvn clean compile` and leave the no-regression
+   checklist unchanged.
+
+Because all three members change the same integration code, the team
+applies these coordination rules:
+
+- Each member works in their own branch created from `develop`, with their
+  own Pull Request reviewed by another member, so a conflict affects one
+  small change at a time and not a shared branch.
+- Each violation is a separate atomic commit tagged with its ID, so any
+  regression can be traced to one commit and reverted on its own.
+- `Main.java` is the main conflict hotspot, because each new interface is
+  wired there by a different member. Changes to `Main.java` are kept to the
+  minimum lines per commit, and the member who merges second resolves the
+  conflict after merging the updated `develop` into their branch.
+- Members pull `develop` before starting each correction and before each push,
+  never use `git push --force`, and re-run the affected rows of the
+  checklist after merging a teammate's prerequisite.
+- The agreed split of every cross-member violation is recorded in the
+  "frontier findings" section of the consolidated audit, so who makes which
+  half and in what order is explicit and not improvised during Phase 2. The
+  Leader notifies the owner of each prerequisite (class, interface name and
+  methods) before Phase 2 starts.
