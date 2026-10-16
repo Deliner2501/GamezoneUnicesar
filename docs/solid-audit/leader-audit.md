@@ -509,3 +509,69 @@ detail, so no abstraction is needed to protect it.
 - **DIP — Correct.** It depends on the model (`Sale`), which is the
   allowed direction `ui → model`. The inverse dependency, `Sale` →
   `SaleReceiptFormatter`, is reported in V-01.
+
+  
+---
+
+## 5. `Main.java`
+
+`Main` is the composition root: `main` builds every DAO (lines 34–38) and
+service (lines 42–51), wires them (including `setWarrantyService`, line 49)
+and starts the UI with `SwingUtilities.invokeLater(mainMenu::start)`
+(line 55).
+
+- **SRP — Correct.** It has one responsibility: assemble the object graph and
+  launch the application. It contains no business or presentation logic.
+- **OCP — Correct.** Adding a class to the system means adding lines to the
+  composition root by design; it is the single place meant to change when the
+  object graph changes, and no behavior of other classes is modified.
+- **LSP — Not applicable.** `public class Main` (line 25) has no inheritance.
+- **ISP — Not applicable.** No interface is declared or implemented.
+- **DIP — Correct.** The composition root is where concrete implementations
+  are chosen and injected into the classes that depend on abstractions
+  (`new ProductService(productDAO)` line 43 receives a `ProductRepository`).
+  Depending on concrete classes here is the expected exception to DIP, not a
+  violation. The corrections of V-03, V-05 and V-06 will be wired in this
+  class.
+
+**Conclusion: no violations found in `Main.java`.**
+
+---
+
+## 6. `ProductService.restoreStock` and `ProductService.reduceStock`
+
+Scope note: only these two methods are mine to audit (`restoreStock` added
+for Requirement 3 and `reduceStock` added by me in Requirement 7, V-34);
+the rest of `ProductService` belongs to Developer 1.
+
+```java
+public void restoreStock(String productId, int quantity) {   // lines 114–119
+    Product product = productDAO.findById(productId);
+    ProductValidator.validateProductExists(product, productId);
+    product.increaseStock(quantity);
+    productDAO.update(product);
+}
+
+public void reduceStock(String productId, int quantity) {    // lines 131–136
+    Product product = productDAO.findById(productId);
+    ProductValidator.validateProductExists(product, productId);
+    product.reduceStock(quantity);
+    productDAO.update(product);
+}
+```
+
+- **SRP — Correct.** Each method does one operation (find, validate, change
+  stock through the product, persist) and changes only if the stock-update
+  rule changes.
+- **OCP — Correct.** Neither method inspects the product's concrete type;
+  the stock change is delegated to `Product.increaseStock` /
+  `Product.reduceStock`, so new `Product` subtypes work unchanged.
+- **LSP — Correct.** Both methods work with the `Product` type and rely only
+  on its contract; `VideoGame` and `Console` can be used wherever a
+  `Product` is expected without special cases.
+- **ISP — Not applicable.** `ProductService` has no interface and these
+  methods are not part of one.
+- **DIP — Correct.** They use the injected `ProductRepository` interface
+  (field line 16, constructor line 18), not the concrete `ProductDAO`.
+
+**Conclusion: no violations found in `restoreStock` or `reduceStock`.**
