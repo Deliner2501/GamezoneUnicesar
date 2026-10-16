@@ -325,49 +325,48 @@ its base type.
 
 ### ISP — Not applicable
 
-`SaleService` neither declares nor implements an interface (line 31). The
-symptom "depends on more methods than it uses" appears because its
-collaborators are concrete classes; it is reported under DIP (V-05) and not
-registered again here, to avoid counting the same fragment twice.
+`SaleService` neither declares nor implements an interface (line 31), so no
+client is forced to depend on a "fat" interface. It does use only a small
+part of each collaborator's API (`ProductService`: `findProductById` and
+`reduceStock`; `PersonService`: the two finders; `PromotionService`:
+`findBestPromotionFor`; `WarrantyService`: the two `assign*` methods).
+Those collaborators are same-layer service classes with a single
+implementation and no expected variation, so narrow interfaces for them
+would add indirection without a real axis of change; the team did not
+consider that a violation.
 
 ### DIP — Violation (V-05)
 
-**V-05 — `SaleService` depends on concrete collaborators**
-- **Principle:** Dependency Inversion Principle (related to ISP)
-- **Module:** `SaleService` fields and constructor, lines 33–38 and 48–55:
-  `SaleDAO`, `ProductService`, `AccessoryDAO`, `PromotionService`,
-  `WarrantyService` and `PersonService`, plus `setWarrantyService`
-  (line 66).
-- **Evidence:** every field is declared with a concrete class. It uses very
-  little of each one: `ProductService` only `findProductById` (line 169) and
-  `reduceStock` (line 261); `PersonService` only `findCustomerById` and
-  `findSellerById` (lines 132, 145); `PromotionService` only
-  `findBestPromotionFor` (line 221); `WarrantyService` only
-  `assignBasicWarranty` and `assignExtendedWarranty` (lines 240, 245);
-  `AccessoryDAO` only `findById` and `update` (lines 176, 267). It also
-  reaches a DAO (`AccessoryDAO`) directly from the service layer, without
-  any abstraction. The `SaleDAO` part of this dependency is registered in
-  V-03 and is not repeated here.
-- **Explanation:** The use-case class depends on the details (implementations
-  and their full public API) instead of on abstractions defined by what it
-  needs.
-- **Consequence:** `registerSale` cannot be tested with fakes, and a change
-  in any of those five classes (names, signatures, constructors) ripples into
-  `SaleService`.
-- **Proposed solution:** Depend on narrow interfaces that express only what
-  `SaleService` uses, implemented by the existing classes (for example
-  `AccessoryRepository`, `PersonLookup`, `PromotionSelector`,
-  `WarrantyAssigner`, plus the `SaleRepository` of V-03), and keep the
-  existing wiring in `Main`. The `setWarrantyService` setter injection stays
-  (the circular dependency with `WarrantyService` still exists). Behavior is
-  unchanged.
-- **Code of another member:** **Yes.** `AccessoryDAO`,
-  `PromotionService`, `WarrantyService`, `PersonService` belong to
-  Developer 2 and must implement the new interfaces; `ProductService` belongs
-  to Developer 1 (`restoreStock` is mine, `reduceStock` too). The change in
-  `SaleService` and `Main` is mine. Frontier finding, to consolidate with
-  both developers.
-
+**V-05 — `SaleService` depends on the concrete persistence class
+`AccessoryDAO`**
+- **Principle:** Dependency Inversion Principle
+- **Module:** `SaleService` field and constructor, lines 35 and 48–52
+  (`private AccessoryDAO accessoryDAO`), used in `resolveSaleItems` line 176
+  (`accessoryDAO.findById`) and `updateInventory` line 267
+  (`accessoryDAO.update`).
+- **Evidence:** A service-layer class holds a concrete DAO and calls its
+  persistence methods directly. For products the same project already solved
+  this: `ProductService` depends on the `ProductRepository` interface
+  (`ProductService` line 16) and `SaleService` reaches products only through
+  `ProductService`. Accessories have no equivalent abstraction. The
+  `SaleDAO` side of the same problem is registered in V-03.
+- **Explanation:** The use-case class (high level) depends on a file-based
+  implementation (low level) instead of an abstraction.
+- **Consequence:** The sale registration with accessories cannot be tested
+  with an in-memory repository, and a change in `AccessoryDAO` (constructor,
+  storage) reaches `SaleService`.
+- **Proposed solution:** Create an `AccessoryRepository` interface
+  (`findById`, `update`, and the other methods its clients use) implemented
+  by `AccessoryDAO`, and have `SaleService` receive it. Behavior is
+  unchanged. The other collaborators (`ProductService`, `PersonService`,
+  `PromotionService`, `WarrantyService`) are same-layer services and are
+  intentionally left as they are; `setWarrantyService` stays because of the
+  circular dependency.
+- **Code of another member:** **Yes.** `AccessoryDAO` belongs to
+  Developer 2 and must implement the new interface (the interface itself can
+  be created by Developer 2 or by me in the same PR, as agreed at
+  consolidation). The change in `SaleService` and `Main` is mine. Frontier
+  finding.
   
 ---
 
@@ -468,9 +467,10 @@ After V-06 they will implement `AreaMenu` identically (`show()` and
 #### ISP — Not applicable
 
 They declare and implement no interface today. `SaleMenu` uses a single
-method of `ProductService` (`findProductById`, line 99); since it depends on
-a concrete class, this wide-dependency symptom is the same one analysed
-under DIP (V-05) for `SaleService`, and is not counted again.
+method of `ProductService` (`findProductById`, line 99), but `ProductService`
+is a class, not an interface, so there is no fat interface to segregate.
+After V-06 the seven menus implement `AreaMenu`, which has two methods that
+every implementer uses.
 
 #### DIP — Correct
 
