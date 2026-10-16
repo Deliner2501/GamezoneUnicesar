@@ -6,7 +6,6 @@ import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.exceptions.ResourceNotFoundException;
 import com.gamezone.model.Accessory;
-import com.gamezone.model.Console;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Product;
 import com.gamezone.model.Promotion;
@@ -478,7 +477,7 @@ public class MainMenu {
                 productQuantities.merge(productId, quantity, Integer::sum);
 
                 Product product = productService.findProductById(productId);
-                if (product instanceof Console) {
+                if (product != null && product.requiresWarranty()) {
                     int answer = JOptionPane.showConfirmDialog(
                             null,
                             "¿Agregar garantía extendida a este producto?",
