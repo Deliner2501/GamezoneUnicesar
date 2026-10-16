@@ -251,3 +251,119 @@ its clients depend on the concrete `SaleDAO`**
 is reloaded. This was already registered as an out-of-scope defect in the
 Requirement 7 audit (`docs/grasp-audit/leader-audit.md`), so it is **not
 registered again** here and remains uncorrected.
+
+
+---
+
+## 3. `SaleService.java`
+
+### SRP — Correct
+
+`SaleService` has one reason to change: the workflow of the "register a
+sale" use case and the sale queries. `registerSale` (lines 92–124) reads as
+a sequence of calls to single-purpose helpers (`resolveCustomer` line 131,
+`resolveSeller` line 144, `resolveSaleItems` line 158, `buildSale` line 195,
+`applyBestPromotion` line 220, `assignWarranties` line 235,
+`updateInventory` line 257), each delegating the real work to the class
+that owns it (`PersonService`, `PromotionService`, `WarrantyService`,
+`ProductService`). The accessory-specific stock logic that does live in this
+class is reported as part of V-04, since it is the same code region.
+
+### OCP — Violation (V-04)
+
+**V-04 — Item-kind branching (product vs. accessory) is repeated in three
+methods, so a new kind of sellable item forces edits in `SaleService`**
+- **Principle:** Open/Closed Principle (related to SRP: accessory stock
+  handling inside the sales service)
+- **Module:** `SaleService.registerSale`, `resolveSaleItems`, `buildSale`
+  and `updateInventory`:
+  - `registerSale` lines 101–103 keep two parallel maps,
+    `Map<Product, Integer> resolvedProducts` and
+    `Map<Accessory, Integer> resolvedAccessories`.
+  - `resolveSaleItems` lines 169–187 first tries
+    `productService.findProductById(itemId)` (lines 169–174) and then
+    `accessoryDAO.findById(itemId)` (lines 176–185), with its own stock rule
+    for accessories (`accessory.getStock() < quantity`, lines 178–182) that
+    duplicates `ProductValidator.validateStockAvailability` (line 171).
+  - `buildSale` lines 198–211 has one loop per map.
+  - `updateInventory` lines 258–268 has one loop per map: products through
+    `productService.reduceStock` (line 261), accessories through
+    `accessory.reduceStock` plus `accessoryDAO.update` (lines 266–267).
+- **Evidence:** the quoted lines. The sale workflow knows the two concrete
+  item kinds and how each one validates stock and persists its inventory.
+- **Explanation:** The class is not closed for modification: supporting a
+  third catalog (for example, bundles or gift cards) means editing four
+  methods of `SaleService` in a consistent way, and the accessory stock rule
+  and its persistence live in the sales service instead of next to the
+  accessory (SRP smell). This is the same root cause as one fragment, so it
+  is registered once, under the principle whose fix solves it.
+- **Consequence:** Every new item kind risks breaking a sale that works
+  today, and the stock rules of products and accessories can drift apart
+  (the two messages and checks are already written twice).
+- **Proposed solution:** Introduce a small abstraction for "where sale items
+  come from", for example `SaleItemSource` with `find(String id)`,
+  `validateStock(item, quantity)` and `reduceStock(item, quantity)`, with
+  two implementations (`ProductItemSource` over `ProductService`, and
+  `AccessoryItemSource` over the accessory repository). `SaleService`
+  iterates its list of sources in the same order as today (products first,
+  accessories second), so the sale item order, the Spanish messages and the
+  data files stay identical.
+- **Code of another member:** No for the OCP correction itself (the new
+  classes live in my `service` package and use the existing
+  `ProductService`). `AccessoryItemSource` becomes cleaner once Developer 2
+  provides an `AccessoryRepository` interface (see V-05).
+
+### LSP — Correct
+
+`SaleService` treats `Accessory` as a `Product` without breaking anything:
+`sale.addProduct(accessory)` (line 209) and the `Product` API used on
+accessories (`getStock`, `getTitle`, `reduceStock`, lines 178–181 and 266)
+behave according to the `Product` contract. The `requiresWarranty()` check
+(line 239) is a polymorphic call that every `Product` subtype answers
+without special cases, so no subtype needs to be treated differently from
+its base type.
+
+### ISP — Not applicable
+
+`SaleService` neither declares nor implements an interface (line 31). The
+symptom "depends on more methods than it uses" appears because its
+collaborators are concrete classes; it is reported under DIP (V-05) and not
+registered again here, to avoid counting the same fragment twice.
+
+### DIP — Violation (V-05)
+
+**V-05 — `SaleService` depends on concrete collaborators**
+- **Principle:** Dependency Inversion Principle (related to ISP)
+- **Module:** `SaleService` fields and constructor, lines 33–38 and 48–55:
+  `SaleDAO`, `ProductService`, `AccessoryDAO`, `PromotionService`,
+  `WarrantyService` and `PersonService`, plus `setWarrantyService`
+  (line 66).
+- **Evidence:** every field is declared with a concrete class. It uses very
+  little of each one: `ProductService` only `findProductById` (line 169) and
+  `reduceStock` (line 261); `PersonService` only `findCustomerById` and
+  `findSellerById` (lines 132, 145); `PromotionService` only
+  `findBestPromotionFor` (line 221); `WarrantyService` only
+  `assignBasicWarranty` and `assignExtendedWarranty` (lines 240, 245);
+  `AccessoryDAO` only `findById` and `update` (lines 176, 267). It also
+  reaches a DAO (`AccessoryDAO`) directly from the service layer, without
+  any abstraction. The `SaleDAO` part of this dependency is registered in
+  V-03 and is not repeated here.
+- **Explanation:** The use-case class depends on the details (implementations
+  and their full public API) instead of on abstractions defined by what it
+  needs.
+- **Consequence:** `registerSale` cannot be tested with fakes, and a change
+  in any of those five classes (names, signatures, constructors) ripples into
+  `SaleService`.
+- **Proposed solution:** Depend on narrow interfaces that express only what
+  `SaleService` uses, implemented by the existing classes (for example
+  `AccessoryRepository`, `PersonLookup`, `PromotionSelector`,
+  `WarrantyAssigner`, plus the `SaleRepository` of V-03), and keep the
+  existing wiring in `Main`. The `setWarrantyService` setter injection stays
+  (the circular dependency with `WarrantyService` still exists). Behavior is
+  unchanged.
+- **Code of another member:** **Yes.** `AccessoryDAO`,
+  `PromotionService`, `WarrantyService`, `PersonService` belong to
+  Developer 2 and must implement the new interfaces; `ProductService` belongs
+  to Developer 1 (`restoreStock` is mine, `reduceStock` too). The change in
+  `SaleService` and `Main` is mine. Frontier finding, to consolidate with
+  both developers.
