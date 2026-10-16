@@ -48,6 +48,7 @@ public class MainMenu {
     private final SaleMenu saleMenuView;
     private final AccessoryMenu accessoryMenuView;
     private final PromotionMenu promotionMenuView;
+    private final ReturnMenu returnMenuView;
     /**
      * Creates the main menu with the services it depends on.
      *
@@ -75,6 +76,7 @@ public class MainMenu {
     this.saleMenuView = new SaleMenu(saleService, productService);
     this.accessoryMenuView = new AccessoryMenu(accessoryService);
     this.promotionMenuView = new PromotionMenu(promotionService);
+    this.returnMenuView = new ReturnMenu(returnService);
 }
 
     /**
@@ -114,7 +116,7 @@ public class MainMenu {
                     case 2 -> saleMenuView.show();
                     case 3 -> accessoryMenuView.show();
                     case 4 -> promotionMenuView.show();
-                    case 5 -> returnMenu();
+                    case 5 -> returnMenuView.show();
                     case 6 -> warrantyMenu();
                     case 7, -1 -> running = false;
                 }
@@ -135,136 +137,6 @@ public class MainMenu {
         }
         JOptionPane.showMessageDialog(null, "Cerrando GameZone Unicesar. ¡Hasta pronto!",
                 "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-    }
-    
-// ===================== RETURN MENU =====================
-
-    private void returnMenu() {
-        String[] options = {
-                "Registrar una devolución",
-                "Consultar todas las devoluciones",
-                "Consultar devoluciones por cliente",
-                "Consultar devoluciones por venta",
-                "Consultar balance mensual",
-                "Volver"
-        };
-        Object selectedOption = JOptionPane.showInputDialog(
-                null,
-                "Gestión de devoluciones - Seleccione una opción:",
-                "GameZone Unicesar",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]
-        );
-        int choice = (selectedOption == null)
-                ? -1
-                : java.util.Arrays.asList(options).indexOf(selectedOption);
-
-        switch (choice) {
-            case 0 -> registerReturn();
-            case 1 -> viewAllReturns();
-            case 2 -> viewReturnsByCustomer();
-            case 3 -> viewReturnsBySale();
-            case 4 -> consultMonthlyBalance();
-            default -> { }
-        }
-    }
-
-    private void registerReturn() {
-        String saleId = MenuDialogs.askInput("Id de la venta original:");
-        if (saleId == null) return;
-
-        try {
-            List<String> productIds = new java.util.ArrayList<>();
-            boolean addingProducts = true;
-            while (addingProducts) {
-                String productId = MenuDialogs.askInput("Id de producto a devolver (deje vacío para terminar):");
-                if (productId == null || productId.isBlank()) {
-                    addingProducts = false;
-                } else {
-                    productIds.add(productId);
-                }
-            }
-
-            String reason = MenuDialogs.askInput("Motivo de la devolución:");
-            if (reason == null) return;
-
-            Return processedReturn = returnService.registerReturn(saleId, productIds, reason);
-            MenuDialogs.showList("Devolución registrada exitosamente", processedReturn.generateReturnReceipt());
-        } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
-                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-        } catch (java.io.IOException e) {
-            MenuDialogs.showPersistenceError();
-        }
-    }
-
-    private void viewAllReturns() {
-        try {
-            printReturns(returnService.viewAllReturns());
-        } catch (java.io.IOException e) {
-            MenuDialogs.showPersistenceError();
-        }
-    }
-
-    private void viewReturnsByCustomer() {
-        String customerId = MenuDialogs.askInput("Id del cliente:");
-        if (customerId == null) return;
-        try {
-            printReturns(returnService.viewReturnsByCustomer(customerId));
-        } catch (java.io.IOException e) {
-            MenuDialogs.showPersistenceError();
-        }
-    }
-
-    private void viewReturnsBySale() {
-        String saleId = MenuDialogs.askInput("Id de la venta:");
-        if (saleId == null) return;
-        try {
-            printReturns(returnService.viewReturnsBySale(saleId));
-        } catch (java.io.IOException e) {
-            MenuDialogs.showPersistenceError();
-        }
-    }
-
-    private void printReturns(List<Return> returns) {
-        if (returns.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No se encontraron devoluciones.",
-                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        List<String> entries = new java.util.ArrayList<>();
-        for (Return r : returns) {
-            entries.add(r.generateReturnReceipt());
-        }
-        MenuDialogs.showList("Devoluciones", MenuDialogs.formatEntries(entries));
-    }
-
-    private void consultMonthlyBalance() {
-        String monthText = MenuDialogs.askInput("Mes (1-12):");
-        if (monthText == null) return;
-        String yearText = MenuDialogs.askInput("Año (AAAA):");
-        if (yearText == null) return;
-
-        try {
-            int month = Integer.parseInt(monthText);
-            int year = Integer.parseInt(yearText);
-
-            double totalSales = returnService.calculateMonthlySales(month, year);
-            double totalReturns = returnService.calculateMonthlyReturns(month, year);
-            double balance = returnService.generateMonthlyBalance(month, year);
-
-            String summary = "Total de ventas para " + month + "/" + year + ": " + totalSales + "\n"
-                    + "Total de devoluciones para " + month + "/" + year + ": " + totalReturns + "\n"
-                    + "Balance neto para " + month + "/" + year + ": " + balance;
-            JOptionPane.showMessageDialog(null, summary, "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null, "Error: el mes y el año deben ser valores numéricos válidos.",
-                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-        } catch (java.io.IOException e) {
-            MenuDialogs.showPersistenceError();
-        }
     }
 
 // ===================== WARRANTY MENU =====================
