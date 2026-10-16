@@ -13,7 +13,6 @@ import com.gamezone.model.Promotion;
 import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
-import com.gamezone.model.VideoGame;
 import com.gamezone.model.Warranty;
 import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
@@ -288,8 +287,7 @@ public class MainMenu {
             double price = Double.parseDouble(priceText);
             int stock = Integer.parseInt(stockText);
 
-            Product videoGame = new VideoGame(id, title, price, stock, platform, genre, ageRating);
-            productService.registerProduct(videoGame);
+            productService.registerVideoGame(id, title, price, stock, platform, genre, ageRating);
             JOptionPane.showMessageDialog(null, "Videojuego registrado exitosamente.",
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
         } catch (NumberFormatException e) {
@@ -319,8 +317,7 @@ public class MainMenu {
             double price = Double.parseDouble(priceText);
             int stock = Integer.parseInt(stockText);
 
-            Product console = new Console(id, title, price, stock, brand, model, generation);
-            productService.registerProduct(console);
+            productService.registerConsole(id, title, price, stock, brand, model, generation);
             JOptionPane.showMessageDialog(null, "Consola registrada exitosamente.",
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
         } catch (NumberFormatException e) {
