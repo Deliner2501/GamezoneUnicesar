@@ -5,14 +5,6 @@ import com.gamezone.exceptions.GameZoneException;
 import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.exceptions.ResourceNotFoundException;
-import com.gamezone.model.Accessory;
-import com.gamezone.model.Customer;
-import com.gamezone.model.Product;
-import com.gamezone.model.Promotion;
-import com.gamezone.model.Return;
-import com.gamezone.model.Sale;
-import com.gamezone.model.Seller;
-import com.gamezone.model.Warranty;
 import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
@@ -20,29 +12,20 @@ import com.gamezone.service.PromotionService;
 import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
 import com.gamezone.service.WarrantyService;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import javax.swing.JOptionPane;
 
 /**
  * Console-based user interface for the GameZone Unicesar system.
- * Displays the main menu and delegates every operation to the
- * corresponding service class; never accesses persistence directly.
- * All text shown to the end user is written in Spanish, while the
- * code itself follows English naming conventions.
+ * Shows the main menu and delegates each area (products, people, sales,
+ * accessories, promotions, returns, warranties) to its own dedicated
+ * menu class, so this class is only responsible for the main loop and
+ * translating system exceptions into user-facing messages (GRASP audit
+ * finding V-06: High Cohesion). All text shown to the end user is
+ * written in Spanish, while the code itself follows English naming
+ * conventions.
  */
 public class MainMenu {
 
-    private final PersonService personService;
-    private final ProductService productService;
-    private final AccessoryService accessoryService;
-    private final PromotionService promotionService;
-    private final WarrantyService warrantyService;
-    private final ReturnService returnService;
-    private final SaleService saleService;
     private final ProductMenu productMenuView;
     private final PersonMenu personMenuView;
     private final SaleMenu saleMenuView;
@@ -50,8 +33,10 @@ public class MainMenu {
     private final PromotionMenu promotionMenuView;
     private final ReturnMenu returnMenuView;
     private final WarrantyMenu warrantyMenuView;
+
     /**
-     * Creates the main menu with the services it depends on.
+     * Creates the main menu with the services it depends on, building
+     * the dedicated menu for each area.
      *
      * @param personService  the service for managing customers and sellers
      * @param productService the service for managing products
@@ -62,33 +47,26 @@ public class MainMenu {
      * @param warrantyService the service for managing warranties
      */
     public MainMenu(PersonService personService, ProductService productService,
-                 SaleService saleService, AccessoryService accessoryService,
-                 PromotionService promotionService, ReturnService returnService,
-                 WarrantyService warrantyService) {
-    this.personService = personService;
-    this.productService = productService;
-    this.saleService = saleService;
-    this.accessoryService = accessoryService;
-    this.promotionService = promotionService;
-    this.returnService = returnService;
-    this.warrantyService = warrantyService;
-    this.productMenuView = new ProductMenu(productService);
-    this.personMenuView = new PersonMenu(personService);
-    this.saleMenuView = new SaleMenu(saleService, productService);
-    this.accessoryMenuView = new AccessoryMenu(accessoryService);
-    this.promotionMenuView = new PromotionMenu(promotionService);
-    this.returnMenuView = new ReturnMenu(returnService);
-    this.warrantyMenuView = new WarrantyMenu(warrantyService);
-}
+                     SaleService saleService, AccessoryService accessoryService,
+                     PromotionService promotionService, ReturnService returnService,
+                     WarrantyService warrantyService) {
+        this.productMenuView = new ProductMenu(productService);
+        this.personMenuView = new PersonMenu(personService);
+        this.saleMenuView = new SaleMenu(saleService, productService);
+        this.accessoryMenuView = new AccessoryMenu(accessoryService);
+        this.promotionMenuView = new PromotionMenu(promotionService);
+        this.returnMenuView = new ReturnMenu(returnService);
+        this.warrantyMenuView = new WarrantyMenu(warrantyService);
+    }
 
     /**
      * Starts the main application loop, showing the menu until
      * the user chooses to exit.
      */
-        public void start() {
+    public void start() {
         boolean running = true;
         while (running) {
-                    String[] options = {
+            String[] options = {
                     "Gestionar productos",
                     "Gestionar clientes y vendedores",
                     "Gestionar ventas",
