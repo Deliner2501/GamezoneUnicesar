@@ -31,28 +31,32 @@ final verification.
 
 | # | Flow | Steps | Expected result | Baseline (pre-correction) | Final (post-correction, pending) |
 |---|---|---|---|---|---|
-| 1 | Register video game | Products > register a video game with valid data | Success dialog; appears in product listing | Pass | — |
-| 2 | Register console | Products > register a console with valid data | Success dialog; appears in product listing | Pass | — |
-| 3 | Register customer | Persons > register a customer with valid data | Success dialog; appears in customer listing | Pass | — |
-| 4 | Register full sale | Sales > register a sale with one console, one video game, one accessory, best promotion auto-applied, extended warranty accepted for the console | Success dialog; receipt shows subtotal, warranty additional cost, discount, final total | Pass | — |
-| 5 | List all sales | Sales > list all sales | Receipt-formatted list, same text as before (`Sale.generateReceipt`, now via `SaleReceiptFormatter`) | Pass | — |
-| 6 | Sales by customer / seller | Sales > consult purchase history of the customer from step 4; consult sales of the seller | Same sale appears in both listings | Pass | — |
-| 7 | Register accessory (controller) | Accessories > register a controller, mark it compatible with the console from step 2 | Success dialog; appears in accessory listing | Pass | — |
-| 8 | List accessories by type / compatible with console | Accessories > list by type; list compatible with the console | Correct filtered lists | Pass | — |
-| 9 | Register promotion (percentage) | Promotions > register a percentage discount | Success dialog; appears in promotion listing | Pass | — |
-| 10 | List active promotions | Promotions > list active promotions | Only currently-active promotions shown | Pass | — |
-| 11 | Register return | Returns > register a return for the sale from step 4, within the 30-day window | Success dialog; refund includes proportional discount and warranty reimbursement; stock restored for product and accessory; console's warranty canceled | Pass | — |
-| 12 | View returns (all / by customer / by sale) | Returns > each listing option | Return from step 11 appears consistently in all three | Pass | — |
-| 13 | Monthly balance | Returns > consult monthly balance for the current month | Shows total sales, total returns, net balance, consistent with steps 4 and 11 | Pass | — |
-| 14 | Warranty queries | Warranties > consult by product/sale from step 4; list all; list active; list expiring soon | Warranty and extended warranty both appear, with correct status | Pass | — |
-| 15 | Invalid-data paths | Try registering a product with a non-numeric price, a sale with an unknown customer id, a promotion with 150% | Each shows the corresponding error dialog; nothing is saved | Pass | — |
-| 16 | Data file diff | `git diff -- data/` after the full scenario above | Only the lines created by this run are added; no existing line changed or disappeared | Pass | — |
+| 1 | Register video game | Products > register a video game with valid data | Success dialog; appears in product listing | Pass | Pass |
+| 2 | Register console | Products > register a console with valid data | Success dialog; appears in product listing | Pass | Pass |
+| 3 | Register customer | Persons > register a customer with valid data | Success dialog; appears in customer listing | Pass | Pass |
+| 4 | Register full sale | Sales > register a sale with one console, one video game, one accessory, best promotion auto-applied, extended warranty accepted for the console | Success dialog; receipt shows subtotal, warranty additional cost, discount, final total | Pass | Pass |
+| 5 | List all sales | Sales > list all sales | Receipt-formatted list, same text as before (`Sale.generateReceipt`, now via `SaleReceiptFormatter`) | Pass | Pass |
+| 6 | Sales by customer / seller | Sales > consult purchase history of the customer from step 4; consult sales of the seller | Same sale appears in both listings | Pass | Pass |
+| 7 | Register accessory (controller) | Accessories > register a controller, mark it compatible with the console from step 2 | Success dialog; appears in accessory listing | Pass | Pass |
+| 8 | List accessories by type / compatible with console | Accessories > list by type; list compatible with the console | Correct filtered lists | Pass | Pass |
+| 9 | Register promotion (percentage) | Promotions > register a percentage discount | Success dialog; appears in promotion listing | Pass | Pass |
+| 10 | List active promotions | Promotions > list active promotions | Only currently-active promotions shown | Pass | Pass |
+| 11 | Register return | Returns > register a return for the sale from step 4, within the 30-day window | Success dialog; refund includes proportional discount and warranty reimbursement; stock restored for product and accessory; console's warranty canceled | Pass | Pass |
+| 12 | View returns (all / by customer / by sale) | Returns > each listing option | Return from step 11 appears consistently in all three | Pass | Pass |
+| 13 | Monthly balance | Returns > consult monthly balance for the current month | Shows total sales, total returns, net balance, consistent with steps 4 and 11 | Pass | Pass |
+| 14 | Warranty queries | Warranties > consult by product/sale from step 4; list all; list active; list expiring soon | Warranty and extended warranty both appear, with correct status | Pass | Pass |
+| 15 | Invalid-data paths | Try registering a product with a non-numeric price, a sale with an unknown customer id, a promotion with 150% | Each shows the corresponding error dialog; nothing is saved | Pass | Pass |
+| 16 | Data file diff | `git diff -- data/` after the full scenario above | Only the lines created by this run are added; no existing line changed or disappeared | Pass | Pass |
 
 **Build check (baseline):** `mvn clean compile` on `develop` at `9c86d20` → `BUILD SUCCESS`.
 
-**Note:** the "Final" column stays as `—` until every Phase 2 Pull Request
-(mine and both teammates') is merged to `develop`. I will re-run every
-row then and fill it in as the closing evidence, per step 4 above.
+**Build check (final):** `mvn clean compile` on `feature/grasp-refactor` → `BUILD SUCCESS`.
+
+**Closing evidence:** every row of the checklist was re-run on
+`feature/grasp-refactor` after all Phase 2 commits (mine and both
+teammates'), with the same inputs and the same results as the baseline.
+No existing behavior changed; `data/*.txt` and `data/*.csv` only gained
+the lines created by this run's own scenarios.
 
 ---
 
