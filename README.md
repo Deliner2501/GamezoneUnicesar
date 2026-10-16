@@ -180,15 +180,16 @@ The `model` layer contains the main domain entities of the system.
 
 The `persistence` layer is responsible for saving and loading information from files.
 
-* `ProductDAO` — manages product information.
+* `ProductRepository` — interface defining the storage operations the service layer needs for products (`save`, `findAll`, `findById`, `update`). `ProductService` depends on this interface instead of a concrete class.
+* `ProductDAO` — implements `ProductRepository`; manages product information, dispatching CSV serialization per product type to a `ProductCsvMapper` (`VideoGameCsvMapper`, `ConsoleCsvMapper`) instead of branching on type internally.
 * `PersonDAO` — manages customers and sellers.
 * `SaleDAO` — manages sales.
-* `AccessoryDAO` — manages controllers, cables, and memories.
-* `PromotionDAO` — manages promotional discount campaigns.
-* `ReturnRepository` — manages returns, resolving references to the original sale and returned products.
+* `AccessoryDAO` — manages controllers, cables, and memories, delegating CSV formatting to each accessory's own `toCsvLine()`/`getTypeCode()`.
+* `PromotionDAO` — manages promotional discount campaigns, delegating CSV formatting to each promotion's own `toCsvLine()`.
+* `ReturnRepository` — manages returns as plain `ReturnRecord` data, with no dependency on the service layer.
 * `WarrantyRepository` — manages warranties, resolving references to the associated product and sale.
 
-`ProductDAO`, `PersonDAO`, and `SaleDAO` catch any `IOException` internally and rethrow it as a `PersistenceException` that includes the file name and the operation (reading or writing).
+`ProductDAO`, `PersonDAO`, `SaleDAO`, `AccessoryDAO`, and `PromotionDAO` catch any `IOException` internally and rethrow it as a `PersistenceException` that includes the file name and the operation (reading or writing).
 
 The system uses files inside the `data` directory to maintain information between executions.
 
@@ -227,9 +228,14 @@ The `exceptions` package is cross-cutting and can be used from any layer. All ex
 
 The `ui` layer contains the graphical interface, built entirely with Java Swing dialogs instead of a console loop.
 
-* `MainMenu` — builds every menu as a `JOptionPane` dropdown dialog (`showInputDialog` with an options array), every data entry field as a `JOptionPane.showInputDialog` text prompt, every confirmation or error message as a `JOptionPane.showMessageDialog`, and every listing (products, customers, sellers, sales, accessories, promotions, returns, warranties) as a numbered, scrollable `JTextArea` wrapped in a `JScrollPane`. It still handles each type of custom exception with its own message in Spanish, now shown as an error dialog instead of a console line.
+* `MainMenu` — owns only the main application loop (the top-level dropdown dialog) and the translation of each custom exception type into its Spanish error message. It delegates every feature area to its own dedicated menu class.
+* `ProductMenu`, `PersonMenu`, `SaleMenu`, `AccessoryMenu`, `PromotionMenu`, `ReturnMenu`, `WarrantyMenu` — one class per feature area, each depending only on the service(s) it needs, building its own submenu dialog and handling its own data-entry prompts.
+* `MenuDialogs` — shared dialog helpers (`askInput`, `showList`, `formatEntries`) and the per-exception-type error dialogs, reused by `MainMenu` and all seven area menus.
+* `SaleReceiptFormatter` — builds the receipt text for a `Sale`, so `Sale.generateReceipt()` only delegates to it instead of building presentation text itself.
 
-The UI communicates with the service layer and does not access the persistence layer directly. Converting the interaction model from console to Swing dialogs did not change any business rule or validation: every operation behaves exactly as before, only the presentation layer changed.
+Every dialog is a `JOptionPane` (`showInputDialog` for prompts and dropdowns, `showMessageDialog` for confirmations and errors), and every listing (products, customers, sellers, sales, accessories, promotions, returns, warranties) is a numbered, scrollable `JTextArea` wrapped in a `JScrollPane`.
+
+The UI communicates with the service layer and does not access the persistence layer directly. Splitting `MainMenu` into one class per feature area did not change any business rule, validation, or displayed text: every operation behaves exactly as before, only the internal organization changed.
 
 ---
 
@@ -370,6 +376,37 @@ A `Sale` is associated with:
 * One `Customer`.
 * One `Seller`.
 * One or more `Product` objects.
+
+---
+
+## GRASP Pattern Review (Requirement 7)
+
+After the four modules were integrated, the team carried out a two-phase
+GRASP pattern audit and correction, each member first auditing their own
+code individually and then reviewing every other member's code as well.
+
+**Phase 1 — Audit.** Each member identified GRASP violations in their own
+scope and in their teammates' code. The three individual reports were
+consolidated into a single numbered list of 34 violations
+(`docs/grasp-audit/consolidated-audit.md`), including 7 "frontier
+findings" where one member's fix was a prerequisite for another's.
+
+**Phase 2 — Correction.** Each violation was fixed as a pure,
+zero-behavior-change refactor — same menu operations, same inputs,
+outputs, messages, and data files — one commit per violation on
+`feature/grasp-refactor`. Patterns applied include Information Expert,
+Creator, Low Coupling, High Cohesion, Polymorphism, Pure Fabrication,
+and Indirection. The most visible change: the 1105-line `MainMenu` god
+class was split into `MainMenu` plus `MenuDialogs` and seven area-specific
+menu classes (`ProductMenu`, `PersonMenu`, `SaleMenu`, `AccessoryMenu`,
+`PromotionMenu`, `ReturnMenu`, `WarrantyMenu`).
+
+Full documentation of this process:
+
+* [`docs/grasp-analysis.md`](docs/grasp-analysis.md) — orienting questions and answers.
+* [`docs/grasp-audit/`](docs/grasp-audit/) — individual and consolidated audit reports.
+* [`docs/grasp-class-diagram.md`](docs/grasp-class-diagram.md) — before/after class diagram covering all 34 violations.
+* [`docs/grasp-refactor-log.md`](docs/grasp-refactor-log.md) — change log, no-regression verification strategy, and baseline/final checklist.
 
 ---
 
