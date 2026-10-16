@@ -26,8 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 
 /**
  * Console-based user interface for the GameZone Unicesar system.
@@ -112,15 +110,15 @@ public class MainMenu {
                     case 7, -1 -> running = false;
                 }
             } catch (ResourceNotFoundException e) {
-                showResourceNotFound(e);
+                MenuDialogs.showResourceNotFound(e);
             } catch (BusinessRuleException e) {
-                showBusinessRuleViolation(e);
+                MenuDialogs.showBusinessRuleViolation(e);
             } catch (InvalidDataException e) {
-                showInvalidData(e);
+                MenuDialogs.showInvalidData(e);
             } catch (PersistenceException e) {
-                showPersistenceError();
+                MenuDialogs.showPersistenceError();
             } catch (GameZoneException e) {
-                showGenericError(e);
+                MenuDialogs.showGenericError(e);
             } catch (IllegalArgumentException e) {
                 JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
                         "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
@@ -129,113 +127,7 @@ public class MainMenu {
         JOptionPane.showMessageDialog(null, "Cerrando GameZone Unicesar. ¡Hasta pronto!",
                 "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
     }
-
-        // ===================== ERROR HANDLING =====================
-
-    /**
-     * Shows the message for a resource that does not exist in the system
-     * (product, customer, seller or sale).
-     *
-     * @param e the exception describing the missing resource
-     */
-    private void showResourceNotFound(ResourceNotFoundException e) {
-        JOptionPane.showMessageDialog(null, "No se encontró el recurso solicitado: " + e.getMessage(),
-                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-    }
-
-    /**
-     * Shows the message for an operation that violates a business rule
-     * (insufficient stock, duplicated customer, sale without products).
-     *
-     * @param e the exception describing the violated rule
-     */
-    private void showBusinessRuleViolation(BusinessRuleException e) {
-        JOptionPane.showMessageDialog(null, "No se puede completar la operación: " + e.getMessage(),
-                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-    }
-
-    /**
-     * Shows the message for input data that fails format or range checks.
-     *
-     * @param e the exception describing the invalid field
-     */
-    private void showInvalidData(InvalidDataException e) {
-        JOptionPane.showMessageDialog(null, "Los datos ingresados no son válidos: " + e.getMessage(),
-                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-    }
-
-    /**
-     * Shows a generic message for storage problems. It never exposes file
-     * names or technical details to the user.
-     */
-    private void showPersistenceError() {
-        JOptionPane.showMessageDialog(null,
-                "Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.",
-                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-    }
-
-    /**
-     * Shows a fallback message for any GameZoneException subtype that has
-     * no dedicated handler, so new exception types never reach the user raw.
-     *
-     * @param e the unclassified GameZone exception
-     */
-    private void showGenericError(GameZoneException e) {
-        JOptionPane.showMessageDialog(null, "No se puede completar la operación: " + e.getMessage(),
-                "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-    }
-    
-        // ===================== UI HELPERS =====================
-
-    /**
-     * Shows a single-line input dialog and returns what the user typed.
-     *
-     * @param label the label describing the requested value
-     * @return the text entered, or null if the dialog was cancelled/closed
-     */
-    private String askInput(String label) {
-        return JOptionPane.showInputDialog(null, label, "GameZone Unicesar", JOptionPane.QUESTION_MESSAGE);
-    }
-
-    /**
-     * Shows a block of text inside a scrollable, read-only text area,
-     * used to display listings that may be too long for a plain dialog.
-     *
-     * @param title   the dialog title
-     * @param content the text content to display
-     */
-        private void showList(String title, String content) {
-        JTextArea textArea = new JTextArea(content);
-        textArea.setEditable(false);
-        textArea.setCaretPosition(0);
-        textArea.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 13));
-        textArea.setMargin(new java.awt.Insets(10, 10, 10, 10));
-
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new java.awt.Dimension(560, 420));
-
-        JOptionPane.showMessageDialog(null, scrollPane, title, JOptionPane.PLAIN_MESSAGE);
-    }
-
-    /**
-     * Formats a list of entries as a numbered block of text, with a
-     * separator line between entries, for display in a scrollable list.
-     *
-     * @param entries the entries to format, in display order
-     * @return the formatted, ready-to-display text
-     */
-    private String formatEntries(List<String> entries) {
-        String separator = "-".repeat(60);
-        StringBuilder content = new StringBuilder();
-        for (int i = 0; i < entries.size(); i++) {
-            content.append(i + 1).append(". ").append(entries.get(i)).append("\n");
-            if (i < entries.size() - 1) {
-                content.append(separator).append("\n");
-            }
-        }
-        return content.toString();
-    }
-    
+        
     // ===================== PRODUCT MENU =====================
 
         private void productMenu() {
@@ -267,19 +159,19 @@ public class MainMenu {
     }
 
     private void registerVideoGame() {
-        String id = askInput("Id:");
+        String id = MenuDialogs.askInput("Id:");
         if (id == null) return;
-        String title = askInput("Título:");
+        String title = MenuDialogs.askInput("Título:");
         if (title == null) return;
-        String priceText = askInput("Precio:");
+        String priceText = MenuDialogs.askInput("Precio:");
         if (priceText == null) return;
-        String stockText = askInput("Cantidad en inventario:");
+        String stockText = MenuDialogs.askInput("Cantidad en inventario:");
         if (stockText == null) return;
-        String platform = askInput("Plataforma:");
+        String platform = MenuDialogs.askInput("Plataforma:");
         if (platform == null) return;
-        String genre = askInput("Género:");
+        String genre = MenuDialogs.askInput("Género:");
         if (genre == null) return;
-        String ageRating = askInput("Clasificación de edad:");
+        String ageRating = MenuDialogs.askInput("Clasificación de edad:");
         if (ageRating == null) return;
 
         try {
@@ -297,19 +189,19 @@ public class MainMenu {
     }
 
     private void registerConsole() {
-        String id = askInput("Id:");
+        String id = MenuDialogs.askInput("Id:");
         if (id == null) return;
-        String title = askInput("Título:");
+        String title = MenuDialogs.askInput("Título:");
         if (title == null) return;
-        String priceText = askInput("Precio:");
+        String priceText = MenuDialogs.askInput("Precio:");
         if (priceText == null) return;
-        String stockText = askInput("Cantidad en inventario:");
+        String stockText = MenuDialogs.askInput("Cantidad en inventario:");
         if (stockText == null) return;
-        String brand = askInput("Marca:");
+        String brand = MenuDialogs.askInput("Marca:");
         if (brand == null) return;
-        String model = askInput("Modelo:");
+        String model = MenuDialogs.askInput("Modelo:");
         if (model == null) return;
-        String generation = askInput("Generación:");
+        String generation = MenuDialogs.askInput("Generación:");
         if (generation == null) return;
 
         try {
@@ -337,7 +229,7 @@ public class MainMenu {
         for (Product product : products) {
             entries.add(product.getFullDescription());
         }
-        showList("Productos disponibles", formatEntries(entries));
+        MenuDialogs.showList("Productos disponibles", MenuDialogs.formatEntries(entries));
     }
 
     // ===================== PERSON MENU =====================
@@ -371,13 +263,13 @@ public class MainMenu {
     }
 
     private void registerCustomer() {
-        String id = askInput("Id:");
+        String id = MenuDialogs.askInput("Id:");
         if (id == null) return;
-        String name = askInput("Nombre:");
+        String name = MenuDialogs.askInput("Nombre:");
         if (name == null) return;
-        String phone = askInput("Teléfono:");
+        String phone = MenuDialogs.askInput("Teléfono:");
         if (phone == null) return;
-        String email = askInput("Correo electrónico:");
+        String email = MenuDialogs.askInput("Correo electrónico:");
         if (email == null) return;
 
         personService.registerCustomer(name, id, phone, email);
@@ -398,7 +290,7 @@ public class MainMenu {
         for (Customer customer : customers) {
             entries.add(customer.toString());
         }
-        showList("Clientes registrados", formatEntries(entries));
+        MenuDialogs.showList("Clientes registrados", MenuDialogs.formatEntries(entries));
     }
 
     private void listSellers() {
@@ -412,7 +304,7 @@ public class MainMenu {
         for (Seller seller : sellers) {
             entries.add(seller.toString());
         }
-        showList("Vendedores registrados", formatEntries(entries));
+        MenuDialogs.showList("Vendedores registrados", MenuDialogs.formatEntries(entries));
     }
 
     // ===================== SALE MENU =====================
@@ -448,11 +340,11 @@ public class MainMenu {
     }
 
     private void registerSale() {
-        String saleId = askInput("Id de la venta:");
+        String saleId = MenuDialogs.askInput("Id de la venta:");
         if (saleId == null) return;
-        String customerId = askInput("Id del cliente:");
+        String customerId = MenuDialogs.askInput("Id del cliente:");
         if (customerId == null) return;
-        String sellerId = askInput("Id del vendedor:");
+        String sellerId = MenuDialogs.askInput("Id del vendedor:");
         if (sellerId == null) return;
 
         try {
@@ -463,12 +355,12 @@ public class MainMenu {
                     "Puede agregar productos (videojuegos, consolas) y accesorios (controles, cables, memorias) en la misma venta.",
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             while (addingProducts) {
-                String productId = askInput("Id del producto o accesorio (deje vacío para terminar):");
+                String productId = MenuDialogs.askInput("Id del producto o accesorio (deje vacío para terminar):");
                 if (productId == null || productId.isBlank()) {
                     addingProducts = false;
                     continue;
                 }
-                String quantityText = askInput("Cantidad:");
+                String quantityText = MenuDialogs.askInput("Cantidad:");
                 if (quantityText == null) {
                     addingProducts = false;
                     continue;
@@ -492,12 +384,12 @@ public class MainMenu {
 
             Sale sale = saleService.registerSale(saleId, LocalDate.now(), customerId, sellerId,
                     productQuantities, productIdsWithExtendedWarranty);
-            showList("Venta registrada exitosamente", sale.generateReceipt());
+            MenuDialogs.showList("Venta registrada exitosamente", sale.generateReceipt());
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(null, "Error: la cantidad debe ser un valor numérico válido.",
                     "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
@@ -506,27 +398,27 @@ public class MainMenu {
             List<Sale> sales = saleService.listSales();
             printSales(sales);
         } catch (IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
     private void listSalesByCustomer() {
-        String customerId = askInput("Id del cliente:");
+        String customerId = MenuDialogs.askInput("Id del cliente:");
         if (customerId == null) return;
         try {
             printSales(saleService.listSalesByCustomer(customerId));
         } catch (IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
     private void listSalesBySeller() {
-        String sellerId = askInput("Id del vendedor:");
+        String sellerId = MenuDialogs.askInput("Id del vendedor:");
         if (sellerId == null) return;
         try {
             printSales(saleService.listSalesBySeller(sellerId));
         } catch (IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
@@ -540,7 +432,7 @@ public class MainMenu {
         for (Sale sale : sales) {
             entries.add(sale.generateReceipt());
         }
-        showList("Ventas", formatEntries(entries));
+        MenuDialogs.showList("Ventas", MenuDialogs.formatEntries(entries));
     }
     
         private void accessoryMenu() {
@@ -578,15 +470,15 @@ public class MainMenu {
     }
 
     private void registerController() {
-        String id = askInput("Id:");
+        String id = MenuDialogs.askInput("Id:");
         if (id == null) return;
-        String title = askInput("Título:");
+        String title = MenuDialogs.askInput("Título:");
         if (title == null) return;
-        String priceText = askInput("Precio:");
+        String priceText = MenuDialogs.askInput("Precio:");
         if (priceText == null) return;
-        String stockText = askInput("Cantidad en inventario:");
+        String stockText = MenuDialogs.askInput("Cantidad en inventario:");
         if (stockText == null) return;
-        String connectionType = askInput("Tipo de conexión (inalámbrico/alámbrico):");
+        String connectionType = MenuDialogs.askInput("Tipo de conexión (inalámbrico/alámbrico):");
         if (connectionType == null) return;
 
         try {
@@ -607,17 +499,17 @@ public class MainMenu {
     }
 
     private void registerCable() {
-        String id = askInput("Id:");
+        String id = MenuDialogs.askInput("Id:");
         if (id == null) return;
-        String title = askInput("Título:");
+        String title = MenuDialogs.askInput("Título:");
         if (title == null) return;
-        String priceText = askInput("Precio:");
+        String priceText = MenuDialogs.askInput("Precio:");
         if (priceText == null) return;
-        String stockText = askInput("Cantidad en inventario:");
+        String stockText = MenuDialogs.askInput("Cantidad en inventario:");
         if (stockText == null) return;
-        String lengthText = askInput("Longitud en metros:");
+        String lengthText = MenuDialogs.askInput("Longitud en metros:");
         if (lengthText == null) return;
-        String connectorType = askInput("Tipo de conector (HDMI/USB/óptico/otro):");
+        String connectorType = MenuDialogs.askInput("Tipo de conector (HDMI/USB/óptico/otro):");
         if (connectorType == null) return;
 
         try {
@@ -639,17 +531,17 @@ public class MainMenu {
     }
 
     private void registerMemory() {
-        String id = askInput("Id:");
+        String id = MenuDialogs.askInput("Id:");
         if (id == null) return;
-        String title = askInput("Título:");
+        String title = MenuDialogs.askInput("Título:");
         if (title == null) return;
-        String priceText = askInput("Precio:");
+        String priceText = MenuDialogs.askInput("Precio:");
         if (priceText == null) return;
-        String stockText = askInput("Cantidad en inventario:");
+        String stockText = MenuDialogs.askInput("Cantidad en inventario:");
         if (stockText == null) return;
-        String capacityText = askInput("Capacidad en gigabytes:");
+        String capacityText = MenuDialogs.askInput("Capacidad en gigabytes:");
         if (capacityText == null) return;
-        String memoryType = askInput("Tipo de memoria (SD/microSD/tarjeta interna):");
+        String memoryType = MenuDialogs.askInput("Tipo de memoria (SD/microSD/tarjeta interna):");
         if (memoryType == null) return;
 
         try {
@@ -674,7 +566,7 @@ public class MainMenu {
     private void registerCompatibleConsoles(String accessoryId) {
         boolean addingConsoles = true;
         while (addingConsoles) {
-            String consoleId = askInput("Id de consola compatible (deje vacío para terminar):");
+            String consoleId = MenuDialogs.askInput("Id de consola compatible (deje vacío para terminar):");
             if (consoleId == null || consoleId.isBlank()) {
                 addingConsoles = false;
             } else {
@@ -689,14 +581,14 @@ public class MainMenu {
     }
 
     private void listAccessoriesByType() {
-        String type = askInput("Tipo de accesorio (CONTROLLER/CABLE/MEMORY):");
+        String type = MenuDialogs.askInput("Tipo de accesorio (CONTROLLER/CABLE/MEMORY):");
         if (type == null) return;
         List<Accessory> accessories = accessoryService.listAccessoriesByType(type);
         printAccessories(accessories);
     }
 
     private void listAccessoriesCompatibleWithConsole() {
-        String consoleId = askInput("Id de la consola:");
+        String consoleId = MenuDialogs.askInput("Id de la consola:");
         if (consoleId == null) return;
         List<Accessory> accessories = accessoryService.findAccessoriesCompatibleWith(consoleId);
         printAccessories(accessories);
@@ -712,7 +604,7 @@ public class MainMenu {
         for (Accessory accessory : accessories) {
             entries.add(accessory.getFullDescription());
         }
-        showList("Accesorios", formatEntries(entries));
+        MenuDialogs.showList("Accesorios", MenuDialogs.formatEntries(entries));
     }
 
 // ===================== PROMOTION MENU =====================
@@ -750,15 +642,15 @@ public class MainMenu {
     }
 
     private void registerPercentageDiscount() {
-        String id = askInput("Id:");
+        String id = MenuDialogs.askInput("Id:");
         if (id == null) return;
-        String name = askInput("Nombre:");
+        String name = MenuDialogs.askInput("Nombre:");
         if (name == null) return;
-        String startDateText = askInput("Fecha de inicio (AAAA-MM-DD):");
+        String startDateText = MenuDialogs.askInput("Fecha de inicio (AAAA-MM-DD):");
         if (startDateText == null) return;
-        String endDateText = askInput("Fecha de fin (AAAA-MM-DD):");
+        String endDateText = MenuDialogs.askInput("Fecha de fin (AAAA-MM-DD):");
         if (endDateText == null) return;
-        String percentageText = askInput("Porcentaje de descuento (0-100):");
+        String percentageText = MenuDialogs.askInput("Porcentaje de descuento (0-100):");
         if (percentageText == null) return;
 
         try {
@@ -782,17 +674,17 @@ public class MainMenu {
     }
 
     private void registerCategoryDiscount() {
-        String id = askInput("Id:");
+        String id = MenuDialogs.askInput("Id:");
         if (id == null) return;
-        String name = askInput("Nombre:");
+        String name = MenuDialogs.askInput("Nombre:");
         if (name == null) return;
-        String startDateText = askInput("Fecha de inicio (AAAA-MM-DD):");
+        String startDateText = MenuDialogs.askInput("Fecha de inicio (AAAA-MM-DD):");
         if (startDateText == null) return;
-        String endDateText = askInput("Fecha de fin (AAAA-MM-DD):");
+        String endDateText = MenuDialogs.askInput("Fecha de fin (AAAA-MM-DD):");
         if (endDateText == null) return;
-        String percentageText = askInput("Porcentaje de descuento (0-100):");
+        String percentageText = MenuDialogs.askInput("Porcentaje de descuento (0-100):");
         if (percentageText == null) return;
-        String targetCategory = askInput("Categoría objetivo (VIDEOGAME/CONSOLE/ACCESSORY):");
+        String targetCategory = MenuDialogs.askInput("Categoría objetivo (VIDEOGAME/CONSOLE/ACCESSORY):");
         if (targetCategory == null) return;
 
         try {
@@ -816,17 +708,17 @@ public class MainMenu {
     }
 
     private void registerBulkPurchaseDiscount() {
-        String id = askInput("Id:");
+        String id = MenuDialogs.askInput("Id:");
         if (id == null) return;
-        String name = askInput("Nombre:");
+        String name = MenuDialogs.askInput("Nombre:");
         if (name == null) return;
-        String startDateText = askInput("Fecha de inicio (AAAA-MM-DD):");
+        String startDateText = MenuDialogs.askInput("Fecha de inicio (AAAA-MM-DD):");
         if (startDateText == null) return;
-        String endDateText = askInput("Fecha de fin (AAAA-MM-DD):");
+        String endDateText = MenuDialogs.askInput("Fecha de fin (AAAA-MM-DD):");
         if (endDateText == null) return;
-        String minQuantityText = askInput("Cantidad mínima de productos:");
+        String minQuantityText = MenuDialogs.askInput("Cantidad mínima de productos:");
         if (minQuantityText == null) return;
-        String percentageText = askInput("Porcentaje de descuento (0-100):");
+        String percentageText = MenuDialogs.askInput("Porcentaje de descuento (0-100):");
         if (percentageText == null) return;
 
         try {
@@ -872,7 +764,7 @@ public class MainMenu {
             entries.add(promotion.getId() + " - " + promotion.getName()
                     + " (" + promotion.getStartDate() + " a " + promotion.getEndDate() + ")");
         }
-        showList("Promociones", formatEntries(entries));
+        MenuDialogs.showList("Promociones", MenuDialogs.formatEntries(entries));
     }
     
 // ===================== RETURN MENU =====================
@@ -910,14 +802,14 @@ public class MainMenu {
     }
 
     private void registerReturn() {
-        String saleId = askInput("Id de la venta original:");
+        String saleId = MenuDialogs.askInput("Id de la venta original:");
         if (saleId == null) return;
 
         try {
             List<String> productIds = new java.util.ArrayList<>();
             boolean addingProducts = true;
             while (addingProducts) {
-                String productId = askInput("Id de producto a devolver (deje vacío para terminar):");
+                String productId = MenuDialogs.askInput("Id de producto a devolver (deje vacío para terminar):");
                 if (productId == null || productId.isBlank()) {
                     addingProducts = false;
                 } else {
@@ -925,16 +817,16 @@ public class MainMenu {
                 }
             }
 
-            String reason = askInput("Motivo de la devolución:");
+            String reason = MenuDialogs.askInput("Motivo de la devolución:");
             if (reason == null) return;
 
             Return processedReturn = returnService.registerReturn(saleId, productIds, reason);
-            showList("Devolución registrada exitosamente", processedReturn.generateReturnReceipt());
+            MenuDialogs.showList("Devolución registrada exitosamente", processedReturn.generateReturnReceipt());
         } catch (IllegalArgumentException e) {
             JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
                     "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
         } catch (java.io.IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
@@ -942,27 +834,27 @@ public class MainMenu {
         try {
             printReturns(returnService.viewAllReturns());
         } catch (java.io.IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
     private void viewReturnsByCustomer() {
-        String customerId = askInput("Id del cliente:");
+        String customerId = MenuDialogs.askInput("Id del cliente:");
         if (customerId == null) return;
         try {
             printReturns(returnService.viewReturnsByCustomer(customerId));
         } catch (java.io.IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
     private void viewReturnsBySale() {
-        String saleId = askInput("Id de la venta:");
+        String saleId = MenuDialogs.askInput("Id de la venta:");
         if (saleId == null) return;
         try {
             printReturns(returnService.viewReturnsBySale(saleId));
         } catch (java.io.IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
@@ -976,13 +868,13 @@ public class MainMenu {
         for (Return r : returns) {
             entries.add(r.generateReturnReceipt());
         }
-        showList("Devoluciones", formatEntries(entries));
+        MenuDialogs.showList("Devoluciones", MenuDialogs.formatEntries(entries));
     }
 
     private void consultMonthlyBalance() {
-        String monthText = askInput("Mes (1-12):");
+        String monthText = MenuDialogs.askInput("Mes (1-12):");
         if (monthText == null) return;
-        String yearText = askInput("Año (AAAA):");
+        String yearText = MenuDialogs.askInput("Año (AAAA):");
         if (yearText == null) return;
 
         try {
@@ -1001,7 +893,7 @@ public class MainMenu {
             JOptionPane.showMessageDialog(null, "Error: el mes y el año deben ser valores numéricos válidos.",
                     "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
         } catch (java.io.IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
@@ -1038,9 +930,9 @@ public class MainMenu {
     }
 
     private void consultWarrantyByProduct() {
-        String productId = askInput("Id del producto:");
+        String productId = MenuDialogs.askInput("Id del producto:");
         if (productId == null) return;
-        String saleId = askInput("Id de la venta:");
+        String saleId = MenuDialogs.askInput("Id de la venta:");
         if (saleId == null) return;
 
         try {
@@ -1049,10 +941,10 @@ public class MainMenu {
                 JOptionPane.showMessageDialog(null, "No se encontró una garantía para ese producto en esa venta.",
                         "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                showList("Garantía encontrada", warranty.generateWarrantyCertificate());
+                MenuDialogs.showList("Garantía encontrada", warranty.generateWarrantyCertificate());
             }
         } catch (java.io.IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
@@ -1060,7 +952,7 @@ public class MainMenu {
         try {
             printWarranties(warrantyService.listAllWarranties());
         } catch (java.io.IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
@@ -1068,12 +960,12 @@ public class MainMenu {
         try {
             printWarranties(warrantyService.listActiveWarranties());
         } catch (java.io.IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
     private void listWarrantiesExpiringSoon() {
-        String daysAheadText = askInput("¿Con cuántos días de anticipación desea consultar?");
+        String daysAheadText = MenuDialogs.askInput("¿Con cuántos días de anticipación desea consultar?");
         if (daysAheadText == null) return;
 
         try {
@@ -1086,7 +978,7 @@ public class MainMenu {
             JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
                     "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
         } catch (java.io.IOException e) {
-            showPersistenceError();
+            MenuDialogs.showPersistenceError();
         }
     }
 
@@ -1100,6 +992,6 @@ public class MainMenu {
         for (Warranty warranty : warranties) {
             entries.add(warranty.generateWarrantyCertificate());
         }
-        showList("Garantías", formatEntries(entries));
+        MenuDialogs.showList("Garantías", MenuDialogs.formatEntries(entries));
     }
 }
