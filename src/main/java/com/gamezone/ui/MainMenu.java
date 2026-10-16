@@ -44,6 +44,7 @@ public class MainMenu {
     private final ReturnService returnService;
     private final SaleService saleService;
     private final ProductMenu productMenuView;
+    private final PersonMenu personMenuView;
     /**
      * Creates the main menu with the services it depends on.
      *
@@ -67,6 +68,7 @@ public class MainMenu {
     this.returnService = returnService;
     this.warrantyService = warrantyService;
     this.productMenuView = new ProductMenu(productService);
+    this.personMenuView = new PersonMenu(personService);
 }
 
     /**
@@ -102,7 +104,7 @@ public class MainMenu {
             try {
                 switch (choice) {
                     case 0 -> productMenuView.show();
-                    case 1 -> personMenu();
+                    case 1 -> personMenuView.show();
                     case 2 -> saleMenu();
                     case 3 -> accessoryMenu();
                     case 4 -> promotionMenu();
@@ -127,81 +129,6 @@ public class MainMenu {
         }
         JOptionPane.showMessageDialog(null, "Cerrando GameZone Unicesar. ¡Hasta pronto!",
                 "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-    }
-      
-    // ===================== PERSON MENU =====================
-
-        private void personMenu() {
-        String[] options = {
-                "Registrar un cliente",
-                "Listar clientes",
-                "Listar vendedores",
-                "Volver"
-        };
-        Object selectedOption = JOptionPane.showInputDialog(
-                null,
-                "Gestión de clientes y vendedores - Seleccione una opción:",
-                "GameZone Unicesar",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]
-        );
-        int choice = (selectedOption == null)
-                ? -1
-                : java.util.Arrays.asList(options).indexOf(selectedOption);
-
-        switch (choice) {
-            case 0 -> registerCustomer();
-            case 1 -> listCustomers();
-            case 2 -> listSellers();
-            default -> { }
-        }
-    }
-
-    private void registerCustomer() {
-        String id = MenuDialogs.askInput("Id:");
-        if (id == null) return;
-        String name = MenuDialogs.askInput("Nombre:");
-        if (name == null) return;
-        String phone = MenuDialogs.askInput("Teléfono:");
-        if (phone == null) return;
-        String email = MenuDialogs.askInput("Correo electrónico:");
-        if (email == null) return;
-
-        personService.registerCustomer(name, id, phone, email);
-        JOptionPane.showMessageDialog(null, "Cliente registrado exitosamente.",
-                "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-
-        
-    }
-
-    private void listCustomers() {
-        List<Customer> customers = personService.listCustomers();
-        if (customers.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Aún no hay clientes registrados.",
-                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        List<String> entries = new java.util.ArrayList<>();
-        for (Customer customer : customers) {
-            entries.add(customer.toString());
-        }
-        MenuDialogs.showList("Clientes registrados", MenuDialogs.formatEntries(entries));
-    }
-
-    private void listSellers() {
-        List<Seller> sellers = personService.listSellers();
-        if (sellers.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Aún no hay vendedores registrados.",
-                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        List<String> entries = new java.util.ArrayList<>();
-        for (Seller seller : sellers) {
-            entries.add(seller.toString());
-        }
-        MenuDialogs.showList("Vendedores registrados", MenuDialogs.formatEntries(entries));
     }
 
     // ===================== SALE MENU =====================
