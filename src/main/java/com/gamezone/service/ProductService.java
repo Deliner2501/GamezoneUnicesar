@@ -117,4 +117,21 @@ public class ProductService {
         product.increaseStock(quantity);
         productDAO.update(product);
     }
+    
+    /**
+     * Reduces stock for a product after a sale, persisting the change
+     * immediately. Lets SaleService depend on ProductService instead of
+     * reaching into ProductRepository/ProductDAO directly
+     * (GRASP audit finding V-34: Low Coupling).
+     *
+     * @param productId the id of the product being sold
+     * @param quantity  the quantity to subtract from the product's stock
+     * @throws com.gamezone.exceptions.ResourceNotFoundException if the product does not exist
+     */
+    public void reduceStock(String productId, int quantity) {
+        Product product = productDAO.findById(productId);
+        ProductValidator.validateProductExists(product, productId);
+        product.reduceStock(quantity);
+        productDAO.update(product);
+    }
 }

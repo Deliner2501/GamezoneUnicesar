@@ -1,6 +1,8 @@
 package com.gamezone.model;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,7 +37,7 @@ public class Return {
         this.id = id;
         this.date = date;
         this.originalSale = originalSale;
-        this.returnedProducts = returnedProducts;
+        this.returnedProducts = new ArrayList<>(returnedProducts);
         this.reason = reason;
         this.warrantyRefund = warrantyRefund;
         this.refundAmount = 0.0;
@@ -44,10 +46,32 @@ public class Return {
     public String getId() { return id; }
     public LocalDate getDate() { return date; }
     public Sale getOriginalSale() { return originalSale; }
-    public List<Product> getReturnedProducts() { return returnedProducts; }
+
+    /**
+     * Returns an unmodifiable view of the products being returned.
+     *
+     * @return the unmodifiable list of returned products
+     */
+    public List<Product> getReturnedProducts() {
+        return Collections.unmodifiableList(returnedProducts);
+    }
+
     public String getReason() { return reason; }
     public double getRefundAmount() { return refundAmount; }
     public double getWarrantyRefund() { return warrantyRefund; }
+
+    /**
+     * Returns the discount rate of the original sale, asking the sale
+     * itself. A sale with a zero subtotal has no discount rate.
+     *
+     * @return the discount rate, or 0.0 if the original sale has a zero subtotal
+     */
+    private double originalDiscountRate() {
+        if (originalSale.getTotal() > 0) {
+            return originalSale.getDiscountRate();
+        }
+        return 0.0;
+    }
 
     /**
      * Calculates the refund amount by summing, for each returned
@@ -59,11 +83,7 @@ public class Return {
      * @return the calculated refund amount
      */
     public double calculateRefundAmount() {
-        double subtotal = originalSale.getTotal();
-        double discountRate = 0.0;
-        if (subtotal > 0) {
-            discountRate = originalSale.getDiscountAmount() / subtotal;
-        }
+        double discountRate = originalDiscountRate();
         double sum = 0.0;
         for (Product product : returnedProducts) {
             sum += product.getPrice() * (1 - discountRate);
@@ -86,11 +106,7 @@ public class Return {
         if (refundAmount == 0.0) {
             calculateRefundAmount();
         }
-        double subtotal = originalSale.getTotal();
-        double discountRate = 0.0;
-        if (subtotal > 0) {
-            discountRate = originalSale.getDiscountAmount() / subtotal;
-        }
+        double discountRate = originalDiscountRate();
         StringBuilder receipt = new StringBuilder();
         receipt.append("Recibo de devolución ").append(id).append("\n");
         receipt.append("Fecha: ").append(date).append("\n");

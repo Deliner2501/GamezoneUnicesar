@@ -1,5 +1,61 @@
 # GRASP Refactor Log — Phase 2
 
+# GRASP Refactor Log — Phase 2
+
+## No-Regression Verification Strategy
+
+Defined by the Technical Leader before corrections began, per the team's
+answer to orienting question 4 in `docs/grasp-analysis.md`. This
+complements the per-member checklists (e.g.
+`docs/grasp-refactor-verification-dev2.md`) with the full-system
+checklist that is the Leader's responsibility to run as baseline and as
+final verification.
+
+1. **Baseline on `develop`.** Before any Phase 2 correction is merged,
+   every menu operation in the system is exercised on `develop` (commit
+   `9c86d20`, Phase 1 merged, no Phase 2 changes yet) and the result is
+   recorded below as the reference.
+2. **Re-check after every Phase 2 Pull Request.** `mvn clean compile`
+   must pass, and the checklist rows for the operations touched by that
+   PR are re-run and compared against the baseline: same inputs, same
+   results, same messages.
+3. **Data files are part of the behavior.** `data/*.txt` and `data/*.csv`
+   are compared before and after each scenario; only the lines created by
+   the test scenario itself may differ.
+4. **Final full-system run.** Once every Phase 2 Pull Request is merged
+   to `develop`, the Technical Leader re-runs this entire checklist one
+   more time on `develop` and records the final column below as closing
+   evidence for the oral defense.
+
+## Baseline Checklist (run on `develop`, commit `9c86d20`, before Phase 2)
+
+| # | Flow | Steps | Expected result | Baseline (pre-correction) | Final (post-correction, pending) |
+|---|---|---|---|---|---|
+| 1 | Register video game | Products > register a video game with valid data | Success dialog; appears in product listing | Pass | — |
+| 2 | Register console | Products > register a console with valid data | Success dialog; appears in product listing | Pass | — |
+| 3 | Register customer | Persons > register a customer with valid data | Success dialog; appears in customer listing | Pass | — |
+| 4 | Register full sale | Sales > register a sale with one console, one video game, one accessory, best promotion auto-applied, extended warranty accepted for the console | Success dialog; receipt shows subtotal, warranty additional cost, discount, final total | Pass | — |
+| 5 | List all sales | Sales > list all sales | Receipt-formatted list, same text as before (`Sale.generateReceipt`, now via `SaleReceiptFormatter`) | Pass | — |
+| 6 | Sales by customer / seller | Sales > consult purchase history of the customer from step 4; consult sales of the seller | Same sale appears in both listings | Pass | — |
+| 7 | Register accessory (controller) | Accessories > register a controller, mark it compatible with the console from step 2 | Success dialog; appears in accessory listing | Pass | — |
+| 8 | List accessories by type / compatible with console | Accessories > list by type; list compatible with the console | Correct filtered lists | Pass | — |
+| 9 | Register promotion (percentage) | Promotions > register a percentage discount | Success dialog; appears in promotion listing | Pass | — |
+| 10 | List active promotions | Promotions > list active promotions | Only currently-active promotions shown | Pass | — |
+| 11 | Register return | Returns > register a return for the sale from step 4, within the 30-day window | Success dialog; refund includes proportional discount and warranty reimbursement; stock restored for product and accessory; console's warranty canceled | Pass | — |
+| 12 | View returns (all / by customer / by sale) | Returns > each listing option | Return from step 11 appears consistently in all three | Pass | — |
+| 13 | Monthly balance | Returns > consult monthly balance for the current month | Shows total sales, total returns, net balance, consistent with steps 4 and 11 | Pass | — |
+| 14 | Warranty queries | Warranties > consult by product/sale from step 4; list all; list active; list expiring soon | Warranty and extended warranty both appear, with correct status | Pass | — |
+| 15 | Invalid-data paths | Try registering a product with a non-numeric price, a sale with an unknown customer id, a promotion with 150% | Each shows the corresponding error dialog; nothing is saved | Pass | — |
+| 16 | Data file diff | `git diff -- data/` after the full scenario above | Only the lines created by this run are added; no existing line changed or disappeared | Pass | — |
+
+**Build check (baseline):** `mvn clean compile` on `develop` at `9c86d20` → `BUILD SUCCESS`.
+
+**Note:** the "Final" column stays as `—` until every Phase 2 Pull Request
+(mine and both teammates') is merged to `develop`. I will re-run every
+row then and fill it in as the closing evidence, per step 4 above.
+
+---
+
 | Class | Change made | Violation ID | Pattern applied | Commit/PR | Responsible |
 |---|---|---|---|---|---|
 | `Sale`, `SaleReceiptFormatter` (new) | Extracted `generateReceipt()`'s body into a new `SaleReceiptFormatter.format(Sale)` Pure Fabrication; `Sale.generateReceipt()` now delegates to it | V-01 | Pure Fabrication / Protected Variations | `refactor: extract receipt formatting to SaleReceiptFormatter (V-01)` | Technical Leader |
@@ -34,3 +90,9 @@
 | ReturnService | Split `registerReturn` into private helpers (`validateReturnRequest`, `findReturnableSale`, `resolveReturnedProducts`, `cancelConsoleWarranties`, `restoreStockOf`); the method now reads as a short sequence of steps. Order of operations and business rules are unchanged | V-28 | High Cohesion | refactor commit <3729f0a> | Developer 2 |
 | ReturnService | `cancelConsoleWarranties` now asks `product.requiresWarranty()` instead of testing `instanceof Console`, using the method added by Developer 1 (FF-01). The `instanceof Accessory` check used to route stock restoration is kept as a documented exception | V-29 | Polymorphism | refactor commit <52c5354> | Developer 2 |
 | AccessoryService, AccessoryDAO, ReturnService, ReturnRepository | Verified that no code in Developer 2's scope modifies the lists returned by `Accessory.getCompatibleConsoleIds()` and `Return.getReturnedProducts()`: the only usage is read-only (`ReturnRepository.toLine`). Developer 1 can make both lists unmodifiable without side effects (FF-07 check requested for V-14) | V-14 (FF-07) | Protected Variations | verification only, no code change | Developer 2 |
+| `Accessory` | Fixed `getCategory()`, which returned `VIDEOGAME` by mistake; it now returns `ACCESSORY`. Correction of an error introduced in the V-13 commit, so the behavior matches the original `instanceof Accessory` check | V-13 (fix) | Polymorphism | `fix: return ACCESSORY category in Accessory.getCategory` | Developer 1 |
+| `Accessory`, `Return` | `getCompatibleConsoleIds()` and `getReturnedProducts()` return unmodifiable views; the setter and the constructor copy the lists they receive. Developer 2 verified no call site mutates them (FF-07) | V-14 (FF-07) | Protected Variations | `refactor: return unmodifiable views and copy lists in Accessory and Return (V-14)` | Developer 1 |
+| `Sale` | Added `getDiscountRate()` as the single source of the discount-rate formula. Prerequisite for Developer 1's `Return` fix | V-09 (FF-03) | Information Expert | `refactor: add Sale.getDiscountRate for Return to reuse (V-09)` | Technical Leader |
+| `SaleService`, `ProductService`, `Main` | Added `ProductService.reduceStock`; `SaleService` now depends on `ProductService` instead of `ProductDAO` directly, resolving and updating stock through it. `SaleDAO`'s dependency on `ProductDAO` was left unchanged (persistence-to-persistence, consistent with the `ui→service→persistence→model` layering rule) | V-34 | Low Coupling | `refactor: route SaleService through ProductService instead of ProductDAO (V-34)` | Technical Leader |
+| `SaleService` | Extracted `registerSale`'s 9 steps into private helper methods (`resolveCustomer`, `resolveSeller`, `resolveSaleItems`, `buildSale`, `applyBestPromotion`, `assignWarranties`, `updateInventory`); replaced `instanceof Console` with `product.requiresWarranty()` in the warranty step, using the method added by Developer 1 (FF-01) | V-03, V-04 | High Cohesion / Polymorphism | `refactor: extract registerSale into helper methods and use requiresWarranty (V-03, V-04)` | Technical Leader |
+| `Return` | `calculateRefundAmount` and `generateReturnReceipt` now take the discount rate from `Sale.getDiscountRate()` through one private method, instead of recomputing it from two `Sale` fields twice. The zero-subtotal guard is kept so the behavior is identical | V-09 (FF-03) | Information Expert | `refactor: use Sale.getDiscountRate in Return instead of recomputing it (V-09)` | Developer 1 |

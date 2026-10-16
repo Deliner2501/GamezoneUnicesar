@@ -136,3 +136,24 @@ No entries yet.
 - **Response summary:** It explained that the remote had new commits, that git pull was needed first and how to leave vim.
 - **Decision:** Accepted.
 - **Related commit:** -
+
+
+### Entry 5
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Correct V-14 and review my earlier changes.
+- **Query:** I pasted Return and Accessory and asked for the complete classes, to avoid errors when replacing pieces.
+- **Response summary:** It explained why unmodifiable views and defensive copies protect the internal lists, and noticed that Accessory.getCategory returned VIDEOGAME instead of ACCESSORY, an error from my earlier change. It gave the complete classes.
+- **Decision:** Accepted. I fixed the category in its own fix commit and applied V-14 in a second commit, building the project before each one.
+- **Related commit:** 1b7d364, ec4d9c2
+
+### Entry 6
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand how to apply V-09 using the Leader's Sale.getDiscountRate.
+- **Query:** I pasted Sale and Return and asked whether the new method behaves like the old formula and what to change in Return.
+- **Response summary:** It pointed out that getDiscountRate divides by zero when the subtotal is zero while the old code guarded that case, so Return keeps the guard. It also advised keeping both per-item expressions to avoid changing printed decimals, and gave the complete Return class.
+- **Decision:** Accepted. Built the project before the commit. I will tell the Leader that his JavaDoc and his code differ for a zero subtotal.
+- **Related commit:** d3a4497

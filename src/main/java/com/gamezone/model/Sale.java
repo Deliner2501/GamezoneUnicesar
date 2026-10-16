@@ -192,6 +192,22 @@ public class Sale {
     public double getDiscountAmount() {
         return discountAmount;
     }
+    
+    /**
+     * Returns the proportion of the subtotal that was discounted by the
+     * applied promotion, as a fraction (for example, 0.1 for a 10%
+     * discount). Used by classes that need to apply the same discount
+     * proportion to a subset of this sale's products — such as
+     * {@link com.gamezone.model.Return} when calculating a partial
+     * refund — instead of recomputing the rate themselves
+     * (GRASP audit finding V-09: Information Expert).
+     *
+     * @return the discount rate, or 0.0 if no promotion was applied or
+     *         the subtotal is zero
+     */
+    public double getDiscountRate() {
+        return discountAmount / total;
+    }
 
     /**
      * Returns the final amount to charge for this sale, after subtracting
