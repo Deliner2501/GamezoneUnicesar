@@ -138,3 +138,116 @@ limited). It is recorded as an **out-of-scope functional defect** for the
 consolidated audit and is not corrected in Phase 2. Developer 1 already
 reported the same difference when applying V-09 of Requirement 7, so it is
 not a new finding for that requirement.
+
+
+---
+
+## 2. `SaleDAO.java` (`SaleRepository` in the Requirement 8 table)
+
+### SRP — Violation (V-02)
+
+**V-02 — `SaleDAO` mixes file I/O, line serialization and cross-DAO reference
+resolution**
+- **Principle:** Single Responsibility Principle
+- **Module:** `SaleDAO`, whole class (225 lines). Three groups of members
+  with different reasons to change:
+  1. File access: `save` (lines 53–64) and `findAll` (lines 75–95) open
+     `data/sales.txt` and read/write it.
+  2. Serialization format: `toLine` (lines 149–168) and `fromLine`
+     (lines 174–207) define the field layout
+     `id;date;customerId;sellerId;productIds;promotion;discount` using
+     `FIELD_SEPARATOR` and `PRODUCT_SEPARATOR` (lines 27–28).
+  3. Reference resolution: `findCustomerById` (lines 209–216) and
+     `findSellerById` (lines 218–225) scan `personDAO.loadCustomers()` /
+     `loadSellers()`, and `fromLine` line 193 queries `productDAO.findById`.
+- **Evidence:** `fromLine` (a serialization method) calls `System.out.println`
+  (line 184) and three different collaborators, so changing the file format,
+  the storage medium or the way ids are resolved all force edits in the same
+  class. In Developer 1's `ProductDAO` the same concerns are already split
+  (`ProductCsvMapper` for the format, `DataLogger` for messages), so this DAO
+  is inconsistent with the rest of the persistence layer.
+- **Explanation:** A class must have a single reason to change. Here the
+  format of a sale line, the storage mechanism and the reference-resolution
+  strategy are three independent axes of change.
+- **Consequence:** Adding a field to a sale (for example, the warranty cost)
+  means editing the same methods that open the file, and the
+  serialization cannot be tested without touching the disk.
+- **Proposed solution:** Extract the line format into a dedicated
+  `SaleCsvMapper` (`toLine(Sale)` / `fromLine(String)`, with the id
+  resolution received as collaborators), following the `ProductCsvMapper`
+  precedent, and leave `SaleDAO` responsible only for reading and writing
+  lines. The file format and the console message stay identical.
+- **Code of another member:** No — the mapper is a new class in the
+  persistence package and only `SaleDAO` (mine) changes.
+
+### OCP — Correct
+
+`findAll`, `findByCustomer` and `findBySeller` (lines 75–143) filter by id
+and contain no type-based branching (`instanceof`, switch on kind), so new
+queries or new sale attributes are added without modifying the existing
+methods; format changes are confined to `toLine`/`fromLine`. The fact that
+`fromLine` resolves items only through `ProductDAO` (line 193) is a
+functional defect, not an extension-point problem, and is recorded below as
+out of scope.
+
+### LSP — Not applicable
+
+`public class SaleDAO` (line 24) neither extends a class nor implements an
+interface, and nothing extends it, so there is no substitution relationship.
+
+### ISP — Not applicable
+
+`SaleDAO` implements no interface, so no client is forced to depend on
+unused interface methods. Its current clients use disjoint subsets of its
+API: `SaleService` uses `save`, `findAll`, `findByCustomer` and
+`findBySeller`; `WarrantyService` uses it only to look up sales. This will
+become relevant after V-03 introduces an abstraction (see below).
+
+### DIP — Violation (V-03)
+
+**V-03 — `SaleDAO` depends on concrete `PersonDAO` and `ProductDAO`, and
+its clients depend on the concrete `SaleDAO`**
+- **Principle:** Dependency Inversion Principle
+- **Module:** `SaleDAO` lines 30–31 and 40–43:
+```java
+  private PersonDAO personDAO;
+  private ProductDAO productDAO;
+  public SaleDAO(PersonDAO personDAO, ProductDAO productDAO) { ... }
+```
+  and the consumers `SaleService` (line 33 `private SaleDAO saleDAO`,
+  constructor line 48) and `WarrantyService` (line 32
+  `private SaleDAO saleDAO`, constructor line 42), wired in `Main` line 38.
+- **Evidence:** Developer 1 already created the abstraction
+  `ProductRepository` (`save`, `findAll`, `findById`, `update`) and
+  `ProductService` depends on it, but `SaleDAO` still receives the concrete
+  `ProductDAO`. `PersonDAO` has no abstraction at all, and `SaleDAO` itself
+  has none: `SaleService` and `WarrantyService` depend on the concrete class.
+- **Explanation:** Higher-level code (the service layer and the sale
+  persistence logic) depends on concrete file-based implementations instead
+  of abstractions that both sides can depend on.
+- **Consequence:** `SaleService` cannot be tested with an in-memory
+  repository and any change of storage (database, another file format)
+  forces changes in the service layer.
+- **Proposed solution:**
+  1. `SaleDAO` receives `ProductRepository` instead of `ProductDAO`
+     (the interface already exists).
+  2. Create a `PersonRepository` interface (`loadCustomers`,
+     `loadSellers`) implemented by `PersonDAO`, and have `SaleDAO` receive
+     it.
+  3. Create a `SaleRepository` interface (`save`, `findAll`,
+     `findByCustomer`, `findBySeller`) implemented by `SaleDAO`, and have
+     `SaleService` receive it.
+  Behavior and data files do not change.
+- **Code of another member:** **Yes.** `PersonDAO` is Developer 2's class
+  (it must implement the new `PersonRepository` interface) and
+  `WarrantyService` (Developer 2) must depend on `SaleRepository` instead of
+  `SaleDAO`. The changes in `SaleDAO`, `SaleService` and `Main` are mine.
+  Frontier finding, to be consolidated with Developer 2.
+
+### Note — functional defect (already recorded in Requirement 7)
+
+`SaleDAO.fromLine` (line 193) resolves every item id only through
+`productDAO.findById`, so accessories in a persisted sale are lost when it
+is reloaded. This was already registered as an out-of-scope defect in the
+Requirement 7 audit (`docs/grasp-audit/leader-audit.md`), so it is **not
+registered again** here and remains uncorrected.
