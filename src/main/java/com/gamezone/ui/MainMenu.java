@@ -43,7 +43,7 @@ public class MainMenu {
     private final WarrantyService warrantyService;
     private final ReturnService returnService;
     private final SaleService saleService;
-
+    private final ProductMenu productMenuView;
     /**
      * Creates the main menu with the services it depends on.
      *
@@ -66,6 +66,7 @@ public class MainMenu {
     this.promotionService = promotionService;
     this.returnService = returnService;
     this.warrantyService = warrantyService;
+    this.productMenuView = new ProductMenu(productService);
 }
 
     /**
@@ -100,7 +101,7 @@ public class MainMenu {
 
             try {
                 switch (choice) {
-                    case 0 -> productMenu();
+                    case 0 -> productMenuView.show();
                     case 1 -> personMenu();
                     case 2 -> saleMenu();
                     case 3 -> accessoryMenu();
@@ -127,111 +128,7 @@ public class MainMenu {
         JOptionPane.showMessageDialog(null, "Cerrando GameZone Unicesar. ¡Hasta pronto!",
                 "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
     }
-        
-    // ===================== PRODUCT MENU =====================
-
-        private void productMenu() {
-        String[] options = {
-                "Registrar un videojuego",
-                "Registrar una consola",
-                "Listar productos disponibles",
-                "Volver"
-        };
-        Object selectedOption = JOptionPane.showInputDialog(
-                null,
-                "Gestión de productos - Seleccione una opción:",
-                "GameZone Unicesar",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]
-        );
-        int choice = (selectedOption == null)
-                ? -1
-                : java.util.Arrays.asList(options).indexOf(selectedOption);
-
-        switch (choice) {
-            case 0 -> registerVideoGame();
-            case 1 -> registerConsole();
-            case 2 -> listProducts();
-            default -> { }
-        }
-    }
-
-    private void registerVideoGame() {
-        String id = MenuDialogs.askInput("Id:");
-        if (id == null) return;
-        String title = MenuDialogs.askInput("Título:");
-        if (title == null) return;
-        String priceText = MenuDialogs.askInput("Precio:");
-        if (priceText == null) return;
-        String stockText = MenuDialogs.askInput("Cantidad en inventario:");
-        if (stockText == null) return;
-        String platform = MenuDialogs.askInput("Plataforma:");
-        if (platform == null) return;
-        String genre = MenuDialogs.askInput("Género:");
-        if (genre == null) return;
-        String ageRating = MenuDialogs.askInput("Clasificación de edad:");
-        if (ageRating == null) return;
-
-        try {
-            double price = Double.parseDouble(priceText);
-            int stock = Integer.parseInt(stockText);
-
-            productService.registerVideoGame(id, title, price, stock, platform, genre, ageRating);
-            JOptionPane.showMessageDialog(null, "Videojuego registrado exitosamente.",
-                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null,
-                    "Error: el precio y la cantidad deben ser valores numéricos válidos.",
-                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void registerConsole() {
-        String id = MenuDialogs.askInput("Id:");
-        if (id == null) return;
-        String title = MenuDialogs.askInput("Título:");
-        if (title == null) return;
-        String priceText = MenuDialogs.askInput("Precio:");
-        if (priceText == null) return;
-        String stockText = MenuDialogs.askInput("Cantidad en inventario:");
-        if (stockText == null) return;
-        String brand = MenuDialogs.askInput("Marca:");
-        if (brand == null) return;
-        String model = MenuDialogs.askInput("Modelo:");
-        if (model == null) return;
-        String generation = MenuDialogs.askInput("Generación:");
-        if (generation == null) return;
-
-        try {
-            double price = Double.parseDouble(priceText);
-            int stock = Integer.parseInt(stockText);
-
-            productService.registerConsole(id, title, price, stock, brand, model, generation);
-            JOptionPane.showMessageDialog(null, "Consola registrada exitosamente.",
-                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null,
-                    "Error: el precio y la cantidad deben ser valores numéricos válidos.",
-                    "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-        private void listProducts() {
-        List<Product> products = productService.listAvailableProducts();
-        if (products.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Aún no hay productos registrados.",
-                    "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        List<String> entries = new java.util.ArrayList<>();
-        for (Product product : products) {
-            entries.add(product.getFullDescription());
-        }
-        MenuDialogs.showList("Productos disponibles", MenuDialogs.formatEntries(entries));
-    }
-
+      
     // ===================== PERSON MENU =====================
 
         private void personMenu() {
