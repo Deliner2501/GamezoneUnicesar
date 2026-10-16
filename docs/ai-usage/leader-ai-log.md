@@ -70,3 +70,107 @@ Retrospective summary covering the most relevant AI-assisted decisions across Re
 
 ## 8. What should be done with a real bug found during an audit that isn't the GRASP pattern violation being looked for?
 **Answer:** Record it separately as an out-of-scope functional defect instead of fixing it, since correcting it would change what the user observes, which goes against the requirement's rule of preserving current behavior.
+
+# Requirement 7 - Phase 2 (GRASP Correction) - AI usage log
+
+In Phase 2 the AI assistant was used in a guided mode: it never edited the repository. It explained each correction and gave the exact code and git commands, and I applied, compiled, tested and committed every change myself, one violation per `refactor:` commit with its own row in `docs/grasp-refactor-log.md`. It was also used to check the current state of the code against the latest uploaded version of the project before each instruction.
+
+### Entry 1
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Build the "before" class diagram that opens Phase 2.
+- **Query:** I asked for the before diagram of my own classes first.
+- **Response summary:** It produced a Mermaid diagram of the Sales and UI classes only. I pointed out that the diagram is my responsibility for the whole team, so it was rebuilt to cover every class touched by the 34 consolidated violations, with a note citing the violation IDs on each class.
+- **Decision:** Accepted the complete version. The scope mistake was in the first answer, not in the requirement.
+- **Related commit:** d8be90e
+
+### Entry 2
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Correct V-01 and V-02.
+- **Query:** I asked for the exact change for each violation after it read the current `Sale` and `SaleDAO`.
+- **Response summary:** For V-01 it proposed moving the receipt text into a new `SaleReceiptFormatter` that only uses `Sale`'s public getters, so the text stays identical. For V-02 it proposed wrapping the `IOException` in `PersistenceException`, copying the pattern already used in `save` and `findAll`, and keeping the `throws IOException` signatures so no caller changes.
+- **Decision:** Applied both as proposed, in separate commits, and checked that the receipt text did not change.
+- **Related commit:** 812aea6, 2dd7168, 20f7ef2, 321f17e
+
+### Entry 3
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Define the no-regression verification strategy that is my responsibility.
+- **Query:** My teammates told me the strategy belongs in `docs/grasp-refactor-log.md`, so I asked for it written like the previous steps.
+- **Response summary:** It wrote the strategy (baseline on `develop`, re-check after each change, data files compared, final full run) and a 16-flow baseline checklist. It kept it separate from Developer 2's own checklist, which only covers his scope.
+- **Decision:** Accepted and ran the baseline on `develop` before correcting my own violations.
+- **Related commit:** fecb949
+
+### Entry 4
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Unblock Developer 1 by adding `Sale.getDiscountRate` (V-09 prerequisite).
+- **Query:** I asked which of my corrections Developer 1 was waiting for.
+- **Response summary:** It identified FF-03 as the blocker and gave the method to add, plus the log row.
+- **Decision:** Applied it first so Developer 1 could do his part of V-09.
+- **Related commit:** c73fd80, 7913aa2
+
+### Entry 5
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Correct V-34, the dependency of `SaleService` on `ProductDAO`.
+- **Query:** I asked for the fix after reading the audit wording, which mentioned both `SaleService` and `SaleDAO`.
+- **Response summary:** It reasoned from the `ui → service → persistence → model` rule: `SaleService` depending on a DAO is a violation, but `SaleDAO` depending on `ProductDAO` is persistence-to-persistence, the same as its existing dependency on `PersonDAO`. It also found that `ProductService` had no stock-reduction method and proposed adding `reduceStock`, mirroring `restoreStock`.
+- **Decision:** Accepted. I changed only `SaleService`, documented in the log why `SaleDAO` was left alone, and told Developer 1 that I added a method to his service.
+- **Related commit:** f76c8ab, 018b81e
+
+### Entry 6
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Correct V-03 and V-04 in `SaleService.registerSale`.
+- **Query:** I asked for the fix for both together, since they touch the same method. The project then failed to compile, so I uploaded it and asked what was wrong.
+- **Response summary:** It split `registerSale` into private helper methods and replaced `instanceof Console` with `product.requiresWarranty()`. After compiling the uploaded project it found that the extracted `assignWarranties` method was missing `throws IOException`, which the original method did not need because the enclosing method already declared it.
+- **Decision:** Accepted. I added the `throws IOException` and compiled again before committing.
+- **Related commit:** 26f7ead, f6be7bb, a49cc0e
+
+### Entry 7
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Correct V-05 and V-07 in `MainMenu`.
+- **Query:** I asked for both once Developer 1's factory methods and `requiresWarranty()` were available.
+- **Response summary:** It replaced the direct `new VideoGame/Console` with the `ProductService` factory methods. For V-07 it warned that, unlike `instanceof`, `requiresWarranty()` fails with a null pointer when the id belongs to an accessory (`findProductById` returns null), so it added an explicit null check.
+- **Decision:** Applied both in separate commits and tested a sale with a console and a sale with only an accessory.
+- **Related commit:** 7740088, a32b3ec, 7b0429a
+
+### Entry 8
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Split `MainMenu` (V-06), the largest violation.
+- **Query:** I asked for the correction after the rest of my violations were done.
+- **Response summary:** It proposed one class per feature area plus a shared `MenuDialogs`, and gave one commit per piece so each step could be compiled and tested. After the `MenuDialogs` commit the project did not compile; I uploaded it and it found 13 remaining calls to `showPersistenceError()` inside the area methods that it had not told me to qualify. It then recommended removing the unused imports in one final commit instead of piece by piece, to avoid deleting one still needed by an area not yet extracted.
+- **Decision:** Accepted. I replaced the 13 calls, applied each extraction and compiled before every commit. `MainMenu` went from 1105 to 120 lines, and I ran the full checklist afterwards.
+- **Related commit:** 25a011b, 0e9810e, b20c333, 869544a, 3e7ef0c, 267ba80, 109f168, 5df8b64, 871aa47, 37220e7
+
+### Entry 9
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand a rejected push and the editor that opened during a merge.
+- **Query:** I pasted a screenshot of the terminal showing the merge message editor.
+- **Response summary:** It explained that a teammate had pushed commits to the shared branch, that the pull created a merge commit, and how to save and leave the editor.
+- **Decision:** Accepted. I confirmed the project still compiled after the merge before continuing.
+- **Related commit:** -
+
+### Entry 10
+- **Date:** 2026-10-16
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Close my team-wide responsibilities: after diagram, final checklist, README and Pull Request description.
+- **Query:** I uploaded the project with all three members' work and asked for the remaining documents.
+- **Response summary:** It compiled the whole project first, then read the real classes to draw the after diagram. It also filled the final column of the checklist from the results I got by running every flow myself, updated the README sections that were out of date, and wrote a description for a Pull Request limited to my own contributions.
+- **Decision:** Accepted. The results of the checklist are the ones I observed in NetBeans, not the assistant's.
+- **Related commit:** (fill with `git log --oneline` for the after diagram, final checklist and README commits)
