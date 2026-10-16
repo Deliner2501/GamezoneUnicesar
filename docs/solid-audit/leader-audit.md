@@ -575,3 +575,88 @@ public void reduceStock(String productId, int quantity) {    // lines 131–136
   (field line 16, constructor line 18), not the concrete `ProductDAO`.
 
 **Conclusion: no violations found in `restoreStock` or `reduceStock`.**
+
+
+---
+
+## Coverage Summary
+
+| Module | Principles audited | Violations found |
+|---|:---:|---|
+| `Sale` | 5/5 | 1 (V-01) |
+| `SaleDAO` | 5/5 | 2 (V-02, V-03) |
+| `SaleService` | 5/5 | 2 (V-04, V-05) |
+| `MainMenu` | 5/5 | 1 (V-06) |
+| Seven area menus | 5/5 | 0 |
+| `MenuDialogs` | 5/5 | 0 |
+| `SaleReceiptFormatter` | 5/5 | 0 |
+| `Main` | 5/5 | 0 |
+| `ProductService.restoreStock` / `reduceStock` | 5/5 | 0 |
+| **Total** | — | **6** |
+
+## Verdict Table by Principle (Leader's scope only)
+
+| Principle | `Sale` | `SaleDAO` | `SaleService` | `MainMenu` | Area menus | `MenuDialogs` | `SaleReceiptFormatter` | `Main` | `restoreStock` / `reduceStock` |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| SRP | Correct | **Violation (V-02)** | Correct | Correct | Correct | Correct | Correct | Correct | Correct |
+| OCP | Correct | Correct | **Violation (V-04)** | **Violation (V-06)** | Correct | Correct | Correct | Correct | Correct |
+| LSP | N/A | N/A | Correct | N/A | N/A | N/A | N/A | N/A | Correct |
+| ISP | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
+| DIP | **Violation (V-01)** | **Violation (V-03)** | **Violation (V-05)** | Correct | Correct | Correct | Correct | Correct | Correct |
+
+## Verdict by Principle for the Leader's scope
+
+| Principle | Verdict | Violations |
+|---|---|---|
+| SRP | Violation | V-02 |
+| OCP | Violation | V-04, V-06 |
+| LSP | Correct (no violation; N/A in classes without inheritance) | — |
+| ISP | Not applicable (none of my classes declares or implements an interface today) | — |
+| DIP | Violation | V-01, V-03, V-05 |
+
+## Violation List
+
+| ID | Principle | Module | One-line description | Code of another member |
+|---|---|---|---|---|
+| V-01 | DIP | `Sale.generateReceipt()` | Domain class depends on `ui.SaleReceiptFormatter` | No |
+| V-02 | SRP | `SaleDAO` | File I/O, line serialization and reference resolution in one class | No |
+| V-03 | DIP | `SaleDAO` and its clients | Concrete `PersonDAO`, `ProductDAO` and `SaleDAO` instead of abstractions | **Yes** (Dev 2: `PersonDAO`, `WarrantyService`) |
+| V-04 | OCP (related SRP) | `SaleService` | Product/accessory branching repeated in four methods | No (cleaner with V-05) |
+| V-05 | DIP | `SaleService` | Concrete `AccessoryDAO` used from the service layer | **Yes** (Dev 2: `AccessoryDAO`) |
+| V-06 | OCP (related DIP) | `MainMenu` | New area requires editing constructor, options and switch | No |
+
+## Violations Requiring Another Member's Code (frontier findings)
+
+| ID | Needs a change in | Owner | What is needed |
+|---|---|---|---|
+| V-03 | `PersonDAO` | Developer 2 | Implement a new `PersonRepository` interface (`loadCustomers`, `loadSellers`) |
+| V-03 | `WarrantyService` | Developer 2 | Depend on `SaleRepository` instead of the concrete `SaleDAO` |
+| V-05 | `AccessoryDAO` | Developer 2 | Implement a new `AccessoryRepository` interface |
+
+The corrections of my own classes for these three must wait until the
+prerequisite changes are merged into `develop` (see the correction order in
+`docs/solid-analysis.md`, question 5).
+
+## Out-of-Scope Functional Defects
+
+| Found in | Description |
+|---|---|
+| `Sale.getDiscountRate()` (line 209) | Divides by `total` without a zero guard although its JavaDoc promises `0.0` for a zero subtotal. Not a SOLID violation; fixing it changes observable behavior, so it is not corrected in this requirement. Developer 1 already noticed it while applying V-09 of Requirement 7. |
+
+Already registered in Requirement 7 and **not registered again**:
+`SaleDAO.fromLine` loses accessories when a sale is reloaded (it resolves
+items only through `ProductDAO`).
+
+## Summary
+
+My audit covers `Sale`, `SaleDAO`, `SaleService`, `MainMenu` with the seven
+area menus, `MenuDialogs` and `SaleReceiptFormatter`, `Main`, and
+`ProductService.restoreStock`/`reduceStock`, against the five SOLID
+principles. I found **6 violations** (V-01 to V-06): 3 of DIP, 1 of SRP and 2
+of OCP, **3 of which depend on Developer 2's code** (V-03 and V-05), plus
+1 out-of-scope functional defect. LSP is correct where it applies and ISP is
+not applicable to my classes because they use no interfaces today (the
+interfaces introduced by the corrections will be kept small). Notably, V-01
+is a SOLID problem introduced by the Requirement 7 correction of GRASP V-01
+(it moved the receipt text out of `Sale` but left a delegating method that
+points at the UI layer).
