@@ -106,3 +106,57 @@ Problems whose origin is in another member's code are not audited here; they are
 
 \- `DataLogger` and `ConsoleDataLogger` each have a single purpose.
 
+
+
+\## 2. Open/Closed Principle - Verdict: Violation
+
+
+
+\### V-04
+
+\- \*\*ID:\*\* V-04
+
+\- \*\*Principle:\*\* OCP
+
+\- \*\*Module:\*\* Products (base workshop) and GRASP correction (Req. 7)
+
+\- \*\*Evidence:\*\* `ProductService.registerVideoGame(...)` and `registerConsole(...)` each do `registerProduct(new VideoGame(...))` / `registerProduct(new Console(...))`, and the class imports `VideoGame` and `Console`.
+
+\- \*\*Explanation:\*\* every new product type needs a new `registerXxx` method in the service. I added these methods in the GRASP correction (FF-02) to remove `new` from the menu.
+
+\- \*\*Consequence:\*\* adding a product type modifies `ProductService`, which already works.
+
+\- \*\*Proposed solution:\*\* a product factory abstraction, one implementation per type, that the service receives and uses.
+
+\- \*\*Code of another member:\*\* Yes, the Technical Leader (`MainMenu` and its sub-menus call the two methods).
+
+
+
+\### V-05
+
+\- \*\*ID:\*\* V-05
+
+\- \*\*Principle:\*\* OCP
+
+\- \*\*Module:\*\* GRASP correction (Req. 7)
+
+\- \*\*Evidence:\*\* `ProductDAO`: `private final List<ProductCsvMapper> mappers = List.of(new VideoGameCsvMapper(), new ConsoleCsvMapper());`.
+
+\- \*\*Explanation:\*\* the list of supported types is fixed inside the DAO.
+
+\- \*\*Consequence:\*\* a new product type requires editing `ProductDAO` besides adding its mapper.
+
+\- \*\*Proposed solution:\*\* receive the mapper list through the constructor (default list kept in the no-argument constructor so `Main` still compiles).
+
+\- \*\*Code of another member:\*\* No.
+
+
+
+\### Where the principle is correctly applied
+
+\- `Promotion.calculateDiscount(Sale)` is abstract: a new promotion type is a new subclass without changing the existing ones.
+
+\- `Warranty` declares `getDurationInMonths`, `getWarrantyType` and `getAdditionalCost` as abstract; a new warranty type does not change `Warranty`.
+
+\- `Accessory` subclasses implement `getFullDescription`, `getTypeCode` and `getCategory` through the base class.
+
