@@ -156,3 +156,28 @@ Classes owned by other team members are not audited here: `Product` hierarchy, `
 ### Documented exception
 
 - `ReturnService.restoreStockOf`, line 159: `if (product instanceof Accessory)`. It was kept on purpose in Requirement 7 because only accessories have stock; it is not counted as a violation.
+
+## 4. Liskov Substitution Principle (LSP)
+
+**Verdict: Correct** (no violations found).
+
+### Analysis
+
+| Hierarchy | Subtypes | Result |
+|---|---|---|
+| `Person` | `Customer`, `Seller` | Correct. Both subclasses only add data (`purchaseHistory`, `employeeCode`, `workShift`) and override `toString()` (`Customer` line 59, `Seller` line 47; `Person` line 68). They do not strengthen preconditions: the constructor validations of `Person` (lines 27-33, blank `name`, `id` and `phone` rejected) are inherited and not changed. They do not weaken postconditions or throw new exceptions in overridden methods. |
+| `Customer.getPurchaseHistory()` | not applicable | It returns an unmodifiable list, so no caller can break the invariant of the subtype. |
+
+### Evidence of substitutability
+
+- `PersonService` and `PersonValidator` work with `Customer` and `Seller` through their `Person` fields (`getId()`, `getName()`, `getPhone()`) and never check the concrete class.
+- The only `instanceof` in the project is `ReturnService.restoreStockOf` (line 159, `product instanceof Accessory`). It does not test a `Person` subtype and does not break substitution; it is the documented exception of Requirement 7.
+- No subclass in this scope overrides a method with an empty body or an `UnsupportedOperationException`.
+
+### Not applicable
+
+- The `Product`, `Accessory`, `Promotion` and `Warranty` hierarchies and the exception hierarchy belong to Developer 1 (see Scope), so their LSP analysis is left to the corresponding audit.
+
+### Reported to the Technical Leader
+
+- None.
