@@ -238,3 +238,47 @@ Problems whose origin is in another member's code are not audited here; they are
 
 \- Limitation: `ProductDAO` creates its mappers with `new` (recorded as V-05) and `ProductService` depends on the concrete `VideoGame` and `Console` (recorded as V-04). They are not counted twice.
 
+
+
+\## 6. Audit of the exceptions, validation and Return code
+
+
+
+\### V-08
+
+\- \*\*ID:\*\* V-08
+
+\- \*\*Principle:\*\* OCP
+
+\- \*\*Module:\*\* Exceptions and validation (Req. 6) and Promotions (Req. 2), adjustment A1
+
+\- \*\*Evidence:\*\* `PromotionValidator.validateTargetCategory` repeats the category literals: `targetCategory.equalsIgnoreCase("VIDEOGAME") || ... "CONSOLE" || ... "ACCESSORY"`. The same knowledge exists in `ProductCategory.fromText`, which `CategoryDiscount`'s constructor already uses.
+
+\- \*\*Explanation:\*\* the list of valid categories is written in two places, and the validator does not use the enum that defines it.
+
+\- \*\*Consequence:\*\* adding a category (for example `ProductCategory.BUNDLE`) requires editing the enum and also this validator, or the new category is rejected when a promotion is registered.
+
+\- \*\*Proposed solution:\*\* validate with `ProductCategory.fromText(targetCategory) == null`, keeping the same exception and the same Spanish message.
+
+\- \*\*Code of another member:\*\* No (`PromotionService` only calls the validator).
+
+
+
+\### Where the principles are correctly applied
+
+\- \*\*SRP, exceptions:\*\* each class has one purpose (`BusinessRuleException`, `InvalidDataException`, `PersistenceException`, `ResourceNotFoundException`); `GameZoneException` only holds the message and the error code. Each validator covers one module.
+
+\- \*\*OCP, exceptions:\*\* a new error category is a new subclass of `GameZoneException`; no existing class changes.
+
+\- \*\*LSP, exceptions:\*\* the four subclasses can be thrown and caught as `GameZoneException` and keep `getErrorCode()` (each passes its own constant).
+
+\- \*\*SRP and LSP, Return:\*\* `Return.calculateRefundAmount` only calculates the refund and has no subclasses. The text generation is recorded as V-03.
+
+\- \*\*DIP, limitation:\*\* the services call the validators as static methods (`ProductValidator.validateProductData(...)` in `ProductService.registerProduct`). The validators are stateless utility classes with no state to replace, so it is recorded as a limitation and not as a violation.
+
+
+
+\### Note for the GRASP relation
+
+`AccessoryValidator.validateStockAvailability` keeps `accessory.getStock() < requestedQuantity`, while GRASP V-08 centralized the rule in `Product.hasEnoughStock` and `ProductValidator` now uses it. The accessory validator was left with the duplicated rule. It is not counted as a SOLID violation; it is reported to the Technical Leader.
+
