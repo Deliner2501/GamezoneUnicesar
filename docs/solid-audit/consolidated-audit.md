@@ -316,3 +316,177 @@ change is stated and justified in "Leader decisions at consolidation".
   CSV output identical.
 - **Source:** `developer1-audit` V-07.
 - **Correction owner:** Developer 1.
+
+
+### Merged finding (Developer 1 and Developer 2)
+
+**V-14 — OCP — `PromotionValidator.validateTargetCategory` repeats the list of valid categories**
+- **Evidence:** `PromotionValidator.java` lines 38–40:
+  `targetCategory.equalsIgnoreCase("VIDEOGAME") || ... "CONSOLE" || ... "ACCESSORY"`.
+  The same knowledge exists in `ProductCategory.fromText`, which the
+  constructor of `CategoryDiscount` already uses.
+- **Explanation and consequence:** the valid categories are written in two
+  places; adding a category (for example `BUNDLE`) requires editing the enum
+  and this validator, or the new category is rejected when registering a
+  promotion.
+- **Agreed solution:** validate with `ProductCategory.fromText(targetCategory)`
+  (the solution of Developer 1) instead of a new `Set` constant (the
+  alternative of Developer 2), because it reuses the enum that already defines
+  the categories. Before applying it, the owner checks that `fromText` accepts
+  exactly the same inputs (the three values, case-insensitive) so the accepted
+  and rejected values and the Spanish message stay identical.
+- **Source:** `developer1-audit` V-08 and `developer2-audit` V-07 (same
+  fragment, found independently by both).
+- **Correction owner:** Developer 1 (owner of the validation package and of
+  `ProductCategory`); Developer 2 reviews because he created the class in
+  Requirement 7.
+
+### Developer 2's scope
+
+**V-15 — SRP — `PersonDAO` owns two independent persistence concerns**
+- **Evidence:** `PersonDAO` lines 22–26 (`CUSTOMERS_FILE` with `;`,
+  `SELLERS_FILE` with `,` and a header line) and the methods
+  `saveCustomers`/`loadCustomers` (lines 36–84) and
+  `saveSellers`/`loadSellers` (lines 94–154).
+- **Explanation and consequence:** the customers file and the sellers file
+  have independent reasons to change; a client that needs only sellers still
+  depends on the customer code, and `SaleDAO` receives the whole `PersonDAO`.
+- **Agreed solution:** split into `CustomerDAO` and `SellerDAO`, each one
+  implementing a new interface (`CustomerRepository` with
+  `saveCustomers`/`loadCustomers`, `SellerRepository` with
+  `saveSellers`/`loadSellers`). File names, formats and header lines are
+  unchanged. `PersonService` uses both (V-23), `SaleDAO` receives both
+  (V-03), and `Main` builds them.
+- **Source:** `developer2-audit` V-01.
+- **Correction owner:** Developer 2 (prerequisite of V-03 part (b)).
+
+**V-16 — SRP — `ReturnService` also computes the monthly financial balance**
+- **Evidence:** `ReturnService.calculateMonthlySales` (line 296),
+  `calculateMonthlyReturns` and `generateMonthlyBalance`
+  (lines 296–318); the first one iterates `saleService.listSales()`.
+- **Explanation and consequence:** reporting is a different responsibility
+  from processing a return; a change in the balance edits the class that
+  registers returns, and `ReturnService` depends on `SaleService` for
+  reporting only. `ReturnMenu` also depends on the whole `ReturnService` to
+  call these three methods.
+- **Agreed solution:** extract the three methods to `MonthlyBalanceService`
+  (receiving `SaleService` and `ReturnService`). `ReturnMenu` (lines 144–146)
+  and `Main` are adapted in the same commit; output unchanged.
+- **Source:** `developer2-audit` V-02.
+- **Correction owner:** Developer 2 (call site belongs to the Leader, who
+  reviews the PR).
+
+**V-17 — SRP — `ReturnService` rebuilds domain objects from stored records**
+- **Evidence:** `ReturnService.loadAllReturns` (lines 199–208) and
+  `resolveReturn` (lines 215–241): look up the sale, then each product and
+  accessory, and rebuild the `Return`.
+- **Explanation and consequence:** a mapping responsibility lives next to the
+  business rules (30-day window, stock restoration, warranty cancellation); a
+  change in the stored record edits the same class as a business rule.
+- **Agreed solution:** extract both methods to `ReturnRecordResolver`; the
+  service delegates to it.
+- **Source:** `developer2-audit` V-03.
+- **Correction owner:** Developer 2.
+
+**V-18 — SRP — `WarrantyService` mixes warranty rules, record mapping and a sale lookup**
+- **Evidence:** `WarrantyService.loadAllWarranties`, `resolveWarranty`
+  (line 246 onward) and the private `findSaleById` (loops over
+  `saleDAO.findAll()`, line 253), which repeats `SaleService.findSaleById`.
+- **Explanation and consequence:** a change in the record format, the type
+  discriminator or the sale lookup edits the class that owns the warranty
+  rules; the duplicated lookup must be kept in sync.
+- **Agreed solution:** extract the three methods to `WarrantyRecordResolver`;
+  its sale lookup uses the `SaleReader` abstraction of V-22.
+- **Source:** `developer2-audit` V-04.
+- **Correction owner:** Developer 2.
+
+**V-19 — OCP — `AccessoryDAO.parseLine` branches on the accessory type**
+- **Evidence:** `AccessoryDAO.java` lines 118–127:
+  `if (type.equals("CONTROLLER")) ... else if ("CABLE") ... else if ("MEMORY")`.
+- **Explanation and consequence:** writing is polymorphic but reading is not;
+  a new accessory type (for example a headset) forces editing the DAO, and a
+  forgotten branch makes the new accessories silently unreadable.
+- **Agreed solution:** replace the chain with a registry of type code to
+  parser, supplied by the accessory mapper created in V-08 (FF-07).
+- **Source:** `developer2-audit` V-05.
+- **Correction owner:** Developer 2.
+
+**V-20 — OCP — `PromotionDAO.parseLine` branches on the promotion type**
+- **Evidence:** `PromotionDAO.java` lines 80–87:
+  `if (type.equals("PERCENTAGE")) ... "CATEGORY" ... "BULK"`.
+- **Explanation and consequence:** same pattern as V-19; a new promotion type
+  forces editing `parseLine`.
+- **Agreed solution:** same registry as V-19, supplied by the promotion
+  mapper of V-08 (FF-07).
+- **Source:** `developer2-audit` V-06.
+- **Correction owner:** Developer 2.
+
+**V-21 — OCP — `WarrantyService.resolveWarranty` branches on a type string**
+- **Evidence:** `WarrantyService.java` line 246:
+  `if (EXTENDED_TYPE.equals(record.getType()))`, with every other value
+  rebuilt as a basic warranty.
+- **Explanation and consequence:** a third warranty type would be silently
+  rebuilt as a basic one.
+- **Agreed solution:** registry of type code to factory, supplied by the
+  warranty type mapper of V-08 (FF-07); it ends up inside the resolver
+  of V-18.
+- **Source:** `developer2-audit` V-08.
+- **Correction owner:** Developer 2.
+
+**V-22 — ISP — `WarrantyService` depends on the whole `SaleDAO` to read one list**
+- **Evidence:** `WarrantyService` constructor line 42
+  (`WarrantyService(WarrantyRepository, SaleDAO, ProductService)`); the only
+  use is the private `findSaleById`, which calls `saleDAO.findAll()` (line 253).
+- **Explanation and consequence:** the service is forced to depend on methods
+  it does not use and cannot be tested with a small fake.
+- **Agreed solution:** `WarrantyService` receives the `SaleReader` interface
+  (`findAll`) created by the Leader in V-03 part (a).
+- **Source:** `developer2-audit` V-09.
+- **Correction owner:** Developer 2 (after the Leader's V-03 part (a)).
+
+**V-23 — DIP — `PersonService` creates its own concrete `PersonDAO`**
+- **Evidence:** `PersonService.java` line 30:
+  `this.personDAO = new PersonDAO();`; `Main` line 42 calls
+  `new PersonService()`.
+- **Explanation and consequence:** the service instantiates a low-level
+  concrete class, cannot be tested with a fake and reads the real files when
+  created.
+- **Agreed solution (changed from the source report):** after V-15,
+  `PersonService(CustomerRepository, SellerRepository)` receives the two
+  interfaces by constructor; `Main` (line 42) passes them.
+- **Source:** `developer2-audit` V-10.
+- **Correction owner:** Developer 2 (after V-15).
+
+**V-24 — DIP — `AccessoryService` depends on the concrete `AccessoryDAO`**
+- **Evidence:** `AccessoryService.java` line 20:
+  `AccessoryService(AccessoryDAO accessoryDAO)`; `Main` line 36 and 44.
+- **Explanation and consequence:** the service is tied to the CSV
+  implementation; `ProductService` already receives `ProductRepository`.
+- **Agreed solution:** `AccessoryRepository` interface implemented by
+  `AccessoryDAO`; the service depends on it. After V-05 no class of the
+  Leader depends on `AccessoryDAO`.
+- **Source:** `developer2-audit` V-11.
+- **Correction owner:** Developer 2.
+
+**V-25 — DIP — `PromotionService` depends on the concrete `PromotionDAO`**
+- **Evidence:** `PromotionService.java` line 22:
+  `PromotionService(PromotionDAO promotionDAO)`; `Main` lines 37 and 45.
+- **Explanation and consequence:** same as V-24.
+- **Agreed solution:** `PromotionRepository` interface implemented by
+  `PromotionDAO`; the service depends on it.
+- **Source:** `developer2-audit` V-12.
+- **Correction owner:** Developer 2.
+
+**V-26 — DIP — `ReturnService` and `WarrantyService` depend on concrete CSV classes**
+- **Evidence:** `ReturnService.java` line 41 (`ReturnRepository`) and
+  `WarrantyService.java` line 42 (`WarrantyRepository`, `SaleDAO`); both
+  repository classes are concrete despite their names; `Main` lines 47–51.
+- **Explanation and consequence:** neither service can be tested without real
+  files, and the names suggest an abstraction that does not exist.
+- **Agreed solution:** rename the concrete classes to `CsvReturnRepository`
+  and `CsvWarrantyRepository`, create the interfaces `ReturnRepository` and
+  `WarrantyRepository`, and use the `SaleReader` of V-22 for the sale lookup
+  (the `SaleDAO` part is not counted twice). `Main` is the only
+  other file affected.
+- **Source:** `developer2-audit` V-13.
+- **Correction owner:** Developer 2.
