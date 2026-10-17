@@ -282,3 +282,49 @@ Problems whose origin is in another member's code are not audited here; they are
 
 `AccessoryValidator.validateStockAvailability` keeps `accessory.getStock() < requestedQuantity`, while GRASP V-08 centralized the rule in `Product.hasEnoughStock` and `ProductValidator` now uses it. The accessory validator was left with the duplicated rule. It is not counted as a SOLID violation; it is reported to the Technical Leader.
 
+
+
+
+
+\## Boundary findings
+
+
+
+These problems originate in code of another member. They were not audited here and were reported to the Technical Leader.
+
+
+
+\- \*\*B-1 (DIP / layers).\*\* `Sale.generateReceipt()` in the `model` package calls `com.gamezone.ui.SaleReceiptFormatter.format(this)` (`Sale.java` lines 250-257). The model depends on the `ui` layer, against the direction ui -> service -> persistence -> model. It was introduced by GRASP V-01. It also constrains my V-03: the new formatters for `Return` and `Warranty` must not repeat this dependency.
+
+\- \*\*B-2 (OCP / SRP, shared correction).\*\* `ProductMenu`, `ReturnMenu` and `WarrantyMenu` call `registerVideoGame`/`registerConsole`, `generateReturnReceipt` and `generateWarrantyCertificate`. Correcting V-03 and V-04 requires changing these callers (Technical Leader); the order of the commits must be coordinated.
+
+
+
+\## Out-of-scope findings (functional defects)
+
+
+
+\- \*\*F-01.\*\* `AccessoryValidator.validateAccessoryData` uses `id.isEmpty()` and accepts a price of `0`, while `ProductValidator.validateProductData` uses `isBlank()` and requires a price greater than zero. An accessory with a blank id or a zero price is accepted although a product would be rejected. Fixing it changes what the user observes.
+
+\- \*\*F-02.\*\* `Sale.getDiscountRate()` returns `discountAmount / total`, which is `NaN` when the total is zero, while its JavaDoc says `0.0`. `Return.originalDiscountRate()` hides it with a guard. Fixing the method changes its output. (Report to the Leader in case it is already listed.)
+
+
+
+\## Summary of verdicts
+
+
+
+| # | Principle | Verdict | Findings |
+
+|---|---|---|---|
+
+| 1 | SRP | Violation | V-01, V-02, V-03 |
+
+| 2 | OCP | Violation | V-04, V-05, V-08 |
+
+| 3 | LSP | Violation | V-06, V-07 |
+
+| 4 | ISP | Correct | - |
+
+| 5 | DIP | Correct (limitations noted) | - |
+
