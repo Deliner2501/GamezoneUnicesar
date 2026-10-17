@@ -181,3 +181,34 @@ Classes owned by other team members are not audited here: `Product` hierarchy, `
 ### Reported to the Technical Leader
 
 - None.
+
+## 5. Interface Segregation Principle (ISP)
+
+**Verdict: Violation** (1 finding: V-09).
+
+### V-09
+
+| Field | Content |
+|---|---|
+| ID | V-09 |
+| Principle | ISP |
+| Module | Warranties (Workshop 4) |
+| Evidence | `WarrantyService` constructor, line 42: `WarrantyService(WarrantyRepository warrantyRepository, SaleDAO saleDAO, ProductService productService)`. The only use of `saleDAO` is the private `findSaleById` (around line 251), which calls `saleDAO.findAll()` and compares ids. |
+| Explanation | `WarrantyService` depends on the whole `SaleDAO` (save, find, update, load of people through `PersonDAO`, etc.) but it only needs to read the list of sales. It is forced to depend on methods it does not use. |
+| Consequence | Any change in the `SaleDAO` signature or behavior it does not use can still force recompiling or adapting `WarrantyService`, and the service cannot be tested with a small fake that only returns sales. |
+| Proposed solution | Define a small interface `SaleReader` with a single method (for example `List<Sale> findAll()`), make `SaleDAO` implement it, and make `WarrantyService` receive `SaleReader`. |
+| Code of another member | Yes. `SaleDAO` belongs to the Technical Leader (it would only add `implements SaleReader`), and `Main` wires `WarrantyService`. |
+
+### Where the principle is met (correct)
+
+- `ReturnService`, `AccessoryService`, `PromotionService` and `PersonService` depend on concrete classes, but each one uses all or almost all of the methods it receives, so no unused dependency is forced on them.
+- There are no interfaces in the scope of Developer 2, so no fat interface exists. The existing interfaces (`ProductRepository`, `ProductCsvMapper`, `DataLogger`) belong to other members.
+- The abstract classes of the model (`Person`, `Promotion`, `Warranty`) declare only methods that every subclass implements and uses (`calculateDiscount`, `toCsvLine`, `getTypeCode`, etc.), so no subclass has to implement an empty method.
+
+### Related finding already reported
+
+- `ReturnMenu` depends on the whole `ReturnService` only to call the monthly balance methods. This is the same problem as V-02 and is solved by extracting `MonthlyBalanceService`.
+
+### Reported to the Technical Leader
+
+- V-09 touches `SaleDAO` and `Main` (see the field "Code of another member").
