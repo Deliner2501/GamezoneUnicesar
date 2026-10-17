@@ -89,3 +89,70 @@ Classes owned by other team members are not audited here: `Product` hierarchy, `
 ### Reported to the Technical Leader
 
 - `SaleService` (lines 176 and 266-267) reads and updates accessory stock directly through `AccessoryDAO` (`accessory.reduceStock(quantity); accessoryDAO.update(accessory);`) instead of using `AccessoryService.updateStock`. The stock responsibility is therefore split between two services. It is reported for the consolidation.
+
+## 3. Open/Closed Principle (OCP)
+
+**Verdict: Violation** (4 findings: V-05 to V-08).
+
+### V-05
+
+| Field | Content |
+|---|---|
+| ID | V-05 |
+| Principle | OCP |
+| Module | Accessories (Workshop 3) |
+| Evidence | `AccessoryDAO.parseLine`, lines 118-127: `if (type.equals("CONTROLLER")) {...} else if (type.equals("CABLE")) {...} else if (type.equals("MEMORY")) {...}`. |
+| Explanation | The DAO must know every concrete accessory type to rebuild it from a CSV line. Writing is already polymorphic (`toCsvLine()` / `getTypeCode()`), but reading is not. |
+| Consequence | Adding a new accessory type (for example a headset) forces modifying `AccessoryDAO.parseLine`, a class that was already tested. Forgetting the new branch makes the new accessories silently unreadable. |
+| Proposed solution | Replace the `if/else` chain with a map from type code to a parser (`Map<String, Function<String[], Accessory>>`), registered in one place. A new type adds one entry and does not change `parseLine`. |
+| Code of another member | No. The accessory classes belong to Developer 1 but they are not modified; only the DAO changes. |
+
+### V-06
+
+| Field | Content |
+|---|---|
+| ID | V-06 |
+| Principle | OCP |
+| Module | Promotions (Workshop 3) |
+| Evidence | `PromotionDAO.parseLine`, lines 80-87: `if (type.equals("PERCENTAGE")) {...} else if (type.equals("CATEGORY")) {...} else if (type.equals("BULK")) {...}`. |
+| Explanation | Same pattern as V-05: persistence of promotions is closed for writing (`toCsvLine()`) but open to modification for reading. |
+| Consequence | A new promotion type forces editing `PromotionDAO.parseLine`. |
+| Proposed solution | Same solution as V-05: a map from type code to parser. |
+| Code of another member | No. |
+
+### V-07
+
+| Field | Content |
+|---|---|
+| ID | V-07 |
+| Principle | OCP |
+| Module | Promotions (Workshop 3), validation |
+| Evidence | `PromotionValidator.validateTargetCategory`, lines 38-40: `targetCategory.equalsIgnoreCase("VIDEOGAME") \|\| ... "CONSOLE" \|\| ... "ACCESSORY"`. |
+| Explanation | The list of valid categories is written inside the condition. The categories are product kinds that exist elsewhere in the system. |
+| Consequence | A new product category forces editing this validator, and a mismatch with the real categories is not detected by the compiler. |
+| Proposed solution | Keep the valid categories in one `Set<String>` constant (or an enum) and validate with `contains`. Adding a category changes one constant, not the logic. |
+| Code of another member | No. |
+
+### V-08
+
+| Field | Content |
+|---|---|
+| ID | V-08 |
+| Principle | OCP |
+| Module | Warranties (Workshop 4) |
+| Evidence | `WarrantyService.resolveWarranty`, line 245: `if (EXTENDED_TYPE.equals(record.getType()))`, with `EXTENDED_TYPE = "EXTENDED"` (line 29). Any other value is treated as a basic warranty. |
+| Explanation | Rebuilding a warranty depends on a condition over the type string. A third warranty type would fall into the `else` branch and be rebuilt as a basic warranty. |
+| Consequence | A new warranty type requires modifying `resolveWarranty`, and if it is forgotten the data is rebuilt incorrectly without any error. |
+| Proposed solution | Use a map from type code to factory function, as in V-05, so each type is registered once. |
+| Code of another member | No. |
+
+### Where the principle is met (correct)
+
+- Writing records: `Accessory.toCsvLine()`, `Promotion.toCsvLine()` and `Warranty.getTypeCode()` let the DAOs and repositories save any subtype without a type check.
+- `AccessoryService.matchesType` uses `accessory.getTypeCode()`, so it does not need to change for a new accessory type.
+- `ReturnService.cancelConsoleWarranties` uses `product.requiresWarranty()` instead of checking for `Console`.
+- `PromotionService.findBestPromotionFor` works over the `Promotion` abstraction.
+
+### Documented exception
+
+- `ReturnService.restoreStockOf`, line 159: `if (product instanceof Accessory)`. It was kept on purpose in Requirement 7 because only accessories have stock; it is not counted as a violation.
