@@ -144,3 +144,19 @@ A second case was found outside the five principles' direct scope: `SaleService`
 - **Polymorphic `toCsvLine()` and `getTypeCode()`** (Accessory, Promotion, Warranty). Saving no longer asks "which subtype is this?", so writing is closed for modification (OCP). This is why V-05 and V-06 only concern reading (`parseLine`).
 - **`Product.requiresWarranty()`.** `ReturnService.cancelConsoleWarranties` no longer checks for `Console`, which removed a type check that would have been an OCP problem.
 - **Raw records for persistence.** Removing the dependency from persistence to services also fixed the direction of dependencies, which is the base of DIP (high-level code does not depend on low-level code). The remaining DIP findings (V-10 to V-13) are about concrete classes instead of abstractions.
+
+## question 4. The correction must preserve the external behavior of the system. What strategy does the team follow to guarantee that all the menu operations keep working the same? What evidence is shown at the end to demonstrate that nothing was broken?
+
+The corrections are refactors, so the strategy is to compare the system before and after with the same inputs, and to keep every change small enough to be compared.
+
+**Strategy.**
+
+1. **Baseline before the first correction.** The team documents in `docs/solid-refactor-log.md` a checklist that covers every menu operation (products, people, sales, accessories, promotions, returns, warranties). Each row states the operation, the input data and the expected result. It is run on `develop` and the observed results are recorded as the reference.
+2. **One violation per commit.** Each correction is an atomic `refactor:` commit tagged with its violation ID, so a regression can be traced to one change and reverted on its own.
+3. **Verification on every Phase 2 Pull Request.** Before a Pull Request is opened the project must build with `mvn clean compile`, and the checklist rows for the operations touched by that correction are run again and compared with the baseline: same inputs, same results, same messages.
+4. **Data files are part of the behavior.** The same scenario is run on a copy of the `data/` folder before and after each correction, and the resulting CSV files are compared, because the requirement demands identical file contents.
+5. **Out-of-scope defects stay untouched.** The defects recorded as out of scope in Requirement 7 and in this audit are not fixed, so that "the same behavior" stays well defined.
+6. **No new violations.** A correction cannot introduce a new SOLID violation or bring back a GRASP one. A sacrifice of one principle for another is justified in the refactor log.
+7. **Known baseline difference.** `Console.getCategory()` returns the wrong category (V-06), so saving a console fails in `ProductDAO.writeAll` on the current `develop`. The baseline records this behavior explicitly, and the correction of V-06 is documented as the only expected difference in the console registration flow.
+
+**Evidence shown at the end.** (a) The baseline and the final results of the checklist side by side, covering all operations. (b) The `BUILD SUCCESS` output for each Pull Request. (c) The comparison of the data files before and after the scenario. (d) A live demonstration of the full scenario: a sale with a console, a video game and an accessory, the best promotion applied, an extended warranty, a partial return and the monthly balance.
