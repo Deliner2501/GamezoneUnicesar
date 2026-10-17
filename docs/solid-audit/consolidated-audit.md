@@ -490,3 +490,30 @@ change is stated and justified in "Leader decisions at consolidation".
   other file affected.
 - **Source:** `developer2-audit` V-13.
 - **Correction owner:** Developer 2.
+
+
+## Frontier Findings
+
+A frontier finding is a violation whose correction needs a change, or a
+stable contract, in code of more than one member. Each one names the
+prerequisite (what must be on `develop` first), the dependent change and the
+agreed split. Rule for call sites: the member who removes or changes a public
+API updates its callers in the same commit, so the build never breaks, and the
+owner of the caller reviews that Pull Request.
+
+| ID | Violations | Prerequisite (owner) | Dependent change (owner) | Agreed split |
+|---|---|---|---|---|
+| FF-01 | V-15, V-23, V-03 | Developer 2 splits `PersonDAO` into `CustomerDAO` and `SellerDAO` with the interfaces `CustomerRepository` and `SellerRepository` (V-15), and makes `PersonService` receive them (V-23) | Leader: `SaleDAO`/`SaleCsvMapper` receive those interfaces instead of `PersonDAO` (V-03 part (b)); `Main` wiring (both) | Developer 2 first; the Leader applies V-03 part (b) after it is on `develop` |
+| FF-02 | V-03, V-22, V-26, V-18 | Leader creates `SaleReader` (`findAll`) and `SaleRepository extends SaleReader`, implemented by `SaleDAO` (V-03 part (a)) | Developer 2: `WarrantyService` and the resolver/repositories receive `SaleReader` (V-22, V-18, V-26) | Leader first (small PR, interfaces only); Developer 2 applies V-22, V-18 and V-26 after it |
+| FF-03 | V-04, V-05, V-24 | None: Developer 2 keeps the public contract of `AccessoryService` (`findById`, `updateStock`, same exceptions and Spanish messages) | Leader: `AccessoryItemSource` and `SaleService` use `AccessoryService` instead of `AccessoryDAO` | No change is requested to Developer 2's classes; if V-24 changes the constructor of `AccessoryService`, only `Main` is affected |
+| FF-04 | V-01, V-09 | None (rule): no `model` class may reference `ui`; formatters live in `ui` | Leader removes `Sale.generateReceipt()` and updates `SaleMenu` (V-01); Developer 1 creates the two formatters, removes the model methods and updates `ReturnMenu` and `WarrantyMenu` in the same commit (V-09) | Independent of each other; the Leader reviews Developer 1's PR |
+| FF-05 | V-10, V-16 | Developer 1 changes the registration API of `ProductService` (V-10); Developer 2 creates `MonthlyBalanceService` (V-16) | They update `ProductMenu` (V-10) and `ReturnMenu` and `Main` (V-16) in the same commit | The Leader reviews both PRs; V-06 is applied last, on top of the final menu code |
+| FF-06 | V-08, V-19, V-20, V-21 | Developer 1 creates the three mappers with both directions and a registry (additive; the model methods are still in place) | Developer 2 switches `AccessoryDAO`, `PromotionDAO` and the warranty resolver to the registries (V-19, V-20, V-21); then Developer 1 removes the storage methods from the model (V-08) | Three steps in this order, each one a small PR; the build compiles after each |
+
+**Frontier findings from the individual reports, all consolidated:**
+B-1 and B-2 of `developer1-audit` are FF-04 and FF-05; the "Reported to the
+Technical Leader" items of `developer2-audit` are FF-03 (accessory stock),
+FF-01/FF-02 (SaleDAO and PersonDAO) and V-03/V-05; the "Code of another
+member = Yes" fields of V-01, V-02, V-09, V-10, V-11, V-12 and V-13 of
+`developer2-audit` are covered by FF-01, FF-05 and FF-02. No frontier finding
+was dropped.
