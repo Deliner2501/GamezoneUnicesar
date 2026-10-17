@@ -19,3 +19,73 @@ This report audits the code developed by Developer 2 against the five SOLID prin
 ### Out of scope for this report
 
 Classes owned by other team members are not audited here: `Product` hierarchy, `Accessory` hierarchy, `Promotion` hierarchy and `Warranty` hierarchy (Developer 1); `Sale`, `SaleService`, the menus and `Main` (Technical Leader); and the `exceptions` and `validation` packages themselves (Developer 1). When a problem found while auditing Developer 2's code originates in one of those classes, it is reported to the Technical Leader for the consolidation instead of being audited here.
+
+## 2. Single Responsibility Principle (SRP)
+
+**Verdict: Violation** (4 findings: V-01 to V-04).
+
+### V-01
+
+| Field | Content |
+|---|---|
+| ID | V-01 |
+| Principle | SRP |
+| Module | Persons (Workshop 1) |
+| Evidence | `PersonDAO`, constants at lines 22-26 (`CUSTOMERS_FILE = "data/customers.txt"` with separator `;`, and `SELLERS_FILE = "data/sellers.csv"` with separator `,`); methods `saveCustomers`/`loadCustomers` (lines 36-84) and `saveSellers`/`loadSellers` (lines 94-154). The seller methods also write and skip a header line (`id,name,phone,employeeCode,workShift`). |
+| Explanation | One class owns two independent persistence concerns: the customers file and format, and the sellers file and format. Each one has its own reason to change. |
+| Consequence | A change in the seller file format (for example a new column) forces editing the same class that persists customers, and any class that only needs sellers still depends on the customer persistence code. `SaleDAO` receives the whole `PersonDAO` to read both lists. |
+| Proposed solution | Split `PersonDAO` into `CustomerDAO` (customers file) and `SellerDAO` (sellers file). `PersonService` would use both, and `SaleDAO` would receive the two DAOs. |
+| Code of another member | Yes. `SaleDAO` (lines 30-41, 210 and 219) and `Main` (line 34, construction of `PersonDAO`) belong to the Technical Leader. |
+
+### V-02
+
+| Field | Content |
+|---|---|
+| ID | V-02 |
+| Principle | SRP |
+| Module | Returns (Requirement 3) |
+| Evidence | `ReturnService.calculateMonthlySales` (lines 296-304), `calculateMonthlyReturns` (lines 306-314) and `generateMonthlyBalance` (lines 316-318). `calculateMonthlySales` iterates `saleService.listSales()` and sums `sale.getFinalTotal()`. |
+| Explanation | `ReturnService` is the class that registers and consults returns, but it also computes a financial report that mostly aggregates sales. Reporting is a different responsibility from processing a return. |
+| Consequence | A change in how the monthly balance is calculated (a new period, a new discount treatment, a different report format) forces editing the class that registers returns, which risks breaking the return flow. The class also depends on `SaleService` for reporting purposes only. |
+| Proposed solution | Extract the three methods to a new `MonthlyBalanceService` in the service package that receives `SaleService` and `ReturnService`. `ReturnService` keeps only return processing. |
+| Code of another member | Yes. `ReturnMenu` (lines 144-146) calls these methods and `Main` wires the services; both belong to the Technical Leader. |
+
+### V-03
+
+| Field | Content |
+|---|---|
+| ID | V-03 |
+| Principle | SRP |
+| Module | Returns (Requirement 3), GRASP correction (Requirement 7) |
+| Evidence | `ReturnService.loadAllReturns` (lines 199-208) and `resolveReturn` (lines 215-241). `resolveReturn` looks up the sale with `saleService.findSaleById`, looks up each product in `productService` and then in `accessoryService`, and rebuilds the `Return`. |
+| Explanation | Rebuilding domain objects from persisted records is a mapping responsibility. It lives in the same class as the return business rules (30-day window, product belongs to sale, warranty cancellation, stock restoration). |
+| Consequence | A change in how a stored record is turned into a `Return` (for example a new column or a different lookup order) forces editing `ReturnService`, and a change in a business rule forces editing the same class that does the mapping. |
+| Proposed solution | Extract `loadAllReturns` and `resolveReturn` to a `ReturnRecordResolver` class in the service package. `ReturnService` would delegate to it. |
+| Code of another member | No. The new class is created and used only inside Developer 2's code (`Main` would only change if the resolver were injected, which is analyzed under DIP). |
+
+### V-04
+
+| Field | Content |
+|---|---|
+| ID | V-04 |
+| Principle | SRP |
+| Module | Warranties (Requirement 4) |
+| Evidence | `WarrantyService.loadAllWarranties`, `resolveWarranty` and the private `findSaleById`. `findSaleById` loops over `saleDAO.findAll()` and compares ids, repeating what `SaleService.findSaleById` already does. |
+| Explanation | `WarrantyService` mixes the warranty business rules (assign basic and extended warranties, list active, list expiring, cancel) with the mapping of stored records into `Warranty` objects and with a sale lookup. The lookup is duplicated because `WarrantyService` cannot depend on `SaleService` (circular dependency solved in Requirement 5). |
+| Consequence | A change in the record format, in the type discriminator or in the sale lookup forces editing the class that owns the warranty rules. The duplicated lookup must be kept in sync with `SaleService.findSaleById`. |
+| Proposed solution | Extract `loadAllWarranties`, `resolveWarranty` and `findSaleById` to a `WarrantyRecordResolver` class in the service package, and keep only the business rules in `WarrantyService`. |
+| Code of another member | No. |
+
+### Where the principle is met (correct)
+
+- `Person`, `Customer` and `Seller` (model): each one only holds the data and the invariants of its own concept (`Customer.addPurchase`/`getPurchaseHistory` for the purchase history, `Seller` for employee data).
+- `PersonService`: registration and lookup of people; the validation is delegated to `PersonValidator`.
+- `AccessoryDAO` and `PromotionDAO`: their only reason to change is the storage format of one entity. `parseLine` is part of that format; the type `if/else` chains are analyzed under OCP.
+- `AccessoryService` and `PromotionService`: each one manages one catalog (registration, queries and the rules of that catalog); validation is delegated to `AccessoryValidator` and `PromotionValidator`.
+- `ReturnRepository`, `WarrantyRepository`, `ReturnRecord` and `WarrantyRecord`: the repositories only read and write raw records; the records only hold data.
+- `AccessoryValidator` and `PromotionValidator`: each one only holds the validation rules of one domain.
+- `ReturnService.registerReturn`: after the GRASP correction (V-28) it only orchestrates the steps through private helpers. The class-level findings are V-02 and V-03.
+
+### Reported to the Technical Leader
+
+- `SaleService` (lines 176 and 266-267) reads and updates accessory stock directly through `AccessoryDAO` (`accessory.reduceStock(quantity); accessoryDAO.update(accessory);`) instead of using `AccessoryService.updateStock`. The stock responsibility is therefore split between two services. It is reported for the consolidation.
