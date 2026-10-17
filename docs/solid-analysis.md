@@ -110,3 +110,37 @@ applies these coordination rules:
   half and in what order is explicit and not improvised during Phase 2. The
   Leader notifies the owner of each prerequisite (class, interface name and
   methods) before Phase 2 starts.
+
+## Question 2: Boundary findings between members' code
+
+**Answered by: Developer 2.**
+
+Developer 2 found boundary findings in four places, where a class in Developer 2's scope and a class of the Technical Leader depend on each other in a way that breaks a principle:
+
+| Finding | Developer 2 code | Technical Leader code | Principle |
+|---|---|---|---|
+| V-01 | `PersonDAO` handles customers and sellers | `SaleDAO` (calls `loadCustomers`/`loadSellers`) and `Main` (builds `PersonDAO`) | SRP |
+| V-02 | `ReturnService` computes the monthly balance | `ReturnMenu` (calls the three balance methods) and `Main` | SRP |
+| V-09 | `WarrantyService` depends on the whole `SaleDAO` and only calls `findAll()` | `SaleDAO`, `Main` | ISP |
+| V-10 to V-13 | Services depend on concrete DAOs | `Main` builds them; `SaleService` receives `AccessoryDAO` directly | DIP |
+
+The clearest concrete case is **V-01**. `SaleDAO` receives the whole `PersonDAO` only to read the two lists, so splitting `PersonDAO` into `CustomerDAO` and `SellerDAO` also changes the `SaleDAO` constructor and the wiring in `Main`. No single member can correct it alone.
+
+A second case was found outside the five principles' direct scope: `SaleService` reads and updates accessory stock directly through `AccessoryDAO` (`accessory.reduceStock(quantity); accessoryDAO.update(accessory);`), skipping `AccessoryService.updateStock`. Stock responsibility is split across two services. It belongs to the Leader's class, so it was reported to the Leader and not counted as a Developer 2 violation.
+
+**How they were registered.** In Developer 2's report, each finding has the field "Code of another member" set to "Yes" with the exact classes and lines, and the report ends with a "Reported to the Technical Leader" list. The Technical Leader unifies these findings in the consolidated audit, gives them definitive identifiers and assigns the person responsible for the correction. Developer 2 proposes that the owner of the class being split (Developer 2) creates the new classes, and that the Leader adapts the callers (`SaleDAO`, `Main`, `ReturnMenu`) in the same coordinated order.
+
+## Question 3: Relation with the GRASP audit (Requirement 7)
+
+**Answered by: Developer 2.**
+
+**SOLID violations in code that GRASP had already corrected**
+
+- **V-03 and V-04 (SRP).** In Requirement 7 the persistence classes were made independent of the service layer with raw records (`ReturnRecord`, `WarrantyRecord`), and the logic that rebuilds `Return` and `Warranty` objects from those records was moved into `ReturnService` and `WarrantyService` (`resolveReturn`, `resolveWarranty`). This fixed the layering problem (persistence no longer depends on services) but the services now carry a mapping responsibility next to their business rules. The SOLID audit proposes extracting it to resolver classes.
+- **V-08 (OCP).** The GRASP correction replaced the magic string with the constant `EXTENDED_TYPE`, which improved readability but kept the type check `if (EXTENDED_TYPE.equals(record.getType()))`, so a new warranty type still requires editing `resolveWarranty`.
+
+**GRASP corrections that also solved a SOLID problem**
+
+- **Polymorphic `toCsvLine()` and `getTypeCode()`** (Accessory, Promotion, Warranty). Saving no longer asks "which subtype is this?", so writing is closed for modification (OCP). This is why V-05 and V-06 only concern reading (`parseLine`).
+- **`Product.requiresWarranty()`.** `ReturnService.cancelConsoleWarranties` no longer checks for `Console`, which removed a type check that would have been an OCP problem.
+- **Raw records for persistence.** Removing the dependency from persistence to services also fixed the direction of dependencies, which is the base of DIP (high-level code does not depend on low-level code). The remaining DIP findings (V-10 to V-13) are about concrete classes instead of abstractions.
