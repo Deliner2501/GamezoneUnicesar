@@ -53,64 +53,6 @@ before it is consolidated. A single fragment gets a single ID, tagged with
 the principle whose proposed solution fixes it most directly, and a related
 principle is noted in parentheses only as context.
 
-## 2. Some violations show up at the boundary between two members' code, for example when one member's class depends inappropriately on another member's class. What findings of this kind did the team identify? How were they registered in the consolidation and who was assigned to correct them? Present at least one concrete case or, if there were none, explain how the team verified none exist.
-
-_To be answered by Developer 1 and Developer 2._
-
-## 3. Some violations were already fixed by the GRASP refactoring of Requirement 7, and some GRASP fixes may have solved or introduced SOLID problems. What cases did the team find? Present at least one concrete case of each kind.
-
-_To be answered by Developer 1 and Developer 2._
-
-## 4. The correction must preserve the external behavior of the system. What strategy does the team follow to guarantee that all the menu operations keep working the same? What evidence is shown at the end to demonstrate that nothing was broken?
-
-_To be answered by Developer 1 and Developer 2._
-
-## 5. In what order are violations corrected, and why? When a correction involves more than one member's code, how is the work coordinated, especially when several members must change the same files on the shared integration branch?
-
-Violations are corrected in Phase 2 in this order:
-
-1. **Prerequisite abstractions first.** The interfaces that other members'
-   corrections depend on are created and merged to `develop` before anything
-   else, because they unblock the rest: the `PersonRepository` and
-   `AccessoryRepository` interfaces (Developer 2) are needed by the Leader's
-   V-03 and V-05. Whoever owns the prerequisite class makes that change first,
-   in a small Pull Request, and notifies the dependent member.
-2. **Violations entirely within one member's own code, in parallel.** These
-   need nobody else, so each member can progress at the same time. For the
-   Leader these are V-01 (remove the model-to-UI dependency), V-06 (the
-   `AreaMenu` abstraction) and V-02 (extract the sale line mapper).
-3. **Dependent violations last, after the prerequisite is on `develop`.**
-   The dependent member merges the updated `develop` into their branch and
-   then applies their own fix. For the Leader this means V-04 (the item
-   source abstraction, which also uses the accessory repository) and
-   V-03/V-05 (wiring `SaleRepository`, `PersonRepository` and
-   `AccessoryRepository`) at the end, after V-02, because the mapper
-   extracted in V-02 is what receives those abstractions.
-4. **No order may break the build or change behavior mid-sequence.** Every
-   commit must compile with `mvn clean compile` and leave the no-regression
-   checklist unchanged.
-
-Because all three members change the same integration code, the team
-applies these coordination rules:
-
-- Each member works in their own branch created from `develop`, with their
-  own Pull Request reviewed by another member, so a conflict affects one
-  small change at a time and not a shared branch.
-- Each violation is a separate atomic commit tagged with its ID, so any
-  regression can be traced to one commit and reverted on its own.
-- `Main.java` is the main conflict hotspot, because each new interface is
-  wired there by a different member. Changes to `Main.java` are kept to the
-  minimum lines per commit, and the member who merges second resolves the
-  conflict after merging the updated `develop` into their branch.
-- Members pull `develop` before starting each correction and before each push,
-  never use `git push --force`, and re-run the affected rows of the
-  checklist after merging a teammate's prerequisite.
-- The agreed split of every cross-member violation is recorded in the
-  "frontier findings" section of the consolidated audit, so who makes which
-  half and in what order is explicit and not improvised during Phase 2. The
-  Leader notifies the owner of each prerequisite (class, interface name and
-  methods) before Phase 2 starts.
-
 ## Question 2: Boundary findings between members' code
 
 **Answered by: Developer 2.**
@@ -160,3 +102,53 @@ The corrections are refactors, so the strategy is to compare the system before a
 7. **Known baseline difference.** `Console.getCategory()` returns the wrong category (V-06), so saving a console fails in `ProductDAO.writeAll` on the current `develop`. The baseline records this behavior explicitly, and the correction of V-06 is documented as the only expected difference in the console registration flow.
 
 **Evidence shown at the end.** (a) The baseline and the final results of the checklist side by side, covering all operations. (b) The `BUILD SUCCESS` output for each Pull Request. (c) The comparison of the data files before and after the scenario. (d) A live demonstration of the full scenario: a sale with a console, a video game and an accessory, the best promotion applied, an extended warranty, a partial return and the monthly balance.
+
+## 5. In what order are violations corrected, and why? When a correction involves more than one member's code, how is the work coordinated, especially when several members must change the same files on the shared integration branch?
+
+Violations are corrected in Phase 2 in this order, which is detailed per
+violation in the "Correction Order for Phase 2" table of
+`docs/solid-audit/consolidated-audit.md`:
+
+1. **The regression first.** V-12 (`Console.getCategory()`) is corrected
+   before anything else, because it restores the console save and lets the
+   baseline and every later check run on a working system.
+2. **Violations entirely within one member's own code, in parallel.** These
+   need nobody else, so each member can progress at the same time (for the
+   Leader, V-01 and V-02).
+3. **Prerequisite abstractions next, in small Pull Requests.** The
+   interfaces that other members' corrections depend on are merged to
+   `develop` before the dependent changes: `CustomerRepository` and
+   `SellerRepository` (Developer 2, V-15) for the Leader's V-03, `SaleReader`
+   and `SaleRepository` (Leader, V-03 part (a)) for Developer 2's V-22 and
+   V-26, and the three CSV mappers with registries (Developer 1, V-08 step 1)
+   for Developer 2's V-19, V-20 and V-21. Whoever owns the prerequisite
+   notifies the dependent member when it is on `develop`.
+4. **Dependent violations after their prerequisite, and the broad change
+   last.** The dependent member merges the updated `develop` into their
+   branch and then applies their fix. V-06 (the `AreaMenu` abstraction)
+   touches every menu class and `Main`, so it is applied last, on top of
+   the final menu code, after the call-site changes of V-09, V-10 and V-16.
+5. **No order may break the build or change behavior mid-sequence.** Every
+   commit must compile with `mvn clean compile` and leave the no-regression
+   checklist unchanged; the only documented exception is V-12.
+
+Because all three members change the same integration code, the team
+applies these coordination rules:
+
+- Each member works in their own branch created from `develop`, with their
+  own Pull Request reviewed by another member, so a conflict affects one
+  small change at a time and not a shared branch.
+- Each violation is a separate atomic commit tagged with its ID, so any
+  regression can be traced to one commit and reverted on its own.
+- `Main.java` is the main conflict hotspot, because each new interface is
+  wired there by a different member. Changes to `Main.java` are kept to the
+  minimum lines per commit, and the member who merges second resolves the
+  conflict after merging the updated `develop` into their branch.
+- Members pull `develop` before starting each correction and before each push,
+  never use `git push --force`, and re-run the affected rows of the
+  checklist after merging a teammate's prerequisite.
+- The agreed split of every cross-member violation is recorded in the
+  "frontier findings" section of the consolidated audit, so who makes which
+  half and in what order is explicit and not improvised during Phase 2. The
+  Leader notifies the owner of each prerequisite (class, interface name and
+  methods) before Phase 2 starts.
