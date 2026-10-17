@@ -280,3 +280,14 @@ Classes owned by other team members are not audited here: `Product` hierarchy, `
 
 - `SaleDAO` (line 40) receives the concrete `PersonDAO` and `ProductDAO`, and `SaleService` (line 48) receives the concrete `AccessoryDAO`. The Leader should consider the same abstractions.
 
+## 7. Summary
+
+| Principle | Verdict | Findings |
+|---|---|---|
+| SRP | Violation | V-01, V-02, V-03, V-04 |
+| OCP | Violation | V-05, V-06, V-07, V-08 |
+| LSP | Correct | None |
+| ISP | Violation | V-09 |
+| DIP | Violation | V-10, V-11, V-12, V-13 |
+
+**Total: 13 violations.** Violations that touch code of another member (Technical Leader): V-01, V-02, V-09, V-10, V-11, V-12, V-13.
