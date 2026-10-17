@@ -95,7 +95,6 @@ He explained to me the Conventional Commits convention that the workshop require
 
 ## Phase 2 - Correction (feature/grasp-refactor)
 
-No entries yet.
 
 ### Entry 1
 - **Date:** 2026-10-14
@@ -157,3 +156,61 @@ No entries yet.
 - **Response summary:** It pointed out that getDiscountRate divides by zero when the subtotal is zero while the old code guarded that case, so Return keeps the guard. It also advised keeping both per-item expressions to avoid changing printed decimals, and gave the complete Return class.
 - **Decision:** Accepted. Built the project before the commit. I will tell the Leader that his JavaDoc and his code differ for a zero subtotal.
 - **Related commit:** d3a4497
+
+
+---
+
+## Requirement 8 - Phase 1 - Audit (feature/solid-audit)
+
+### Entry 1
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Understand Requirement 8 and the rules for AI use.
+- **Query:** I shared the Requirement 8 PDF and asked what I had to do. The AI use policy page was marked as an unofficial working copy, so I asked the professor, who confirmed by WhatsApp that AI use is allowed for Requirement 8.
+- **Response summary:** It summarized the two phases, my scope and the deliverables, and pointed out that the policy page was not official until the professor confirmed.
+- **Decision:** Accepted. I asked the professor and saved his confirmation.
+- **Related commit:** -
+
+### Entry 2
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Audit my code against the five SOLID principles.
+- **Query:** I pasted the source of my scope (products, accessories, promotions, warranties, Return, exceptions, validation and my GRASP classes) and asked for the verdicts with evidence.
+- **Response summary:** It proposed eight violations (V-01 to V-08: SRP, OCP and LSP), ISP and DIP as correct, two boundary findings and two out-of-scope findings, quoting classes and methods.
+- **Decision:** Accepted after checking each piece of evidence against the code with Select-String. I wrote the report in my own file.
+- **Related commit:** 
+
+### Entry 3
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Understand a defect found while auditing.
+- **Query:** While reading Console I noticed it returns the VIDEOGAME category, and asked what it caused.
+- **Response summary:** It explained that ProductDAO.writeAll selects the video game mapper and fails with ClassCastException, and that the error came from my GRASP V-13 change. I first made a fix branch, then decided with the team to correct it in Phase 2 with its violation ID.
+- **Decision:** Recorded as V-06 (LSP). I deleted the fix branch so the audited code stays the same as develop.
+- **Related commit:** 
+
+### Entry 4
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Answer orienting question 4.
+- **Query:** I asked for the no-regression strategy answer, based on the requirement.
+- **Response summary:** It drafted the strategy (baseline, one violation per commit, per-PR checks, data file comparison) and added the known baseline difference caused by V-06.
+- **Decision:** Accepted. I will ask the Leader to keep solid-refactor-log.md consistent with it.
+- **Related commit:** 
+
+### Entry 5
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Understand Git operations during the work.
+- **Query:** I asked how to create the audit file, commit in parts and delete a branch I pushed by mistake.
+- **Response summary:** It gave the commands for add, commit, pull, push and deleting a remote branch.
+- **Decision:** Accepted.
+- **Related commit:** -
+
+## Requirement 8 - Phase 2 - Correction (feature/solid-refactor)
+
