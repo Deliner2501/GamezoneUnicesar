@@ -174,3 +174,84 @@ In Phase 2 the AI assistant was used in a guided mode: it never edited the repos
 - **Response summary:** It compiled the whole project first, then read the real classes to draw the after diagram. It also filled the final column of the checklist from the results I got by running every flow myself, updated the README sections that were out of date, and wrote a description for a Pull Request limited to my own contributions.
 - **Decision:** Accepted. The results of the checklist are the ones I observed in NetBeans, not the assistant's.
 - **Related commit:** (fill with `git log --oneline` for the after diagram, final checklist and README commits)
+
+
+# Requirement 8 - SOLID Audit and Correction - AI usage log
+
+## Phase 1 - Audit
+
+In Phase 1 the AI assistant was used in a guided mode: it never edited the repository. It read the current code and the teammates' reports, explained each finding and gave the exact text for each document and the git commands, and I checked the evidence lines against the code, wrote the documents and made every commit myself, one atomic `docs:` commit per step.
+
+### Entry 1
+- **Date:** 2026-10-16
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/solid-audit
+- **Objective:** Understand Requirement 8 and organize Phase 1 for the team.
+- **Query:** I uploaded the Requirement 8 PDF and the current project and asked to repeat the process of Requirement 7, telling me what my teammates had to do for me to do my part.
+- **Response summary:** It summarized the five principles, the Leader's responsibilities and the deliverables, proposed a sequence of commits for my audit, and wrote a message for Ronald and Santiago (what each report must contain, the split of the orienting questions, the order of the Pull Requests). It also proposed one branch per member so the team would reach three Pull Requests, instead of one shared branch as in Requirement 7.
+- **Decision:** Accepted the plan and the split of questions (I answer 1 and 5, the developers 2, 3 and 4). In practice the team kept working on the shared branch `feature/solid-audit`; the consolidated audit was moved to its own branch and Pull Request so the three-PR minimum is met, and this is stated in the consolidated audit.
+- **Related commit:** 870d533
+
+### Entry 2
+- **Date:** 2026-10-16
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/solid-audit
+- **Objective:** Audit `Sale` and `SaleDAO`.
+- **Query:** I asked for the audit of my classes after it read them with their line numbers.
+- **Response summary:** For `Sale` it found that `generateReceipt()` calls `com.gamezone.ui.SaleReceiptFormatter`, so the model depends on the UI layer; this problem was introduced by the Requirement 7 correction of GRASP V-01 (the text was moved out but a delegating method was left). For `SaleDAO` it proposed an SRP violation (file access, line format and reference resolution in one class) and a DIP violation (concrete `PersonDAO`/`ProductDAO`, while the interface `ProductRepository` already exists), and it did not register again the accessory-loss defect already recorded in Requirement 7. It also recorded the missing zero guard in `Sale.getDiscountRate()` as an out-of-scope defect.
+- **Decision:** Accepted. I checked each line number against the code and kept `Sale.canBeReturned()` out of my audit because it belongs to Developer 1.
+- **Related commit:** 3311118, fe066ed
+
+### Entry 3
+- **Date:** 2026-10-16
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/solid-audit
+- **Objective:** Audit `SaleService`, and decide how many of its dependencies are real DIP violations.
+- **Query:** I asked for the audit of `SaleService`, and later told the assistant to decide what was best when it offered to narrow the scope of the DIP finding.
+- **Response summary:** It proposed an OCP violation (the product/accessory branching repeated in four methods) and a DIP violation. The first version of the DIP finding listed all the concrete collaborators of the class (five services and DAOs); it then said that services of the same layer with one implementation did not justify a new interface each and narrowed it to the concrete `AccessoryDAO`, which is a persistence detail used directly from the service layer.
+- **Decision:** Accepted the narrower version, written in a separate commit so the change is visible, and used the same criterion for the area menus.
+- **Related commit:** 37d3568, c1c0154
+
+### Entry 4
+- **Date:** 2026-10-16
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/solid-audit
+- **Objective:** Audit the user interface classes created in Requirement 7.
+- **Query:** I asked for the audit of `MainMenu`, the seven area menus, `MenuDialogs` and `SaleReceiptFormatter`.
+- **Response summary:** It read the six menu classes it had not yet seen and found one real violation: adding a menu area means editing the constructor, the options array and the `switch` of `MainMenu`, which also instantiates every concrete menu. It marked the other classes as correct or not applicable, explaining the reason for each verdict.
+- **Decision:** Accepted. I preferred a short list of well-supported findings over a long one.
+- **Related commit:** 9c836ce
+
+### Entry 5
+- **Date:** 2026-10-16
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/solid-audit
+- **Objective:** Finish my individual audit and answer my orienting questions.
+- **Query:** I asked for the audit of `Main` and my two stock methods, the verdict tables, and the answers to questions 1 and 5.
+- **Response summary:** It audited `Main` as the composition root and `restoreStock`/`reduceStock` against the five principles, then built the summary tables with the list of violations, the frontier findings and the out-of-scope defects. For question 1 it wrote the criterion per principle and the minimum evidence; for question 5 it proposed the correction order and the rules for the files that several members change. It also created the file with the three questions of my teammates left pending, so the three of us did not create the same file and conflict.
+- **Decision:** Accepted. My individual audit ended with 6 violations, 3 of them depending on Developer 2's code.
+- **Related commit:** 03fa6d0, ed51d63, ec0e666
+
+### Entry 6
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/solid-audit-consolidated
+- **Objective:** Consolidate the three reports.
+- **Query:** I uploaded the project with my teammates' reports and asked for the consolidated audit.
+- **Response summary:** It read both developer reports and compared them with my own, and checked a sample of the lines they cited against `develop`. It found that the three reports audited slightly different commits (the difference does not affect any finding), that two members had registered the same fragment (`PromotionValidator`), and that the proposals overlapped: Developer 2's split of `PersonDAO` made my single `PersonRepository` interface unnecessary, and `AccessoryService.updateStock` already did what `SaleService` did directly with the DAO. It also confirmed that `Console.getCategory()` returns the wrong category, which makes saving a console fail since the Requirement 7 correction. It produced 26 unique violations and wrote the coverage table, verdicts, frontier findings, out-of-scope defects and the correction order in several commits.
+- **Decision:** Accepted the consolidation and the decisions that change a proposal (two person repositories, `SaleReader` and `SaleRepository`, `SaleService` through `AccessoryService`, the merged duplicate and the documented exception for the console category), recorded and justified in "Leader decisions at consolidation". I took the final decision on each one as Technical Leader.
+- **Related commit:** (fill with `git log --oneline` of `feature/solid-audit-consolidated`: the coverage, verdicts, V-01 to V-13, V-14 to V-26, frontier findings, decisions and correction-order commits)
+
+### Entry 7
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/solid-audit-consolidated
+- **Objective:** Keep question 5 consistent with the consolidated audit, and understand a file status warning.
+- **Query:** I asked whether the decisions announced at the end of the consolidation were also part of the document; separately, the project I had uploaded showed five modified files that I had not touched.
+- **Response summary:** It confirmed that the decisions are recorded in the consolidated audit and noticed that my answer to question 5 still mentioned `PersonRepository` and `AccessoryRepository` and placed V-06 early, which was no longer true; it rewrote the correction order. It explained that the modified files only differed in line endings and could be ignored or restored.
+- **Decision:** Accepted and updated my answer in its own commit.
+- **Related commit:** (fill with the hash of "docs: align orienting question 5 with the consolidated correction order")
+
+## Phase 2 - Correction
+
+No entries yet.
