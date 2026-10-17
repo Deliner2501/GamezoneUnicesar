@@ -91,7 +91,6 @@ public class AccessoryService {
         Accessory accessory = findById(accessoryId);
         AccessoryValidator.validateAccessoryExists(accessory, accessoryId);
         accessory.addCompatibleConsole(consoleId);
-        accessory.addCompatibleConsole(consoleId);
         accessoryDAO.update(accessory);
     }
 
@@ -192,9 +191,7 @@ public class AccessoryService {
      */
     public void restoreStock(String accessoryId, int quantity) {
         Accessory accessory = accessoryDAO.findById(accessoryId);
-        if (accessory == null) {
-            throw new IllegalArgumentException("Accessory not found: " + accessoryId);
-        }
+        AccessoryValidator.validateAccessoryExists(accessory, accessoryId);
         accessory.increaseStock(quantity);
         accessoryDAO.update(accessory);
     }
