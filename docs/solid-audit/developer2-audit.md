@@ -212,3 +212,71 @@ Classes owned by other team members are not audited here: `Product` hierarchy, `
 ### Reported to the Technical Leader
 
 - V-09 touches `SaleDAO` and `Main` (see the field "Code of another member").
+
+## 6. Dependency Inversion Principle (DIP)
+
+**Verdict: Violation** (4 findings: V-10 to V-13).
+
+### V-10
+
+| Field | Content |
+|---|---|
+| ID | V-10 |
+| Principle | DIP |
+| Module | Persons (Workshop 1) |
+| Evidence | `PersonService` constructor, lines 29-30: `this.personDAO = new PersonDAO();`. The service creates its own concrete DAO and takes no parameter. `Main`, line 42, calls `new PersonService()`. |
+| Explanation | A high-level class (the service) depends on and instantiates a low-level concrete class (the CSV DAO). The other services of the project already receive their dependencies in the constructor. |
+| Consequence | `PersonService` cannot be tested with a fake or in-memory repository, and changing the storage means editing the service. It also reads the real files `data/customers.txt` and `data/sellers.csv` whenever it is created. |
+| Proposed solution | Add a `PersonRepository` interface implemented by `PersonDAO`, and change the constructor to `PersonService(PersonRepository personRepository)`. |
+| Code of another member | Yes. `Main` (line 42) must pass the repository to the constructor. |
+
+### V-11
+
+| Field | Content |
+|---|---|
+| ID | V-11 |
+| Principle | DIP |
+| Module | Accessories (Workshop 3) |
+| Evidence | `AccessoryService` constructor, line 20: `AccessoryService(AccessoryDAO accessoryDAO)`. `Main`, line 36, creates `new AccessoryDAO()` and passes it. |
+| Explanation | The service receives the dependency from outside (good) but depends on the concrete class and not on an abstraction. `ProductService` in the same project already receives the interface `ProductRepository`. |
+| Consequence | The accessory service is tied to the CSV implementation and cannot be tested with a fake. |
+| Proposed solution | Add an `AccessoryRepository` interface implemented by `AccessoryDAO`, and make `AccessoryService` depend on it. |
+| Code of another member | Yes. `Main` (line 44) and `SaleService` (constructor line 48 receives `AccessoryDAO` directly) belong to the Technical Leader. |
+
+### V-12
+
+| Field | Content |
+|---|---|
+| ID | V-12 |
+| Principle | DIP |
+| Module | Promotions (Workshop 3) |
+| Evidence | `PromotionService` constructor, line 22: `PromotionService(PromotionDAO promotionDAO)`. `Main`, line 37, creates `new PromotionDAO()`. |
+| Explanation | Same pattern as V-11: injected, but concrete. |
+| Consequence | The service cannot be replaced or tested without the real CSV file. |
+| Proposed solution | Add a `PromotionRepository` interface implemented by `PromotionDAO`, and make `PromotionService` depend on it. |
+| Code of another member | Yes. `Main` (line 45). |
+
+### V-13
+
+| Field | Content |
+|---|---|
+| ID | V-13 |
+| Principle | DIP |
+| Module | Returns (Requirement 3) and Warranties (Workshop 4) |
+| Evidence | `ReturnService` constructor, line 41: `ReturnService(ReturnRepository returnRepository, ...)`; `WarrantyService` constructor, line 42: `WarrantyService(WarrantyRepository warrantyRepository, SaleDAO saleDAO, ...)`. `ReturnRepository` and `WarrantyRepository` are concrete classes (despite the name) and `SaleDAO` is concrete. `Main` (lines 47-51) creates all of them. |
+| Explanation | The services depend on concrete CSV classes. The names `ReturnRepository` and `WarrantyRepository` suggest an abstraction that does not exist. |
+| Consequence | Neither service can be tested without reading and writing real files, and changing the storage format forces changing the services. |
+| Proposed solution | Rename the concrete classes to `CsvReturnRepository` and `CsvWarrantyRepository`, and create the interfaces `ReturnRepository` and `WarrantyRepository`. For the sale lookup, use the `SaleReader` interface proposed in V-09. |
+| Code of another member | Yes. `Main` (lines 47-51) and `SaleDAO` (V-09). |
+
+### Where the principle is met (correct)
+
+- `ReturnService` receives `SaleService`, `ProductService`, `AccessoryService` and `WarrantyService` in the constructor instead of creating them.
+- `WarrantyService` receives its repository and `ProductService` in the constructor, and the circular dependency with `SaleService` is solved with a setter (`setWarrantyService`) in Requirement 5.
+- The services do not depend on the user interface, and the persistence classes do not depend on the services (raw records `ReturnRecord` and `WarrantyRecord`, Requirement 7).
+- Validators are static utility classes with no state, so they do not hide infrastructure dependencies.
+
+### Reported to the Technical Leader
+
+- `SaleDAO` (line 40) receives the concrete `PersonDAO` and `ProductDAO`, and `SaleService` (line 48) receives the concrete `AccessoryDAO`. The Leader should consider the same abstractions.
+
