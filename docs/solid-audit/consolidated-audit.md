@@ -579,3 +579,76 @@ was dropped.
    model classes, while GRASP V-17, V-19 and V-22 had put it there to remove
    `instanceof` from the DAOs; polymorphism is kept in the mappers through the
    registry).
+
+   
+## Out-of-Scope Functional Defects
+
+Defects that are not SOLID violations and whose correction would change what
+the user observes. They are recorded and not corrected in Phase 2. The three
+defects already registered in the Requirement 7 consolidated audit
+(`SaleDAO.fromLine` losing accessories, `ProductDAO.save`/`update` losing
+corrupted lines and omitting unknown product types, and the inconsistent
+"not found" handling of `checkStock`/`restoreStock`) are **not registered
+again**.
+
+| ID | Found in | Found by | Description |
+|---|---|---|---|
+| OS-01 | `Sale.getDiscountRate()` (`Sale.java` line 209) | Technical Leader and Developer 1 | Returns `discountAmount / total` with no zero guard, which is `NaN` when the subtotal is zero, while its JavaDoc promises `0.0`. `Return.originalDiscountRate()` hides it with its own guard. Fixing the method changes its output. |
+| OS-02 | `AccessoryValidator.validateAccessoryData` | Developer 1 | Uses `id.isEmpty()` and accepts a price of `0`, while `ProductValidator.validateProductData` uses `isBlank()` and requires a price greater than zero, so an accessory with a blank id or a zero price is accepted although a product would be rejected. |
+
+## Observations (not violations)
+
+Points recorded by the individual reports that were reviewed and are **not**
+counted as violations:
+
+- **O-01.** `AccessoryValidator.validateStockAvailability` keeps the rule
+  `accessory.getStock() < requestedQuantity`, while GRASP V-08 centralized it
+  in `Product.hasEnoughStock`. It is a leftover of the Requirement 7
+  correction, not a SOLID violation; it is not corrected in this requirement
+  (reported by Developer 1).
+- **O-02.** `Warranty`'s constructor calls the overridable
+  `getDurationInMonths()`. It is safe today because both subclasses return
+  constants (reported by Developer 1).
+- **O-03.** `ReturnService.restoreStockOf` (line 159) keeps
+  `product instanceof Accessory` on purpose, because only accessories hold
+  stock; it was documented as an exception in Requirement 7 (reported by
+  Developer 2).
+- **O-04.** Services call the validators as static methods. They are
+  stateless utility classes with no infrastructure to replace, so it is a
+  recorded limitation and not a DIP violation (reported by Developer 1 and
+  Developer 2).
+- **O-05.** `SaleService.setWarrantyService` (setter injection) remains
+  because of the circular dependency between `SaleService` and
+  `WarrantyService` solved in Requirement 5; none of the corrections removes
+  it.
+
+## Correction Order for Phase 2
+
+| Order | Violations | Owner | Why in this position |
+|---|---|---|---|
+| 1 | V-12 | Developer 1 | Restores the console save (regression of Requirement 7); it is done first so the baseline and every later check can run on a working system |
+| 2 (parallel) | V-01, V-02 | Leader | Entirely inside his own classes |
+| 2 (parallel) | V-07, V-11, V-13, V-14 | Developer 1 | Entirely inside his own classes |
+| 2 (parallel) | V-17, V-18 (extraction), V-24, V-25 | Developer 2 | Entirely inside his own classes |
+| 3 (prerequisites) | V-15 and V-23 (FF-01) | Developer 2 | Creates `CustomerRepository` and `SellerRepository` that the Leader needs |
+| 3 (prerequisites) | V-03 part (a) (FF-02) | Leader | Creates `SaleReader` and `SaleRepository` that Developer 2 needs; interfaces only |
+| 3 (prerequisites) | V-08 step 1 (FF-06) | Developer 1 | Creates the three mappers with registries; additive |
+| 4 (dependents) | V-03 part (b), V-04, V-05 | Leader | After V-15 is on `develop`; V-04 and V-05 are delivered together |
+| 4 (dependents) | V-22, V-26, V-18 (sale lookup) | Developer 2 | After V-03 part (a) is on `develop` |
+| 4 (dependents) | V-19, V-20, V-21 | Developer 2 | After V-08 step 1 is on `develop` |
+| 4 (dependents) | V-16 | Developer 2 | Adapts `ReturnMenu` and `Main` in the same commit |
+| 4 (dependents) | V-09, V-10 | Developer 1 | Adapt `ReturnMenu`, `WarrantyMenu` and `ProductMenu` in the same commits |
+| 5 | V-08 final step | Developer 1 | Removes the storage methods from the model after Developer 2 switched the DAOs |
+| 6 (last) | V-06 | Leader | Touches every menu class and `Main`, so it is applied on top of the final menu code |
+
+Every commit must compile with `mvn clean compile` and leave the
+no-regression checklist unchanged, with the single documented exception of
+V-12.
+
+## Summary
+
+26 definitive violations (8 SRP, 8 OCP, 2 LSP, 1 ISP, 7 DIP): 6 owned by the
+Technical Leader (V-01 to V-06), 8 by Developer 1 (V-07 to V-14) and 12 by
+Developer 2 (V-15 to V-26). 6 frontier findings (FF-01 to FF-06), 2 new
+out-of-scope defects (OS-01, OS-02) and 5 observations. Every definitive
+violation will appear in `docs/solid-refactor-log.md` when it is corrected.
