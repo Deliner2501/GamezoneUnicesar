@@ -214,3 +214,27 @@ Problems whose origin is in another member's code are not audited here; they are
 
 \- `BasicWarranty` and `ExtendedWarranty` honor the abstract contract. Note: `Warranty`'s constructor calls the overridable `getDurationInMonths()`; it is safe today because both subclasses return constants, but it would fail if a subclass used its own fields.
 
+
+
+\## 4. Interface Segregation Principle - Verdict: Correct
+
+
+
+\- `ProductService` uses the four operations of `ProductRepository` (`save` in `registerProduct`, `findAll` in `listAvailableProducts`, `findById` in `checkStock` and `findProductById`, `update` in `restoreStock` and `reduceStock`).
+
+\- `ProductDAO` uses every method of `ProductCsvMapper` (`getCategory`, `getTypeCode`, `toCsvLine`, `create`) and `DataLogger` has a single method.
+
+\- Promotions and warranties have no interfaces; their clients depend on the abstract class and use its operations.
+
+
+
+\## 5. Dependency Inversion Principle - Verdict: Correct
+
+
+
+\- `ProductService` depends on the `ProductRepository` abstraction and receives it by constructor (`public ProductService(ProductRepository productDAO)`), which I introduced in GRASP V-10.
+
+\- `ProductDAO` receives a `DataLogger` by constructor (`ProductDAO(String filePath, DataLogger logger)`).
+
+\- Limitation: `ProductDAO` creates its mappers with `new` (recorded as V-05) and `ProductService` depends on the concrete `VideoGame` and `Console` (recorded as V-04). They are not counted twice.
+
