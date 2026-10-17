@@ -160,3 +160,57 @@ Problems whose origin is in another member's code are not audited here; they are
 
 \- `Accessory` subclasses implement `getFullDescription`, `getTypeCode` and `getCategory` through the base class.
 
+
+
+\## 3. Liskov Substitution Principle - Verdict: Violation
+
+
+
+\### V-06
+
+\- \*\*ID:\*\* V-06
+
+\- \*\*Principle:\*\* LSP
+
+\- \*\*Module:\*\* Products (base workshop) and GRASP correction (Req. 7)
+
+\- \*\*Evidence:\*\* `Console.getCategory()` returns `ProductCategory.VIDEOGAME`, while the contract of `Product.getCategory()` is "the category this product belongs to". `VideoGame.getCategory()` returns the same value.
+
+\- \*\*Explanation:\*\* a `Console` used as a `Product` reports a wrong category, so code that trusts the contract behaves incorrectly. The error was introduced in the GRASP V-13 change (commit `1d908d5`).
+
+\- \*\*Consequence:\*\* `ProductDAO.writeAll` selects `VideoGameCsvMapper` for a console and `(VideoGame) product` throws `ClassCastException`; a `CONSOLE` category promotion never matches a console.
+
+\- \*\*Proposed solution:\*\* return `ProductCategory.CONSOLE`.
+
+\- \*\*Code of another member:\*\* No.
+
+
+
+\### V-07
+
+\- \*\*ID:\*\* V-07
+
+\- \*\*Principle:\*\* LSP
+
+\- \*\*Module:\*\* GRASP correction (Req. 7)
+
+\- \*\*Evidence:\*\* `VideoGameCsvMapper.toCsvLine(Product product)` starts with `VideoGame vg = (VideoGame) product;` and `ConsoleCsvMapper.toCsvLine` with `Console c = (Console) product;`, while `ProductCsvMapper.toCsvLine(Product)` accepts any product.
+
+\- \*\*Explanation:\*\* each implementation strengthens the precondition of the interface method: it works only for one subclass.
+
+\- \*\*Consequence:\*\* the call is safe only because `ProductDAO.writeAll` filters by `getCategory()` first; any other caller, or a wrong category (V-06), fails at runtime.
+
+\- \*\*Proposed solution:\*\* make the interface generic (`ProductCsvMapper<T extends Product>`) or make the mapper decide whether it can handle the product before converting it.
+
+\- \*\*Code of another member:\*\* No.
+
+
+
+\### Where the principle is correctly applied
+
+\- `Controller`, `Cable` and `Memory` can replace `Accessory` and keep its behavior (`getCategory` returns `ACCESSORY` from the base class; `addCompatibleConsole` and `isCompatibleWith` are not overridden).
+
+\- `PercentageDiscount`, `CategoryDiscount` and `BulkPurchaseDiscount` return a non-negative discount for any `Sale`.
+
+\- `BasicWarranty` and `ExtendedWarranty` honor the abstract contract. Note: `Warranty`'s constructor calls the overridable `getDurationInMonths()`; it is safe today because both subclasses return constants, but it would fail if a subclass used its own fields.
+
