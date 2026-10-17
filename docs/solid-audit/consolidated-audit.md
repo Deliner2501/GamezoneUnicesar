@@ -51,3 +51,56 @@ package of Developer 1, created by Developer 2) and `Warranty.getTypeCode`
 is the one on `PromotionValidator.validateTargetCategory`, which both
 reports registered; it is merged into a single violation (V-14). No class was
 left uncovered.
+
+
+## Final Team Verdict by Principle
+
+| # | Principle | Team verdict | Violations |
+|---|---|---|---|
+| 1 | SRP | Violation | V-02, V-07, V-08, V-09, V-15, V-16, V-17, V-18 |
+| 2 | OCP | Violation | V-04, V-06, V-10, V-11, V-14, V-19, V-20, V-21 |
+| 3 | LSP | Violation | V-12, V-13 |
+| 4 | ISP | Violation | V-22 |
+| 5 | DIP | Violation | V-01, V-03, V-05, V-23, V-24, V-25, V-26 |
+
+**Summary:** 26 definitive violations (8 SRP, 8 OCP, 2 LSP, 1 ISP, 7 DIP).
+The three individual reports registered 27 findings (6 Leader, 8 Developer 1,
+13 Developer 2); one fragment was registered twice and is merged (V-14).
+Per member, the verdicts were: Leader (SRP, OCP, DIP violations; LSP correct;
+ISP not applicable), Developer 1 (SRP, OCP, LSP violations; ISP and DIP
+correct) and Developer 2 (SRP, OCP, ISP, DIP violations; LSP correct). The
+team verdict is "Violation" whenever at least one member found a violation
+with valid evidence. Every principle therefore has violations; LSP and ISP
+are the ones with the fewest, and ISP appears only in the warranty/sale
+boundary.
+
+## Mapping from individual reports to definitive IDs
+
+| Definitive ID | Source report and ID | Notes |
+|---|---|---|
+| V-01 | `leader-audit` V-01 | Also reported as boundary finding B-1 by Developer 1 |
+| V-02 | `leader-audit` V-02 | |
+| V-03 | `leader-audit` V-03 | Also reported by Developer 2 (SaleDAO concrete dependencies) |
+| V-04 | `leader-audit` V-04 | Developer 2 also reported the direct use of `AccessoryDAO` for stock |
+| V-05 | `leader-audit` V-05 | Also reported by Developer 2 |
+| V-06 | `leader-audit` V-06 | |
+| V-07 | `developer1-audit` V-01 | |
+| V-08 | `developer1-audit` V-02 | |
+| V-09 | `developer1-audit` V-03 | |
+| V-10 | `developer1-audit` V-04 | |
+| V-11 | `developer1-audit` V-05 | |
+| V-12 | `developer1-audit` V-06 | |
+| V-13 | `developer1-audit` V-07 | |
+| V-14 | `developer1-audit` V-08 and `developer2-audit` V-07 | Same fragment, merged |
+| V-15 | `developer2-audit` V-01 | |
+| V-16 | `developer2-audit` V-02 | |
+| V-17 | `developer2-audit` V-03 | |
+| V-18 | `developer2-audit` V-04 | |
+| V-19 | `developer2-audit` V-05 | |
+| V-20 | `developer2-audit` V-06 | |
+| V-21 | `developer2-audit` V-08 | |
+| V-22 | `developer2-audit` V-09 | |
+| V-23 | `developer2-audit` V-10 | |
+| V-24 | `developer2-audit` V-11 | |
+| V-25 | `developer2-audit` V-12 | |
+| V-26 | `developer2-audit` V-13 | |
