@@ -517,3 +517,65 @@ FF-01/FF-02 (SaleDAO and PersonDAO) and V-03/V-05; the "Code of another
 member = Yes" fields of V-01, V-02, V-09, V-10, V-11, V-12 and V-13 of
 `developer2-audit` are covered by FF-01, FF-05 and FF-02. No frontier finding
 was dropped.
+
+
+## Leader decisions at consolidation
+
+1. **Merged duplicate (V-14).** `developer1-audit` V-08 and
+   `developer2-audit` V-07 describe the same fragment
+   (`PromotionValidator.validateTargetCategory`). They are one violation with
+   one ID. Developer 1's solution is adopted (validate with
+   `ProductCategory.fromText`) because it reuses the enum that already
+   defines the categories instead of adding a second constant.
+2. **Two repository interfaces instead of `PersonRepository` (V-03, V-15, V-23).**
+   The Leader proposed one `PersonRepository` and Developer 2 proposed
+   splitting `PersonDAO` (V-15). Doing both would create an interface that is
+   immediately split again. The team uses `CustomerRepository` and
+   `SellerRepository`, one per DAO, which solves V-15, V-23 and the person
+   part of V-03 at once, and avoids a client that needs both lists depending
+   on a combined interface.
+3. **`SaleReader` plus `SaleRepository` (V-03, V-22).** Developer 2 proposed a
+   one-method `SaleReader`. It is adopted as is, and `SaleRepository` extends
+   it, so that `WarrantyService` depends on the one method it uses (ISP) and
+   `SaleService` on the full contract (DIP) with a single implementation.
+4. **V-05 corrected through `AccessoryService`, not through a new interface.**
+   `AccessoryService.updateStock` already validates that the accessory exists,
+   that the quantity is positive and that the stock is enough, reduces it and
+   persists it, with the same Spanish message that `SaleService` raises today
+   (`AccessoryValidator.validateStockAvailability`). `SaleService` already
+   rejects non-positive quantities (line 164) and checks the stock before
+   changing anything, so using the service does not alter any result. It is
+   the same decision taken for products in GRASP V-34 (`SaleService` uses
+   `ProductService`, not the DAO) and it removes a prerequisite for
+   Developer 2.
+5. **No interfaces for same-layer service dependencies.** `SaleService`
+   depends on `ProductService`, `PersonService`, `PromotionService` and
+   `WarrantyService`. These services have one implementation, no expected
+   variation and sit in the same layer, so introducing one interface for each
+   would add indirection without an axis of change (criterion of question 1
+   in `docs/solid-analysis.md`). What is corrected is every dependency on a
+   persistence implementation.
+6. **V-12 is kept as a violation although its correction changes behavior.**
+   `Console.getCategory()` returns `VIDEOGAME`, so saving a console fails
+   with `ClassCastException`. The defect was introduced by the Requirement 7
+   change for GRASP V-13, so it is a regression and not a legacy behavior to
+   preserve. Registering it as an out-of-scope defect would leave `develop`
+   unable to save consoles, and the no-regression baseline could not pass the
+   console registration flow. The fix is one word (`ProductCategory.CONSOLE`),
+   it restores the behavior that existed before Requirement 7, it is made
+   first, and the refactor log documents it as the only expected difference
+   between baseline and final.
+7. **Correction owner.** The owner of each violation is the member who owns the
+   class where the change is made; a change in someone else's call site is
+   made by the owner of the API in the same commit (so the build never
+   breaks) and reviewed by the owner of the caller. The only exception is
+   V-14, assigned to Developer 1 (owner of `ProductCategory` and of the
+   validation package).
+8. **Interplay with the GRASP correction.** Two corrections require a
+   justification in the refactor log because they trade one pattern for
+   another: V-10 (factory abstraction in `ProductService`, while GRASP V-05
+   made the service the creator of products; the service remains the creator
+   through its factories) and V-08 (moving the storage format out of the
+   model classes, while GRASP V-17, V-19 and V-22 had put it there to remove
+   `instanceof` from the DAOs; polymorphism is kept in the mappers through the
+   registry).
