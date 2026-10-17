@@ -321,3 +321,31 @@ In Phase 2 the AI assistant was used to understand which violations of the conso
 | 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-28, V-29 and V-30 in `ReturnService` | Asked how to split `registerReturn`, replace the exceptions and remove `instanceof Console` | Proposed private helper methods, typed exceptions and `product.requiresWarranty()` | Applied as proposed. The `instanceof Accessory` used for stock restoration was kept as a documented exception | d7272e4, 3729f0a, 52c5354 |
 | 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-17, V-19 and V-22 after Developer 1 pushed `getTypeCode()` and `toCsvLine()` | Asked me to check that the new methods produce the same CSV text as the DAOs | Compared the output of `toCsvLine()` with the lines the DAOs wrote and confirmed they are identical; proposed using them in `AccessoryDAO`, `AccessoryService` and `PromotionDAO` | Applied as proposed; the CSV files are unchanged | fca12ea, 73b4a5d, 95839d5 |
 | 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Verify FF-07 and prepare the no-regression checklist | Asked how to check that no code modifies the lists Developer 1 makes unmodifiable, and for a manual test plan | Proposed a search for call sites and a 15-check manual table covering every flow touched | Ran the search and all 15 checks myself; all passed. Wrote the results in the verification file | 78980b3, c94446d |
+
+
+## Requirement 8 - SOLID Audit
+
+### Phase 1 - Audit
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-17 |
+| Tool | Claude |
+| Phase and branch | Phase 1, `feature/solid-audit` |
+| Objective | Audit my scope (Person/Customer/Seller, Accessory, Promotion, Return and Warranty services and persistence, GRASP correction classes) against the five SOLID principles and write `docs/solid-audit/developer2-audit.md`. |
+| Query | Asked for a scope section and one section per principle (SRP, OCP, LSP, ISP, DIP) in the same format used in Requirement 7: verdict per principle and, for each violation, ID, principle, module, evidence, explanation, consequence, proposed solution and code of another member. Asked to use the current state of `develop` after the Requirement 7 corrections. |
+| Response | Proposed 13 violations: SRP V-01 to V-04 (`PersonDAO` handles two entities; `ReturnService` mixes the monthly balance and the record mapping; `WarrantyService` mixes the record mapping and a duplicated sale lookup), OCP V-05 to V-08 (type `if/else` chains in `AccessoryDAO.parseLine` and `PromotionDAO.parseLine`, fixed categories in `PromotionValidator`, type condition in `WarrantyService.resolveWarranty`), ISP V-09 (`WarrantyService` depends on the whole `SaleDAO`), DIP V-10 to V-13 (services create or depend on concrete DAOs). LSP was judged correct. |
+| Decision | Checked each line number and quote against the code before pasting. Accepted all findings. Reported the findings that touch the Technical Leader's code (`SaleDAO`, `Main`, `ReturnMenu`, `SaleService` bypassing `AccessoryService`) in the field "Code of another member" and in the section "Reported to the Technical Leader". Kept `ReturnService.restoreStockOf` (`instanceof Accessory`) as the documented exception from Requirement 7. |
+| Related commit | docs: add scope section to developer2 SOLID audit; docs: add SRP findings to developer2 SOLID audit; docs: add OCP findings to developer2 SOLID audit; docs: add LSP analysis to developer2 SOLID audit; docs: add ISP findings to developer2 SOLID audit; docs: add DIP findings to developer2 SOLID audit; docs: add summary table to developer2 SOLID audit |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-17 |
+| Tool | Claude |
+| Phase and branch | Phase 1, `feature/solid-audit` |
+| Objective | Answer guiding questions 2 and 3 in `docs/solid-analysis.md`. |
+| Query | Asked for the answers to question 2 (boundary findings between members' code) and question 3 (relation with the GRASP audit), using real cases from my report. |
+| Response | Proposed the boundary cases V-01, V-02, V-09, V-10 to V-13 and the stock bypass in `SaleService`, and how they are registered and assigned. For GRASP, proposed V-03, V-04 and V-08 as SOLID problems left in code already corrected, and the polymorphic `toCsvLine()`/`getTypeCode()`, `requiresWarranty()` and the raw records as GRASP corrections that also solved a SOLID problem. |
+| Decision | Reviewed that the IDs match my report; the responsible person for each boundary correction is decided by the Technical Leader in the consolidation. |
+| Related commit | docs: add Developer 2 answers to SOLID guiding questions 2 and 3 |
+
