@@ -91,6 +91,7 @@ Pull Request: _pending_.
 
 | Class | Change made | Violation ID | Principle applied | Commit/PR | Responsible |
 |---|---|---|---|---|---|
+| `Sale`, `SaleMenu` | Removed `Sale.generateReceipt()`, which pointed the model at `ui.SaleReceiptFormatter`; `SaleMenu` now calls `SaleReceiptFormatter.format(sale)` directly. The receipt text is unchanged | V-01 | DIP | refactor: remove model dependency on ui by dropping Sale.generateReceipt (V-01) | Technical Leader |
 
 ## Corrections by Developer 1
 
