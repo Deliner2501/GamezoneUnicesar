@@ -93,6 +93,7 @@ Pull Request: _pending_.
 |---|---|---|---|---|---|
 | `Sale`, `SaleMenu` | Removed `Sale.generateReceipt()`, which pointed the model at `ui.SaleReceiptFormatter`; `SaleMenu` now calls `SaleReceiptFormatter.format(sale)` directly. The receipt text is unchanged | V-01 | DIP | refactor: remove model dependency on ui by dropping Sale.generateReceipt (V-01) | Technical Leader |
 | `SaleDAO`, `SaleCsvMapper` (new) | Moved `toLine`, `fromLine` and the customer/seller lookups into the new `SaleCsvMapper`; `SaleDAO` keeps only the file reading and writing and delegates the line format to the mapper. File format and messages are unchanged | V-02 | SRP | refactor: extract SaleCsvMapper so SaleDAO only handles file access (V-02) | Technical Leader |
+| `SaleReader` (new), `SaleRepository` (new), `SaleDAO`, `SaleService` | Added the read-only `SaleReader` and the full `SaleRepository` interfaces; `SaleDAO` implements them and `SaleService` now depends on `SaleRepository` instead of the concrete `SaleDAO`. Part (a) of V-03; part (b), the person repositories, comes after Developer 2's V-15 | V-03 | DIP | refactor: add SaleReader and SaleRepository so SaleService depends on abstractions (V-03) | Technical Leader |
 
 ## Corrections by Developer 1
 
