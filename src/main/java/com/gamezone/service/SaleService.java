@@ -11,7 +11,7 @@ import com.gamezone.exceptions.BusinessRuleException;
 import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.exceptions.ResourceNotFoundException;
 import com.gamezone.persistence.AccessoryDAO;
-import com.gamezone.persistence.SaleDAO;
+import com.gamezone.persistence.SaleRepository;
 import com.gamezone.validation.ProductValidator;
 import com.gamezone.validation.SaleValidator;
 import java.io.IOException;
@@ -30,7 +30,7 @@ import java.util.Map;
  */
 public class SaleService {
 
-    private SaleDAO saleDAO;
+    private SaleRepository saleRepository;
     private ProductService productService;
     private AccessoryDAO accessoryDAO;
     private PromotionService promotionService;
@@ -40,14 +40,14 @@ public class SaleService {
     /**
      * Creates a SaleService with its required collaborators.
      *
-     * @param saleDAO       the DAO used to persist and query sales
+     * @param saleRepository the repository used to persist and query sales
      * @param personService the service used to resolve customers and sellers by id
      * @param accessoryDAO  the DAO used to look up and update accessory stock
      * @param promotionService the service used to find and apply the best available promotion
      */
-    public SaleService(SaleDAO saleDAO, ProductService productService, AccessoryDAO accessoryDAO,
+    public SaleService(SaleRepository saleRepository, ProductService productService, AccessoryDAO accessoryDAO,
                         PromotionService promotionService, PersonService personService) {
-        this.saleDAO = saleDAO;
+        this.saleRepository = saleRepository;
         this.productService = productService;
         this.accessoryDAO = accessoryDAO;
         this.promotionService = promotionService;
@@ -117,7 +117,7 @@ public class SaleService {
 
         updateInventory(resolvedProducts, resolvedAccessories);
 
-        saleDAO.save(sale);
+        saleRepository.save(sale);
         customer.addPurchase(sale);
 
         return sale;
@@ -275,7 +275,7 @@ public class SaleService {
      * @throws IOException if the sales file cannot be read
      */
     public List<Sale> listSales() throws IOException {
-        return saleDAO.findAll();
+        return saleRepository.findAll();
     }
 
     /**
@@ -286,7 +286,7 @@ public class SaleService {
      * @throws IOException if the sales file cannot be read
      */
     public List<Sale> listSalesByCustomer(String customerId) throws IOException {
-        return saleDAO.findByCustomer(customerId);
+        return saleRepository.findByCustomer(customerId);
     }
 
     /**
@@ -297,7 +297,7 @@ public class SaleService {
      * @throws IOException if the sales file cannot be read
      */
     public List<Sale> listSalesBySeller(String sellerId) throws IOException {
-        return saleDAO.findBySeller(sellerId);
+        return saleRepository.findBySeller(sellerId);
     }
 
     /**
@@ -308,7 +308,7 @@ public class SaleService {
      * @throws IOException if the sales cannot be read from storage
      */
     public Sale findSaleById(String saleId) throws IOException {
-        for (Sale sale : saleDAO.findAll()) {
+        for (Sale sale : saleRepository.findAll()) {
             if (sale.getId().equals(saleId)) {
                 return sale;
             }

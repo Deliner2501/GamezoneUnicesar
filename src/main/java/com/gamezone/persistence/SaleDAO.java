@@ -16,7 +16,7 @@ import java.util.List;
  * Only the file access lives here; the text format of each line is
  * handled by {@link SaleCsvMapper} (SOLID audit finding V-02).
  */
-public class SaleDAO {
+public class SaleDAO implements SaleRepository {
 
     private static final String FILE_PATH = "data/sales.txt";
     private final SaleCsvMapper mapper;
@@ -40,6 +40,7 @@ public class SaleDAO {
      * @throws IOException declared for API compatibility; write failures
      *         are now wrapped as PersistenceException instead
      */
+    @Override
     public void save(Sale sale) throws IOException {
         File file = new File(FILE_PATH);
         file.getParentFile().mkdirs();
@@ -62,6 +63,7 @@ public class SaleDAO {
      * @throws IOException declared for API compatibility; read failures
      *         are now wrapped as PersistenceException instead
      */
+    @Override
     public List<Sale> findAll() throws IOException {
         List<Sale> sales = new ArrayList<>();
         File file = new File(FILE_PATH);
@@ -93,6 +95,7 @@ public class SaleDAO {
      * @throws IOException declared for API compatibility; read failures
      *         are now wrapped as PersistenceException instead
      */
+    @Override
     public List<Sale> findByCustomer(String customerId) throws IOException {
         List<Sale> result = new ArrayList<>();
         try {
@@ -117,6 +120,7 @@ public class SaleDAO {
      * @throws IOException declared for API compatibility; read failures
      *         are now wrapped as PersistenceException instead
      */
+    @Override
     public List<Sale> findBySeller(String sellerId) throws IOException {
         List<Sale> result = new ArrayList<>();
         try {
