@@ -43,7 +43,7 @@ public class Main {
         ProductService productService = new ProductService(productDAO);
         AccessoryService accessoryService = new AccessoryService(accessoryDAO);
         PromotionService promotionService = new PromotionService(promotionDAO);
-        SaleService saleService = new SaleService(saleDAO, productService, accessoryDAO, promotionService, personService);
+        SaleService saleService = new SaleService(saleDAO, productService, accessoryService, promotionService, personService);
         WarrantyRepository warrantyRepository = new WarrantyRepository();
         WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
         saleService.setWarrantyService(warrantyService);
