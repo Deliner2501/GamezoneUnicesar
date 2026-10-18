@@ -1,34 +1,25 @@
 package com.gamezone.persistence;
 
 import com.gamezone.exceptions.PersistenceException;
-import com.gamezone.model.Customer;
-import com.gamezone.model.Product;
 import com.gamezone.model.Sale;
-import com.gamezone.model.Seller;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Handles saving and loading Sale data to and from a text file.
- * Since a sale references a customer, a seller and a list of products,
- * this class relies on PersonDAO and ProductDAO to reconstruct those
- * objects from their stored ids when a sale is loaded.
+ * Only the file access lives here; the text format of each line is
+ * handled by {@link SaleCsvMapper} (SOLID audit finding V-02).
  */
 public class SaleDAO {
 
     private static final String FILE_PATH = "data/sales.txt";
-    private static final String FIELD_SEPARATOR = ";";
-    private static final String PRODUCT_SEPARATOR = ",";
-
-    private PersonDAO personDAO;
-    private ProductDAO productDAO;
+    private final SaleCsvMapper mapper;
 
     /**
      * Creates a SaleDAO that uses the given PersonDAO and ProductDAO
@@ -38,8 +29,7 @@ public class SaleDAO {
      * @param productDAO the DAO used to look up products by id
      */
     public SaleDAO(PersonDAO personDAO, ProductDAO productDAO) {
-        this.personDAO = personDAO;
-        this.productDAO = productDAO;
+        this.mapper = new SaleCsvMapper(personDAO, productDAO);
     }
 
     /**
@@ -55,7 +45,7 @@ public class SaleDAO {
         file.getParentFile().mkdirs();
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
-            writer.write(toLine(sale));
+            writer.write(mapper.toLine(sale));
             writer.newLine();
         } catch (IOException e) {
             throw new PersistenceException(
@@ -82,7 +72,7 @@ public class SaleDAO {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                Sale sale = fromLine(line);
+                Sale sale = mapper.fromLine(line);
                 if (sale != null) {
                     sales.add(sale);
                 }
@@ -140,87 +130,5 @@ public class SaleDAO {
                     "Error al leer el archivo " + FILE_PATH + " (operación de lectura)", e);
         }
         return result;
-    }
-
-    /**
-     * Converts a Sale into a single line of text for storage.
-     * Format: id;date;customerId;sellerId;productId1,productId2,...
-     */
-    private String toLine(Sale sale) {
-        StringBuilder productIds = new StringBuilder();
-        List<Product> products = sale.getProducts();
-        for (int i = 0; i < products.size(); i++) {
-            productIds.append(products.get(i).getId());
-            if (i < products.size() - 1) {
-                productIds.append(PRODUCT_SEPARATOR);
-            }
-        }
-
-        String promotionName = sale.getAppliedPromotionName() == null ? "" : sale.getAppliedPromotionName();
-
-        return sale.getId() + FIELD_SEPARATOR
-                + sale.getDate() + FIELD_SEPARATOR
-                + sale.getCustomer().getId() + FIELD_SEPARATOR
-                + sale.getSeller().getId() + FIELD_SEPARATOR
-                + productIds + FIELD_SEPARATOR
-                + promotionName + FIELD_SEPARATOR
-                + sale.getDiscountAmount();
-    }
-
-    /**
-     * Reconstructs a Sale from a stored line of text, resolving the
-     * customer, seller and product ids back into real objects.
-     */
-    private Sale fromLine(String line) throws IOException {
-        String[] parts = line.split(FIELD_SEPARATOR);
-        String id = parts[0];
-        LocalDate date = LocalDate.parse(parts[1]);
-        String customerId = parts[2];
-        String sellerId = parts[3];
-
-        Customer customer = findCustomerById(customerId);
-        Seller seller = findSellerById(sellerId);
-        if (customer == null || seller == null) {
-            System.out.println("Skipping sale " + id + ": customer or seller not found");
-            return null;
-        }
-
-        Sale sale = new Sale(id, date, customer, seller);
-
-        if (parts.length > 4 && !parts[4].isBlank()) {
-            String[] productIds = parts[4].split(PRODUCT_SEPARATOR);
-            for (String productId : productIds) {
-                Product product = productDAO.findById(productId);
-                if (product != null) {
-                    sale.addProduct(product);
-                }
-            }
-        }
-
-        if (parts.length > 6 && !parts[5].isBlank()) {
-            String promotionName = parts[5];
-            double discountAmount = Double.parseDouble(parts[6]);
-            sale.applyPromotion(promotionName, discountAmount);
-        }
-
-        return sale;
-    }
-
-    private Customer findCustomerById(String id) throws IOException {
-        for (Customer customer : personDAO.loadCustomers()) {
-            if (customer.getId().equals(id)) {
-                return customer;
-            }
-        }
-        return null;
-    }
-
-    private Seller findSellerById(String id) throws IOException {
-        for (Seller seller : personDAO.loadSellers()) {
-            if (seller.getId().equals(id)) {
-                return seller;
-            }
-        }
-        return null;
     }
 }
