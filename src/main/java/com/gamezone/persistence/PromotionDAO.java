@@ -16,7 +16,7 @@ import java.util.List;
  * or "BULK") is used to tell the three concrete promotion types apart
  * when reloading the file.
  */
-public class PromotionDAO {
+public class PromotionDAO implements PromotionRepository {
 
     private static final String FILE_PATH = "data/promotions.csv";
 
@@ -26,6 +26,7 @@ public class PromotionDAO {
      *
      * @param promotions the complete list of promotions to save
      */
+    @Override
     public void saveAll(List<Promotion> promotions) {
         File dir = new File("data");
         if (!dir.exists()) dir.mkdirs();
@@ -46,6 +47,7 @@ public class PromotionDAO {
      * @return the list of all persisted promotions, or an empty list
      *         if the file does not exist yet
      */
+    @Override
     public List<Promotion> loadAll() {
         List<Promotion> promotions = new ArrayList<>();
         File file = new File(FILE_PATH);
