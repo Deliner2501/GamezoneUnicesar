@@ -132,5 +132,19 @@ Pull Request: _pending_.
 
 ## Out-of-scope findings and justifications
 
-Violations of the consolidated audit that are not corrected in this phase are
-listed here with their justification. _None so far._
+All the violations of the consolidated audit (V-01 to V-26) are corrected in
+this phase and appear in the tables above. The following functional defects
+are not SOLID violations, and correcting them would change the output of the
+system, which a pure refactor must not do. They are recorded in the
+consolidated audit (OS-01, OS-02) or found during the final verification
+(OS-03), and they stay untouched.
+
+| ID | Fragment | Finding | Justification |
+|---|---|---|---|
+| OS-01 | `Sale.getDiscountRate()` | Returns `discountAmount / total` with no zero guard: it is `NaN` when the subtotal is zero, while its JavaDoc promises `0.0`. `Return` hides it with its own guard | Fixing the method changes its output, so it is not a refactor |
+| OS-02 | `AccessoryValidator.validateAccessoryData` | Uses `isEmpty()` and accepts a price of `0`, while `ProductValidator` uses `isBlank()` and requires a price greater than zero | Making both validators equal would reject data that is accepted today, which is a behavior change |
+| OS-03 | `SaleService.registerSale` and `WarrantyService` | When a sale includes a console with an extended warranty, the basic warranty is assigned first and then lost: the next assignment reloads the warranties, and the sale is not yet persisted, so the basic one cannot be resolved and is not rewritten. Only the extended warranty reaches `warranties.csv`. The same happens in the reference B1 | Fixing it means changing the order of the persistence steps in `registerSale`, which changes the content of `warranties.csv`. It is also a functional defect, not a SOLID violation |
+
+Defects already recorded in Requirement 7 (for example, `SaleDAO` losing the
+accessories of a sale when it is reloaded) also stay untouched for the same
+reason.
