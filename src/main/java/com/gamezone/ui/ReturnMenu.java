@@ -81,8 +81,7 @@ public class ReturnMenu {
             if (reason == null) return;
 
             Return processedReturn = returnService.registerReturn(saleId, productIds, reason);
-            MenuDialogs.showList("Devolución registrada exitosamente", processedReturn.generateReturnReceipt());
-        } catch (IllegalArgumentException e) {
+MenuDialogs.showList("Devolución registrada exitosamente", ReturnReceiptFormatter.format(processedReturn));        } catch (IllegalArgumentException e) {
             JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
                     "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
@@ -126,8 +125,7 @@ public class ReturnMenu {
         }
         List<String> entries = new ArrayList<>();
         for (Return r : returns) {
-            entries.add(r.generateReturnReceipt());
-        }
+entries.add(ReturnReceiptFormatter.format(r));        }
         MenuDialogs.showList("Devoluciones", MenuDialogs.formatEntries(entries));
     }
 
