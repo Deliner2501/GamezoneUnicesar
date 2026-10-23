@@ -4,7 +4,7 @@ import com.gamezone.model.BulkPurchaseDiscount;
 import com.gamezone.model.CategoryDiscount;
 import com.gamezone.model.PercentageDiscount;
 import com.gamezone.model.Promotion;
-import com.gamezone.persistence.PromotionDAO;
+import com.gamezone.persistence.PromotionRepository;
 import com.gamezone.validation.PromotionValidator;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,10 +17,15 @@ import java.util.ArrayList;
  */
 public class PromotionService {
 
-    private PromotionDAO promotionDAO;
+    private PromotionRepository promotionRepository;
 
-    public PromotionService(PromotionDAO promotionDAO) {
-        this.promotionDAO = promotionDAO;
+    /**
+     * Creates the service with the storage it reads and writes promotions through.
+     *
+     * @param promotionRepository the promotion storage the service depends on
+     */
+    public PromotionService(PromotionRepository promotionRepository) {
+        this.promotionRepository = promotionRepository;
     }
 
     /**
@@ -38,9 +43,9 @@ public class PromotionService {
                                                       LocalDate endDate, double percentage) {
         PromotionValidator.validatePercentage(percentage);
         PercentageDiscount promotion = new PercentageDiscount(id, name, startDate, endDate, percentage);
-        List<Promotion> promotions = promotionDAO.loadAll();
+        List<Promotion> promotions = promotionRepository.loadAll();
         promotions.add(promotion);
-        promotionDAO.saveAll(promotions);
+        promotionRepository.saveAll(promotions);
         return promotion;
     }
 
@@ -62,9 +67,9 @@ public class PromotionService {
         PromotionValidator.validatePercentage(percentage);
         PromotionValidator.validateTargetCategory(targetCategory);
         CategoryDiscount promotion = new CategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
-        List<Promotion> promotions = promotionDAO.loadAll();
+        List<Promotion> promotions = promotionRepository.loadAll();
         promotions.add(promotion);
-        promotionDAO.saveAll(promotions);
+        promotionRepository.saveAll(promotions);
         return promotion;
     }
 
@@ -85,9 +90,9 @@ public class PromotionService {
                                                               double percentage) {
         PromotionValidator.validatePercentage(percentage);
         BulkPurchaseDiscount promotion = new BulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
-        List<Promotion> promotions = promotionDAO.loadAll();
+        List<Promotion> promotions = promotionRepository.loadAll();
         promotions.add(promotion);
-        promotionDAO.saveAll(promotions);
+        promotionRepository.saveAll(promotions);
         return promotion;
     }
 
@@ -97,7 +102,7 @@ public class PromotionService {
      * @return the list of all promotions
      */
     public List<Promotion> listAllPromotions() {
-        return promotionDAO.loadAll();
+        return promotionRepository.loadAll();
     }
 
     /**
@@ -109,7 +114,7 @@ public class PromotionService {
     public List<Promotion> listActivePromotions() {
         List<Promotion> active = new ArrayList<>();
         LocalDate today = LocalDate.now();
-        for (Promotion p : promotionDAO.loadAll()) {
+        for (Promotion p : promotionRepository.loadAll()) {
             if (p.isActive(today)) {
                 active.add(p);
             }
@@ -147,7 +152,7 @@ public class PromotionService {
      * @return the matching promotion, or null if none is found
      */
     public Promotion findById(String id) {
-        for (Promotion p : promotionDAO.loadAll()) {
+        for (Promotion p : promotionRepository.loadAll()) {
             if (p.getId().equals(id)) return p;
         }
         return null;
