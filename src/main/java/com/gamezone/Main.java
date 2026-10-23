@@ -13,6 +13,7 @@ import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
 import com.gamezone.service.ReturnService;
+import com.gamezone.service.ReturnRecordResolver;
 import com.gamezone.service.SaleService;
 import com.gamezone.service.VideoGameFactory;
 import com.gamezone.service.WarrantyService;
@@ -52,7 +53,8 @@ public class Main {
         WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
         saleService.setWarrantyService(warrantyService);
         ReturnRepository returnRepository = new ReturnRepository();
-        ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService);
+        ReturnRecordResolver returnRecordResolver = new ReturnRecordResolver(returnRepository, saleService, productService, accessoryService);
+        ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService, returnRecordResolver);
 
         // UI layer
         MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService);
