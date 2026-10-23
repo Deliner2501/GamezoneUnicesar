@@ -8,13 +8,16 @@ import com.gamezone.persistence.ReturnRepository;
 import com.gamezone.persistence.SaleDAO;
 import com.gamezone.persistence.WarrantyRepository;
 import com.gamezone.service.AccessoryService;
+import com.gamezone.service.ConsoleFactory;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
 import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
+import com.gamezone.service.VideoGameFactory;
 import com.gamezone.service.WarrantyService;
 import com.gamezone.ui.MainMenu;
+import java.util.List;
 import javax.swing.SwingUtilities;
 
 /**
@@ -40,7 +43,8 @@ public class Main {
         // Service layer
         // Service layer
         PersonService personService = new PersonService();
-        ProductService productService = new ProductService(productDAO);
+        ProductService productService = new ProductService(productDAO,
+                List.of(new VideoGameFactory(), new ConsoleFactory()));
         AccessoryService accessoryService = new AccessoryService(accessoryDAO);
         PromotionService promotionService = new PromotionService(promotionDAO);
         SaleService saleService = new SaleService(saleDAO, productService, accessoryService, promotionService, personService);

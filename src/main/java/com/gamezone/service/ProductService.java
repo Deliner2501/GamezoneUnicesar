@@ -1,12 +1,13 @@
 package com.gamezone.service;
 
 import com.gamezone.exceptions.InvalidDataException;
-import com.gamezone.model.Console;
 import com.gamezone.model.Product;
-import com.gamezone.model.VideoGame;
+import com.gamezone.model.ProductCategory;
 import com.gamezone.persistence.ProductRepository;
 import com.gamezone.validation.ProductValidator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Contains the business rules for managing products.
@@ -14,9 +15,20 @@ import java.util.List;
 public class ProductService {
 
     private ProductRepository productDAO;
+    private final Map<ProductCategory, ProductFactory> factories = new EnumMap<>(ProductCategory.class);
 
-    public ProductService(ProductRepository productDAO) {
+    /**
+     * Creates the service with its repository and the factories of the
+     * product types it can register.
+     *
+     * @param productDAO the repository where products are stored
+     * @param factories  one factory for each supported product type
+     */
+    public ProductService(ProductRepository productDAO, List<ProductFactory> factories) {
         this.productDAO = productDAO;
+        for (ProductFactory factory : factories) {
+            this.factories.put(factory.getCategory(), factory);
+        }
     }
 
     /**
@@ -36,37 +48,25 @@ public class ProductService {
     }
 
     /**
-     * Creates a video game from the given data, validates it and persists it.
+     * Builds a product of the given category with the factory registered
+     * for it, validates it and persists it.
      *
-     * @param id        the unique id of the video game
-     * @param title     the title of the video game
-     * @param price     the price of the video game
-     * @param stock     the initial stock
-     * @param platform  the platform the game runs on
-     * @param genre     the genre of the game
-     * @param ageRating the age rating of the game
-     * @throws InvalidDataException if the resulting product data is not valid
+     * @param category       the category of the product to register
+     * @param id             the unique id of the product
+     * @param title          the title of the product
+     * @param price          the price of the product
+     * @param stock          the initial stock
+     * @param specificFields the fields that only this type has
+     * @throws InvalidDataException if the category has no factory or the
+     *         resulting product data is not valid
      */
-    public void registerVideoGame(String id, String title, double price, int stock,
-                                  String platform, String genre, String ageRating) {
-        registerProduct(new VideoGame(id, title, price, stock, platform, genre, ageRating));
-    }
-
-    /**
-     * Creates a console from the given data, validates it and persists it.
-     *
-     * @param id         the unique id of the console
-     * @param title      the title of the console
-     * @param price      the price of the console
-     * @param stock      the initial stock
-     * @param brand      the brand of the console
-     * @param model      the model of the console
-     * @param generation the generation of the console
-     * @throws InvalidDataException if the resulting product data is not valid
-     */
-    public void registerConsole(String id, String title, double price, int stock,
-                                String brand, String model, String generation) {
-        registerProduct(new Console(id, title, price, stock, brand, model, generation));
+    public void registerNewProduct(ProductCategory category, String id, String title,
+                                   double price, int stock, String... specificFields) {
+        ProductFactory factory = factories.get(category);
+        if (factory == null) {
+            throw new InvalidDataException("tipo de producto", "no es compatible");
+        }
+        registerProduct(factory.create(id, title, price, stock, specificFields));
     }
 
     /**
@@ -117,7 +117,7 @@ public class ProductService {
         product.increaseStock(quantity);
         productDAO.update(product);
     }
-    
+
     /**
      * Reduces stock for a product after a sale, persisting the change
      * immediately. Lets SaleService depend on ProductService instead of
