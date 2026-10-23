@@ -204,6 +204,6 @@ public class AccessoryService {
 
     private boolean matchesType(Accessory accessory, String type) {
         if (type == null) return false;
-        return accessory.getTypeCode().equalsIgnoreCase(type);
+        return accessory.getClass().getSimpleName().equalsIgnoreCase(type);
     }
 }
