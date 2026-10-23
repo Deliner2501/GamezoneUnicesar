@@ -36,7 +36,8 @@ public class ConsoleCsvMapper implements ProductCsvMapper {
     }
 
     @Override
-    public Product create(String id, String title, double price, int stock, String[] parts) {
-        return new Console(id, title, price, stock, parts[5], parts[6], parts[7]);
+    public Product parse(String[] parts) {
+        return new Console(parts[1], parts[2], Double.parseDouble(parts[3]),
+                Integer.parseInt(parts[4]), parts[5], parts[6], parts[7]);
     }
 }

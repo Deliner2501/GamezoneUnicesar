@@ -59,25 +59,4 @@ public class Memory extends Accessory {
         return getTitle() + " - Capacity: " + capacityInGigabytes + "GB, Type: " + memoryType
                 + ", Price: " + getPrice() + ", Stock: " + getStock();
     }
-        /**
-     * Returns the type code of this accessory.
-     *
-     * @return "MEMORY"
-     */
-    @Override
-    public String getTypeCode() {
-        return "MEMORY";
-    }
-
-    /**
-     * Returns the CSV line that represents this memory.
-     *
-     * @return the line in the format MEMORY,id,title,price,stock,capacity,type,consoles
-     */
-    @Override
-    public String toCsvLine() {
-        return "MEMORY," + getId() + "," + getTitle() + ","
-                + getPrice() + "," + getStock() + ","
-                + capacityInGigabytes + "," + memoryType + "," + compatibleConsolesAsCsv();
-    }
 }

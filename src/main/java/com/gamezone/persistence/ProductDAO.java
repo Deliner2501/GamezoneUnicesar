@@ -154,17 +154,13 @@ public class ProductDAO implements ProductRepository {
         }
     }
 
-    private Product parseLine(String line) {
+        private Product parseLine(String line) {
         String[] parts = line.split(",");
         String type = parts[0];
-        String id = parts[1];
-        String title = parts[2];
-        double price = Double.parseDouble(parts[3]);
-        int stock = Integer.parseInt(parts[4]);
 
         for (ProductCsvMapper mapper : mappers) {
             if (mapper.getTypeCode().equals(type)) {
-                return mapper.create(id, title, price, stock, parts);
+                return mapper.parse(parts);
             }
         }
         return null;

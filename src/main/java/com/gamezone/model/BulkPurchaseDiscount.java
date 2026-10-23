@@ -63,18 +63,6 @@ public class BulkPurchaseDiscount extends Promotion {
         if (sale.getProducts().size() < minQuantity) {
             return 0.0;
         }
-                return sale.calculateTotal() * (percentage / 100.0);
-    }
-
-    /**
-     * Returns the CSV line that represents this promotion.
-     *
-     * @return the line in the format BULK,id,name,start,end,minQuantity,percentage
-     */
-    @Override
-    public String toCsvLine() {
-        return "BULK," + getId() + "," + getName() + ","
-                + getStartDate() + "," + getEndDate() + ","
-                + minQuantity + "," + percentage;
+        return sale.calculateTotal() * (percentage / 100.0);
     }
 }

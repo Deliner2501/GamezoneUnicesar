@@ -58,25 +58,4 @@ public class Cable extends Accessory {
         return getTitle() + " - Length: " + lengthInMeters + "m, Connector: " + connectorType
                 + ", Price: " + getPrice() + ", Stock: " + getStock();
     }
-        /**
-     * Returns the type code of this accessory.
-     *
-     * @return "CABLE"
-     */
-    @Override
-    public String getTypeCode() {
-        return "CABLE";
-    }
-
-    /**
-     * Returns the CSV line that represents this cable.
-     *
-     * @return the line in the format CABLE,id,title,price,stock,length,connector,consoles
-     */
-    @Override
-    public String toCsvLine() {
-        return "CABLE," + getId() + "," + getTitle() + ","
-                + getPrice() + "," + getStock() + ","
-                + lengthInMeters + "," + connectorType + "," + compatibleConsolesAsCsv();
-    }
 }

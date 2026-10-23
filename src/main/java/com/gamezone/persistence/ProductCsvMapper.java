@@ -5,6 +5,7 @@ import com.gamezone.model.ProductCategory;
 
 /**
  * Converts one concrete type of product to and from its CSV representation.
+ * It owns the storage format in both directions (SOLID audit finding V-07).
  */
 public interface ProductCsvMapper {
 
@@ -41,14 +42,13 @@ public interface ProductCsvMapper {
     String toCsvLine(Product product);
 
     /**
-     * Builds a product from its parsed CSV values.
+     * Builds a product from the columns of one CSV line, including the
+     * common ones (id, title, price, stock).
      *
-     * @param id    the product id
-     * @param title the product title
-     * @param price the product price
-     * @param stock the product stock
      * @param parts the full array of CSV columns
      * @return the product created
+     * @throws NumberFormatException if a numeric column is not valid
+     * @throws ArrayIndexOutOfBoundsException if columns are missing
      */
-    Product create(String id, String title, double price, int stock, String[] parts);
+    Product parse(String[] parts);
 }

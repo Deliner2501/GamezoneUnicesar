@@ -40,25 +40,4 @@ public class Controller extends Accessory {
         return getTitle() + " - Connection: " + connectionType
                 + ", Price: " + getPrice() + ", Stock: " + getStock();
     }
-        /**
-     * Returns the type code of this accessory.
-     *
-     * @return "CONTROLLER"
-     */
-    @Override
-    public String getTypeCode() {
-        return "CONTROLLER";
-    }
-
-    /**
-     * Returns the CSV line that represents this controller.
-     *
-     * @return the line in the format CONTROLLER,id,title,price,stock,connectionType,consoles
-     */
-    @Override
-    public String toCsvLine() {
-        return "CONTROLLER," + getId() + "," + getTitle() + ","
-                + getPrice() + "," + getStock() + ","
-                + connectionType + "," + compatibleConsolesAsCsv();
-    }
 }
