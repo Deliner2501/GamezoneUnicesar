@@ -1,7 +1,8 @@
 package com.gamezone;
 
 import com.gamezone.persistence.AccessoryDAO;
-import com.gamezone.persistence.PersonDAO;
+import com.gamezone.persistence.CustomerDAO;
+import com.gamezone.persistence.SellerDAO;
 import com.gamezone.persistence.ProductDAO;
 import com.gamezone.persistence.PromotionDAO;
 import com.gamezone.persistence.ReturnRepository;
@@ -36,15 +37,16 @@ public class Main {
      */
     public static void main(String[] args) {
         // Persistence layer
-        PersonDAO personDAO = new PersonDAO();
+        CustomerDAO customerDAO = new CustomerDAO();
+        SellerDAO sellerDAO = new SellerDAO();
         ProductDAO productDAO = new ProductDAO();
         AccessoryDAO accessoryDAO = new AccessoryDAO();
         PromotionDAO promotionDAO = new PromotionDAO();
-        SaleDAO saleDAO = new SaleDAO(personDAO, productDAO);
+        SaleDAO saleDAO = new SaleDAO(customerDAO, sellerDAO, productDAO);
 
         // Service layer
         // Service layer
-        PersonService personService = new PersonService();
+        PersonService personService = new PersonService(customerDAO, sellerDAO);
         ProductService productService = new ProductService(productDAO,
                 List.of(new VideoGameFactory(), new ConsoleFactory()));
         AccessoryService accessoryService = new AccessoryService(accessoryDAO);

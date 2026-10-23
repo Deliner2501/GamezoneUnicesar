@@ -22,14 +22,16 @@ public class SaleDAO implements SaleRepository {
     private final SaleCsvMapper mapper;
 
     /**
-     * Creates a SaleDAO that uses the given PersonDAO and ProductDAO
+     * Creates a SaleDAO that uses the given repositories and ProductDAO
      * to resolve customer, seller and product references when loading sales.
      *
-     * @param personDAO  the DAO used to look up customers and sellers by id
-     * @param productDAO the DAO used to look up products by id
+     * @param customerRepository the repository used to look up customers by id
+     * @param sellerRepository   the repository used to look up sellers by id
+     * @param productDAO         the DAO used to look up products by id
      */
-    public SaleDAO(PersonDAO personDAO, ProductDAO productDAO) {
-        this.mapper = new SaleCsvMapper(personDAO, productDAO);
+    public SaleDAO(CustomerRepository customerRepository, SellerRepository sellerRepository,
+                   ProductDAO productDAO) {
+        this.mapper = new SaleCsvMapper(customerRepository, sellerRepository, productDAO);
     }
 
     /**

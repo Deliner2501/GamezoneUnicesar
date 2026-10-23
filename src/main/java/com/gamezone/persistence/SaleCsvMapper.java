@@ -20,7 +20,8 @@ public class SaleCsvMapper {
     private static final String FIELD_SEPARATOR = ";";
     private static final String PRODUCT_SEPARATOR = ",";
 
-    private final PersonDAO personDAO;
+    private final CustomerRepository customerRepository;
+    private final SellerRepository sellerRepository;
     private final ProductDAO productDAO;
 
     /**
@@ -28,11 +29,13 @@ public class SaleCsvMapper {
      * references through the given DAOs when a line is converted back
      * into a sale.
      *
-     * @param personDAO  the DAO used to look up customers and sellers by id
-     * @param productDAO the DAO used to look up products by id
+     * @param customerRepository the repository used to look up customers by id
+     * @param sellerRepository   the repository used to look up sellers by id
      */
-    public SaleCsvMapper(PersonDAO personDAO, ProductDAO productDAO) {
-        this.personDAO = personDAO;
+    public SaleCsvMapper(CustomerRepository customerRepository, SellerRepository sellerRepository,
+                         ProductDAO productDAO) {
+        this.customerRepository = customerRepository;
+        this.sellerRepository = sellerRepository;
         this.productDAO = productDAO;
     }
 
@@ -107,7 +110,7 @@ public class SaleCsvMapper {
     }
 
     private Customer findCustomerById(String id) throws IOException {
-        for (Customer customer : personDAO.loadCustomers()) {
+        for (Customer customer : customerRepository.loadCustomers()) {
             if (customer.getId().equals(id)) {
                 return customer;
             }
@@ -116,7 +119,7 @@ public class SaleCsvMapper {
     }
 
     private Seller findSellerById(String id) throws IOException {
-        for (Seller seller : personDAO.loadSellers()) {
+        for (Seller seller : sellerRepository.loadSellers()) {
             if (seller.getId().equals(id)) {
                 return seller;
             }
