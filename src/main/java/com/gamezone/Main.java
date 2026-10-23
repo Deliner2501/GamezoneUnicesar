@@ -12,6 +12,7 @@ import com.gamezone.service.ConsoleFactory;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
+import com.gamezone.service.WarrantyRecordResolver;
 import com.gamezone.service.ReturnService;
 import com.gamezone.service.ReturnRecordResolver;
 import com.gamezone.service.SaleService;
@@ -50,7 +51,8 @@ public class Main {
         PromotionService promotionService = new PromotionService(promotionDAO);
         SaleService saleService = new SaleService(saleDAO, productService, accessoryService, promotionService, personService);
         WarrantyRepository warrantyRepository = new WarrantyRepository();
-        WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
+        WarrantyRecordResolver warrantyRecordResolver = new WarrantyRecordResolver(warrantyRepository, saleDAO, productService);
+        WarrantyService warrantyService = new WarrantyService(warrantyRepository, warrantyRecordResolver);
         saleService.setWarrantyService(warrantyService);
         ReturnRepository returnRepository = new ReturnRepository();
         ReturnRecordResolver returnRecordResolver = new ReturnRecordResolver(returnRepository, saleService, productService, accessoryService);
