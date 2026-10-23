@@ -18,7 +18,7 @@ import javax.swing.JOptionPane;
  * so this area's UI logic is cohesive on its own (GRASP audit finding
  * V-06: High Cohesion).
  */
-public class SaleMenu {
+public class SaleMenu implements AreaMenu {
 
     private final SaleService saleService;
     private final ProductService productService;
@@ -34,9 +34,15 @@ public class SaleMenu {
         this.productService = productService;
     }
 
+    @Override
+    public String getTitle() {
+        return "Gestionar ventas";
+    }
+    
     /**
      * Shows the sale menu and dispatches the chosen option.
      */
+    @Override
     public void show() {
         String[] options = {
                 "Registrar una venta (productos y/o accesorios)",

@@ -22,21 +22,22 @@ public class SaleCsvMapper {
 
     private final CustomerRepository customerRepository;
     private final SellerRepository sellerRepository;
-    private final ProductDAO productDAO;
+    private final ProductRepository productRepository;
 
     /**
      * Creates a mapper that resolves customer, seller and product
-     * references through the given DAOs when a line is converted back
-     * into a sale.
+     * references through the given repositories when a line is converted
+     * back into a sale.
      *
      * @param customerRepository the repository used to look up customers by id
      * @param sellerRepository   the repository used to look up sellers by id
+     * @param productRepository  the repository used to look up products by id
      */
     public SaleCsvMapper(CustomerRepository customerRepository, SellerRepository sellerRepository,
-                         ProductDAO productDAO) {
+                         ProductRepository productRepository) {
         this.customerRepository = customerRepository;
         this.sellerRepository = sellerRepository;
-        this.productDAO = productDAO;
+        this.productRepository = productRepository;
     }
 
     /**
@@ -93,7 +94,7 @@ public class SaleCsvMapper {
         if (parts.length > 4 && !parts[4].isBlank()) {
             String[] productIds = parts[4].split(PRODUCT_SEPARATOR);
             for (String productId : productIds) {
-                Product product = productDAO.findById(productId);
+                Product product = productRepository.findById(productId);
                 if (product != null) {
                     sale.addProduct(product);
                 }

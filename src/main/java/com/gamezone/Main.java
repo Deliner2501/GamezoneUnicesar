@@ -23,6 +23,14 @@ import com.gamezone.service.VideoGameFactory;
 import com.gamezone.service.WarrantyService;
 import com.gamezone.service.MonthlyBalanceService;
 import com.gamezone.ui.MainMenu;
+import com.gamezone.ui.AccessoryMenu;
+import com.gamezone.ui.AreaMenu;
+import com.gamezone.ui.PersonMenu;
+import com.gamezone.ui.ProductMenu;
+import com.gamezone.ui.PromotionMenu;
+import com.gamezone.ui.ReturnMenu;
+import com.gamezone.ui.SaleMenu;
+import com.gamezone.ui.WarrantyMenu;
 import java.util.List;
 import javax.swing.SwingUtilities;
 
@@ -65,7 +73,15 @@ public class Main {
         MonthlyBalanceService monthlyBalanceService = new MonthlyBalanceService(saleService, returnService);
         
         // UI layer
-        MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService, monthlyBalanceService);
+        List<AreaMenu> areaMenus = List.of(
+            new ProductMenu(productService),
+            new PersonMenu(personService),
+            new SaleMenu(saleService, productService),
+            new AccessoryMenu(accessoryService),
+            new PromotionMenu(promotionService),
+            new ReturnMenu(returnService, monthlyBalanceService),
+            new WarrantyMenu(warrantyService));
+        MainMenu mainMenu = new MainMenu(areaMenus);
         SwingUtilities.invokeLater(mainMenu::start);
     }
 }

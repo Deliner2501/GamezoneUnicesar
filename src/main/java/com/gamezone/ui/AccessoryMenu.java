@@ -12,7 +12,7 @@ import javax.swing.JOptionPane;
  * MainMenu so this area's UI logic is cohesive on its own (GRASP audit
  * finding V-06: High Cohesion).
  */
-public class AccessoryMenu {
+public class AccessoryMenu implements AreaMenu {
 
     private final AccessoryService accessoryService;
 
@@ -25,9 +25,15 @@ public class AccessoryMenu {
         this.accessoryService = accessoryService;
     }
 
+    @Override
+    public String getTitle() {
+        return "Gestionar accesorios";
+    }
+    
     /**
      * Shows the accessory menu and dispatches the chosen option.
      */
+    @Override
     public void show() {
         String[] options = {
                 "Registrar un control",

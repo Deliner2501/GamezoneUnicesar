@@ -13,7 +13,7 @@ import javax.swing.JOptionPane;
  * so this area's UI logic is cohesive on its own (GRASP audit finding
  * V-06: High Cohesion).
  */
-public class PersonMenu {
+public class PersonMenu implements AreaMenu {
 
     private final PersonService personService;
 
@@ -26,9 +26,15 @@ public class PersonMenu {
         this.personService = personService;
     }
 
+    @Override
+    public String getTitle() {
+        return "Gestionar clientes y vendedores";
+    }
+    
     /**
      * Shows the person menu and dispatches the chosen option.
      */
+    @Override
     public void show() {
         String[] options = {
                 "Registrar un cliente",
