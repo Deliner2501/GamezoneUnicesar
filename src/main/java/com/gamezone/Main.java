@@ -1,5 +1,7 @@
 package com.gamezone;
 
+import com.gamezone.persistence.CsvReturnRepository;
+import com.gamezone.persistence.CsvWarrantyRepository;
 import com.gamezone.persistence.AccessoryDAO;
 import com.gamezone.persistence.CustomerDAO;
 import com.gamezone.persistence.SellerDAO;
@@ -52,11 +54,11 @@ public class Main {
         AccessoryService accessoryService = new AccessoryService(accessoryDAO);
         PromotionService promotionService = new PromotionService(promotionDAO);
         SaleService saleService = new SaleService(saleDAO, productService, accessoryService, promotionService, personService);
-        WarrantyRepository warrantyRepository = new WarrantyRepository();
+        WarrantyRepository warrantyRepository = new CsvWarrantyRepository();
         WarrantyRecordResolver warrantyRecordResolver = new WarrantyRecordResolver(warrantyRepository, saleDAO, productService);
         WarrantyService warrantyService = new WarrantyService(warrantyRepository, warrantyRecordResolver);
         saleService.setWarrantyService(warrantyService);
-        ReturnRepository returnRepository = new ReturnRepository();
+        ReturnRepository returnRepository = new CsvReturnRepository();
         ReturnRecordResolver returnRecordResolver = new ReturnRecordResolver(returnRepository, saleService, productService, accessoryService);
         ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService, returnRecordResolver);
 

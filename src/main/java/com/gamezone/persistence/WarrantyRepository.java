@@ -1,50 +1,27 @@
 package com.gamezone.persistence;
 
-import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.model.Warranty;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Handles saving and loading Warranty data to and from a text file.
- * To avoid a circular dependency with SaleService (which needs to use
- * WarrantyService when registering a sale), this repository does not
- * resolve product or sale references on its own: it only reads and
- * writes raw identifiers. Turning a stored record back into a real
- * Warranty object is the responsibility of WarrantyService.
+ * Storage contract for warranties. Services depend on this interface instead
+ * of on a concrete CSV class (SOLID audit finding V-26). It works with raw
+ * records so that persistence does not depend on the service layer.
  */
-public class WarrantyRepository {
-
-    private static final String FILE_PATH = "data/warranties.csv";
-    private static final String FIELD_SEPARATOR = ";";
+public interface WarrantyRepository {
 
     /**
-     * A raw, unresolved warranty record as stored on disk: just ids
-     * and dates, with no references to actual Product or Sale objects.
+     * Raw representation of a stored warranty, before its product and sale
+     * are resolved into real objects.
      */
-    public static class WarrantyRecord {
+    class WarrantyRecord {
         private String type;
         private String id;
         private String productId;
         private String saleId;
         private LocalDate startDate;
 
-        /**
-         * Creates a raw warranty record.
-         *
-         * @param type      the discriminator ("BASIC" or "EXTENDED")
-         * @param id        the warranty id
-         * @param productId the id of the covered product
-         * @param saleId    the id of the associated sale
-         * @param startDate the date the warranty coverage starts
-         */
         public WarrantyRecord(String type, String id, String productId, String saleId, LocalDate startDate) {
             this.type = type;
             this.id = id;
@@ -75,83 +52,16 @@ public class WarrantyRepository {
     }
 
     /**
-     * Persists the complete list of warranties, replacing the previous
-     * content of the file.
+     * Saves the whole list of warranties, replacing the stored one.
      *
-     * @param warranties the full list of warranties to persist
-     * @throws PersistenceException if the warranties cannot be written to disk
+     * @param warranties the warranties to persist
      */
-    public void saveAll(List<Warranty> warranties) {
-        File file = new File(FILE_PATH);
-        File parent = file.getParentFile();
-        if (parent != null) {
-            parent.mkdirs();
-        }
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            for (Warranty warranty : warranties) {
-                writer.write(toLine(warranty));
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            throw new PersistenceException(
-                    "Error al escribir el archivo " + FILE_PATH + " (operación de escritura)", e);
-        }
-    }
+    void saveAll(List<Warranty> warranties);
 
     /**
-     * Loads and returns every warranty record stored in the warranties
-     * file, without resolving product or sale references.
+     * Loads every stored warranty as a raw record.
      *
-     * @return the list of all persisted warranty records, or an empty
-     *         list if the file does not exist yet
-     * @throws PersistenceException if the file cannot be read
+     * @return the stored records, or an empty list if none exist
      */
-    public List<WarrantyRecord> loadAll() {
-        List<WarrantyRecord> records = new ArrayList<>();
-        File file = new File(FILE_PATH);
-        if (!file.exists()) {
-            return records;
-        }
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.isBlank()) {
-                    continue;
-                }
-                records.add(fromLine(line));
-            }
-        } catch (IOException e) {
-            throw new PersistenceException(
-                    "Error al leer el archivo " + FILE_PATH + " (operación de lectura)", e);
-        }
-        return records;
-    }
-
-    /**
-     * Converts a Warranty into a single line of text for storage.
-     * Format: type;id;productId;saleId;startDate
-     */
-    private String toLine(Warranty warranty) {
-        String type = warranty.getTypeCode();
-        return type + FIELD_SEPARATOR
-                + warranty.getId() + FIELD_SEPARATOR
-                + warranty.getProduct().getId() + FIELD_SEPARATOR
-                + warranty.getSale().getId() + FIELD_SEPARATOR
-                + warranty.getStartDate();
-    }
-
-    /**
-     * Parses a stored line of text into a raw warranty record.
-     */
-    private WarrantyRecord fromLine(String line) {
-        String[] parts = line.split(FIELD_SEPARATOR, -1);
-        String type = parts[0];
-        String id = parts[1];
-        String productId = parts[2];
-        String saleId = parts[3];
-        LocalDate startDate = LocalDate.parse(parts[4]);
-        return new WarrantyRecord(type, id, productId, saleId, startDate);
-    }
+    List<WarrantyRecord> loadAll();
 }
