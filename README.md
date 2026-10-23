@@ -130,12 +130,12 @@ The application follows a four-layer architecture:
 │   MODEL    │ │ PERSISTENCE  │
 │            │ │              │
 │ Product    │ │ ProductDAO   │
-│ VideoGame  │ │ PersonDAO    │
+│ VideoGame  │ │ CustomerDAO  │
 │ Console    │ │ SaleDAO      │
 │ Accessory  │ │ AccessoryDAO │
 │ Controller │ │ PromotionDAO │
 │ Cable      │ │              │
-│ Memory     │ │              │
+│ Memory     │ │ SellerDAO    │
 │ Promotion  │ │ ReturnRepository│
 │ Return     │ │              │
 │ Warranty   │ │ WarrantyRepository│
@@ -181,15 +181,20 @@ The `model` layer contains the main domain entities of the system.
 The `persistence` layer is responsible for saving and loading information from files.
 
 * `ProductRepository` — interface defining the storage operations the service layer needs for products (`save`, `findAll`, `findById`, `update`). `ProductService` depends on this interface instead of a concrete class.
-* `ProductDAO` — implements `ProductRepository`; manages product information, dispatching CSV serialization per product type to a `ProductCsvMapper` (`VideoGameCsvMapper`, `ConsoleCsvMapper`) instead of branching on type internally.
-* `PersonDAO` — manages customers and sellers.
-* `SaleDAO` — manages sales.
-* `AccessoryDAO` — manages controllers, cables, and memories, delegating CSV formatting to each accessory's own `toCsvLine()`/`getTypeCode()`.
-* `PromotionDAO` — manages promotional discount campaigns, delegating CSV formatting to each promotion's own `toCsvLine()`.
-* `ReturnRepository` — manages returns as plain `ReturnRecord` data, with no dependency on the service layer.
-* `WarrantyRepository` — manages warranties, resolving references to the associated product and sale.
+* `ProductDAO` — implements `ProductRepository`; manages product information. It receives its list of `ProductCsvMapper` (`VideoGameCsvMapper`, `ConsoleCsvMapper`) in the constructor. Each mapper says which product it `supports`, writes it with `toCsvLine` and reads a whole line with `parse`, so the DAO only splits the line and delegates.
+* `CustomerRepository`, `SellerRepository` — interfaces for the storage operations on customers and on sellers.
+* `CustomerDAO`, `SellerDAO` — implement those interfaces; each one manages its own file (they replace the former `PersonDAO`).
+* `SaleReader` — read-only interface (`findAll`) for the classes that only look sales up.
+* `SaleRepository` — extends `SaleReader` with `save`, `findByCustomer` and `findBySeller`; `SaleService` depends on it.
+* `SaleDAO` — implements `SaleRepository`; it only reads and writes the file and delegates the line format to `SaleCsvMapper`.
+* `SaleCsvMapper` — converts a `Sale` to and from a line of text, resolving customers, sellers and products through their repositories.
+* `AccessoryRepository`, `AccessoryDAO` — interface and implementation for accessories; the CSV format is delegated to `AccessoryCsvMapper`, which finds the parser by type code.
+* `PromotionRepository`, `PromotionDAO` — interface and implementation for promotions; the CSV format is delegated to `PromotionCsvMapper`, which finds the parser by type code.
+* `WarrantyTypeMapper` — converts a warranty type to and from its storage code and builds the warranty for a code.
+* `ReturnRepository`, `CsvReturnRepository` — interface and CSV implementation that manage returns as plain `ReturnRecord` data, with no dependency on the service layer.
+* `WarrantyRepository`, `CsvWarrantyRepository` — interface and CSV implementation that manage warranties as plain `WarrantyRecord` data.
 
-`ProductDAO`, `PersonDAO`, `SaleDAO`, `AccessoryDAO`, and `PromotionDAO` catch any `IOException` internally and rethrow it as a `PersistenceException` that includes the file name and the operation (reading or writing).
+`ProductDAO`, `CustomerDAO`, `SellerDAO`, `SaleDAO`, `AccessoryDAO`, and `PromotionDAO` catch any `IOException` internally and rethrow it as a `PersistenceException` that includes the file name and the operation (reading or writing).
 
 The system uses files inside the `data` directory to maintain information between executions.
 
@@ -197,13 +202,14 @@ The system uses files inside the `data` directory to maintain information betwee
 
 The `service` layer contains the application's business rules.
 
-* `ProductService` — handles product registration, listing, and stock validation.
-* `PersonService` — handles customer and seller information.
-* `SaleService` — handles sales, validations, total processing, and inventory updates for both products and accessories.
-* `AccessoryService` — handles accessory registration, console compatibility, listing, and stock updates.
-* `PromotionService` — handles promotion registration, validity checks, and selecting the best applicable promotion for a sale.
-* `ReturnService` — handles return registration with 30-day and ownership validation, stock restoration, and the monthly balance report.
-* `WarrantyService` — handles warranty assignment, validity checks, and queries for active or soon-to-expire warranties.
+* `ProductService` — handles product registration, listing, and stock validation. It creates products through one `ProductFactory` per category (`VideoGameFactory`, `ConsoleFactory`) received in the constructor.
+* `PersonService` — handles customer and seller information; it receives `CustomerRepository` and `SellerRepository` instead of creating its own DAO.
+* `SaleService` — handles sales, validations, total processing, and inventory updates. It treats products and accessories uniformly through `SaleItemSource` (`ProductItemSource` over `ProductService`, `AccessoryItemSource` over `AccessoryService`).
+* `AccessoryService` — handles accessory registration, console compatibility, listing, and stock updates, depending on `AccessoryRepository`.
+* `PromotionService` — handles promotion registration, validity checks, and selecting the best applicable promotion for a sale, depending on `PromotionRepository`.
+* `ReturnService` — handles return registration with 30-day and ownership validation and stock restoration. `ReturnRecordResolver` rebuilds `Return` objects from the stored records.
+* `MonthlyBalanceService` — builds the monthly sales, returns, and net balance report.
+* `WarrantyService` — handles warranty assignment, validity checks, and queries for active or soon-to-expire warranties. `WarrantyRecordResolver` rebuilds `Warranty` objects from the stored records, reading sales through `SaleReader`.
 
 The service layer prevents invalid operations before information is persisted.
 
@@ -228,14 +234,15 @@ The `exceptions` package is cross-cutting and can be used from any layer. All ex
 
 The `ui` layer contains the graphical interface, built entirely with Java Swing dialogs instead of a console loop.
 
-* `MainMenu` — owns only the main application loop (the top-level dropdown dialog) and the translation of each custom exception type into its Spanish error message. It delegates every feature area to its own dedicated menu class.
-* `ProductMenu`, `PersonMenu`, `SaleMenu`, `AccessoryMenu`, `PromotionMenu`, `ReturnMenu`, `WarrantyMenu` — one class per feature area, each depending only on the service(s) it needs, building its own submenu dialog and handling its own data-entry prompts.
+* `AreaMenu` — interface implemented by every area menu (`getTitle`, `show`).
+* `MainMenu` — owns only the main application loop (the top-level dropdown dialog) and the translation of each custom exception type into its Spanish error message. It receives the list of `AreaMenu` built in `Main`, so it does not know any concrete menu.
+* `ProductMenu`, `PersonMenu`, `SaleMenu`, `AccessoryMenu`, `PromotionMenu`, `ReturnMenu`, `WarrantyMenu` — one class per feature area implementing `AreaMenu`, each depending only on the service(s) it needs, building its own submenu dialog and handling its own data-entry prompts.
 * `MenuDialogs` — shared dialog helpers (`askInput`, `showList`, `formatEntries`) and the per-exception-type error dialogs, reused by `MainMenu` and all seven area menus.
-* `SaleReceiptFormatter` — builds the receipt text for a `Sale`, so `Sale.generateReceipt()` only delegates to it instead of building presentation text itself.
+* `SaleReceiptFormatter`, `ReturnReceiptFormatter`, `WarrantyCertificateFormatter` — build the text of a sale receipt, a return receipt and a warranty certificate. The model classes no longer produce presentation text.
 
 Every dialog is a `JOptionPane` (`showInputDialog` for prompts and dropdowns, `showMessageDialog` for confirmations and errors), and every listing (products, customers, sellers, sales, accessories, promotions, returns, warranties) is a numbered, scrollable `JTextArea` wrapped in a `JScrollPane`.
 
-The UI communicates with the service layer and does not access the persistence layer directly. Splitting `MainMenu` into one class per feature area did not change any business rule, validation, or displayed text: every operation behaves exactly as before, only the internal organization changed.
+The UI communicates with the service layer and does not access the persistence layer directly. Splitting `MainMenu` into one class per feature area, and later making it depend on `AreaMenu`, did not change any business rule, validation, or displayed text: every operation behaves exactly as before, only the internal organization changed.
 
 ---
 
@@ -410,6 +417,61 @@ Full documentation of this process:
 
 ---
 
+## SOLID Principles Review (Requirement 8)
+
+After the GRASP review, the team audited and corrected the code against the five
+SOLID principles in two phases. Each member first audited their own scope and
+then every other member's code.
+
+**Phase 1 — Audit.** The three individual reports were consolidated into a single
+numbered list of 26 violations (`docs/solid-audit/consolidated-audit.md`):
+8 of Single Responsibility, 8 of Open/Closed, 2 of Liskov Substitution,
+1 of Interface Segregation and 7 of Dependency Inversion, plus 6 "frontier
+findings" where one member's fix was a prerequisite for another's. Two
+functional defects found during the audit were recorded as out of scope.
+
+**Phase 2 — Correction.** Each violation was fixed with its own `refactor:`
+commit on `feature/solid-refactor` (and the members' own branches), as a pure
+refactor: same menu operations, same inputs, outputs, messages, and data files.
+The only deliberate behavior change is V-12: `Console.getCategory()` returned
+the wrong category and saving a console failed, so the correction restores the
+behavior that existed before Requirement 7. It is documented in the log as the
+single exception.
+
+Main design changes:
+
+* **Dependency Inversion.** Services depend on interfaces instead of concrete DAOs:
+  `SaleRepository`, `AccessoryRepository`, `PromotionRepository`,
+  `CustomerRepository`, `SellerRepository`, `ReturnRepository` and
+  `WarrantyRepository`. `PersonDAO` was split into `CustomerDAO` and `SellerDAO`,
+  and `Main` builds and injects every dependency. The model no longer depends on
+  `ui` (`Sale.generateReceipt()` was removed).
+* **Single Responsibility.** The line format of sales moved to `SaleCsvMapper`;
+  product, accessory, promotion and warranty storage formats moved out of the
+  model into mappers; receipt and certificate text moved to `ui` formatters;
+  the monthly balance moved to `MonthlyBalanceService`; and the rebuilding of
+  returns and warranties from stored records moved to `ReturnRecordResolver`
+  and `WarrantyRecordResolver`.
+* **Open/Closed.** New kinds of items, products, areas or types are added by
+  writing a new class instead of editing existing ones: `SaleItemSource`,
+  `ProductFactory`, `AreaMenu`, the product mappers received by `ProductDAO`,
+  and the type registries of the accessory, promotion and warranty mappers.
+* **Liskov Substitution.** `Console.getCategory()` now returns `CONSOLE`, and
+  `ProductCsvMapper` states its precondition with `supports(Product)`.
+* **Interface Segregation.** `WarrantyRecordResolver` reads sales through the
+  read-only `SaleReader` instead of the whole sales DAO.
+
+Defects that are not SOLID violations (for example, `Sale.getDiscountRate()`
+without a zero guard) were left untouched and are justified in the log, because
+correcting them would change the behavior of the system.
+
+Full documentation of this process:
+
+* [`docs/solid-analysis.md`](docs/solid-analysis.md) — orienting questions and answers.
+* [`docs/solid-audit/`](docs/solid-audit/) — individual and consolidated audit reports.
+* [`docs/solid-class-diagram.md`](docs/solid-class-diagram.md) — before/after class diagram covering all 26 violations.
+* [`docs/solid-refactor-log.md`](docs/solid-refactor-log.md) — change log by member, no-regression strategy, checklist, and out-of-scope findings.
+
 ## Requirements
 
 To run the project, the following software is required:
@@ -580,6 +642,10 @@ Additional project documentation is available in the `docs` directory:
 * [`return-class-diagram.md`](docs/return-class-diagram.md) — class diagram for the return module.
 * [`warranty-analysis.md`](docs/warranty-analysis.md) — analysis questions and answers for the warranty module.
 * [`warranty-class-diagram.md`](docs/warranty-class-diagram.md) — class diagram for the warranty module.
+* [`solid-analysis.md`](docs/solid-analysis.md) — orienting questions and answers for the SOLID review.
+* [`solid-audit/`](docs/solid-audit/) — individual and consolidated SOLID audit reports.
+* [`solid-class-diagram.md`](docs/solid-class-diagram.md) — before/after class diagram of the SOLID corrections.
+* [`solid-refactor-log.md`](docs/solid-refactor-log.md) — SOLID change log, verification checklist, and out-of-scope findings.
 * [`ai-usage/`](docs/ai-usage/) — individual AI usage logs for each team member.
 
 ---
