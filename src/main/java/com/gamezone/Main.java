@@ -21,6 +21,7 @@ import com.gamezone.service.ReturnRecordResolver;
 import com.gamezone.service.SaleService;
 import com.gamezone.service.VideoGameFactory;
 import com.gamezone.service.WarrantyService;
+import com.gamezone.service.MonthlyBalanceService;
 import com.gamezone.ui.MainMenu;
 import java.util.List;
 import javax.swing.SwingUtilities;
@@ -61,9 +62,10 @@ public class Main {
         ReturnRepository returnRepository = new CsvReturnRepository();
         ReturnRecordResolver returnRecordResolver = new ReturnRecordResolver(returnRepository, saleService, productService, accessoryService);
         ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService, returnRecordResolver);
-
+        MonthlyBalanceService monthlyBalanceService = new MonthlyBalanceService(saleService, returnService);
+        
         // UI layer
-        MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService);
+        MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService, monthlyBalanceService);
         SwingUtilities.invokeLater(mainMenu::start);
     }
 }

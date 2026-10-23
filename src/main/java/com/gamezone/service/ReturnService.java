@@ -245,36 +245,6 @@ public class ReturnService {
         return result;
     }
 
-    /**
-     * Calculates the net balance (sales minus returns) for a given month and year.
-     *
-     * @param month the month to calculate the balance for (1-12)
-     * @param year  the year to calculate the balance for
-     * @return the total sales minus the total returns for that period
-     * @throws IOException if sales or returns cannot be read from storage
-     */
-    public double calculateMonthlySales(int month, int year) throws IOException {
-        double totalSales = 0.0;
-        for (Sale sale : saleService.listSales()) {
-            if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
-                totalSales += sale.getFinalTotal();
-            }
-        }
-        return totalSales;
-    }
-
-    public double calculateMonthlyReturns(int month, int year) throws IOException {
-        double totalReturns = 0.0;
-        for (Return r : loadAllReturns()) {
-            if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
-                totalReturns += r.getRefundAmount();
-            }
-        }
-        return totalReturns;
-    }
-
-    public double generateMonthlyBalance(int month, int year) throws IOException {
-        return calculateMonthlySales(month, year) - calculateMonthlyReturns(month, year);
-    }
+    
 }
 

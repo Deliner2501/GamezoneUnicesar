@@ -27,13 +27,6 @@ public class CsvReturnRepository implements ReturnRepository {
     private static final String FIELD_SEPARATOR = ";";
     private static final String PRODUCT_SEPARATOR = ",";
 
-    /**
-     * A raw, unresolved return record as stored on disk: just ids,
-     * dates and amounts, with no references to actual Sale or Product
-     * objects.
-     */
-    public static class ReturnRecord {
-    }
 
     /**
      * Persists the complete list of returns, replacing the previous
