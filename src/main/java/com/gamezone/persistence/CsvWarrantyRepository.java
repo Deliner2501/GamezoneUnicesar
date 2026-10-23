@@ -24,6 +24,7 @@ public class CsvWarrantyRepository implements WarrantyRepository {
 
     private static final String FILE_PATH = "data/warranties.csv";
     private static final String FIELD_SEPARATOR = ";";
+    private final WarrantyTypeMapper typeMapper = new WarrantyTypeMapper();
 
 
     /**
@@ -88,7 +89,7 @@ public class CsvWarrantyRepository implements WarrantyRepository {
      * Format: type;id;productId;saleId;startDate
      */
     private String toLine(Warranty warranty) {
-        String type = warranty.getTypeCode();
+        String type = typeMapper.toTypeCode(warranty);
         return type + FIELD_SEPARATOR
                 + warranty.getId() + FIELD_SEPARATOR
                 + warranty.getProduct().getId() + FIELD_SEPARATOR

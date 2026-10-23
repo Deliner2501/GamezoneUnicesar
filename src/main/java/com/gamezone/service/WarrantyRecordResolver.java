@@ -1,7 +1,5 @@
 package com.gamezone.service;
 
-import com.gamezone.model.BasicWarranty;
-import com.gamezone.model.ExtendedWarranty;
 import com.gamezone.model.Product;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Warranty;
@@ -11,6 +9,7 @@ import com.gamezone.persistence.WarrantyRepository.WarrantyRecord;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import com.gamezone.persistence.WarrantyTypeMapper;
 
 /**
  * Rebuilds {@link Warranty} objects from the raw records stored by the
@@ -21,11 +20,11 @@ import java.util.List;
  */
 public class WarrantyRecordResolver {
 
-    private static final String EXTENDED_TYPE = "EXTENDED";
 
     private final WarrantyRepository warrantyRepository;
     private final SaleReader saleReader;
     private final ProductService productService;
+    private final WarrantyTypeMapper typeMapper = new WarrantyTypeMapper();
 
     /**
      * Creates a resolver with the collaborators needed to look up sales and products.
@@ -78,10 +77,7 @@ public class WarrantyRecordResolver {
             return null;
         }
 
-        if (EXTENDED_TYPE.equals(record.getType())) {
-            return new ExtendedWarranty(record.getId(), product, sale, record.getStartDate());
-        }
-        return new BasicWarranty(record.getId(), product, sale, record.getStartDate());
+        return typeMapper.create(record.getType(), record.getId(), product, sale, record.getStartDate());
     }
 
     private Sale findSaleById(String saleId) throws IOException {
