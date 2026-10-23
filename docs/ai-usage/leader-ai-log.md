@@ -173,7 +173,7 @@ In Phase 2 the AI assistant was used in a guided mode: it never edited the repos
 - **Query:** I uploaded the project with all three members' work and asked for the remaining documents.
 - **Response summary:** It compiled the whole project first, then read the real classes to draw the after diagram. It also filled the final column of the checklist from the results I got by running every flow myself, updated the README sections that were out of date, and wrote a description for a Pull Request limited to my own contributions.
 - **Decision:** Accepted. The results of the checklist are the ones I observed in NetBeans, not the assistant's.
-- **Related commit:** (fill with `git log --oneline` for the after diagram, final checklist and README commits)
+- **Related commit:** 6600ff5, 1ba51e3, ff7a240
 
 
 # Requirement 8 - SOLID Audit and Correction - AI usage log
@@ -240,7 +240,7 @@ In Phase 1 the AI assistant was used in a guided mode: it never edited the repos
 - **Query:** I uploaded the project with my teammates' reports and asked for the consolidated audit.
 - **Response summary:** It read both developer reports and compared them with my own, and checked a sample of the lines they cited against `develop`. It found that the three reports audited slightly different commits (the difference does not affect any finding), that two members had registered the same fragment (`PromotionValidator`), and that the proposals overlapped: Developer 2's split of `PersonDAO` made my single `PersonRepository` interface unnecessary, and `AccessoryService.updateStock` already did what `SaleService` did directly with the DAO. It also confirmed that `Console.getCategory()` returns the wrong category, which makes saving a console fail since the Requirement 7 correction. It produced 26 unique violations and wrote the coverage table, verdicts, frontier findings, out-of-scope defects and the correction order in several commits.
 - **Decision:** Accepted the consolidation and the decisions that change a proposal (two person repositories, `SaleReader` and `SaleRepository`, `SaleService` through `AccessoryService`, the merged duplicate and the documented exception for the console category), recorded and justified in "Leader decisions at consolidation". I took the final decision on each one as Technical Leader.
-- **Related commit:** (fill with `git log --oneline` of `feature/solid-audit-consolidated`: the coverage, verdicts, V-01 to V-13, V-14 to V-26, frontier findings, decisions and correction-order commits)
+- **Related commit:** 158c871, 9b4681e, 419bf83, f22ac50, 63bd4d3, f7f456f, fb1c63f
 
 ### Entry 7
 - **Date:** 2026-10-17
@@ -250,8 +250,58 @@ In Phase 1 the AI assistant was used in a guided mode: it never edited the repos
 - **Query:** I asked whether the decisions announced at the end of the consolidation were also part of the document; separately, the project I had uploaded showed five modified files that I had not touched.
 - **Response summary:** It confirmed that the decisions are recorded in the consolidated audit and noticed that my answer to question 5 still mentioned `PersonRepository` and `AccessoryRepository` and placed V-06 early, which was no longer true; it rewrote the correction order. It explained that the modified files only differed in line endings and could be ignored or restored.
 - **Decision:** Accepted and updated my answer in its own commit.
-- **Related commit:** (fill with the hash of "docs: align orienting question 5 with the consolidated correction order")
+- **Related commit:** 54a0b90
 
 ## Phase 2 - Correction
 
-No entries yet.
+In Phase 2 the AI assistant kept the same guided mode: it never edited the repository. It read the current code of `develop`, wrote the exact text of each change and the git commands, compiled and compared the result in a separate copy outside the repository, and I applied every change, compiled with Maven and made every commit myself, one atomic `refactor:` commit per violation followed by a `docs:` commit that logs it.
+
+### Entry 1
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/solid-refactor
+- **Objective:** Define the no-regression strategy and record the baseline before the first correction.
+- **Query:** I uploaded the project with the consolidated audit merged and asked to start Phase 2 the same way as in Requirement 7.
+- **Response summary:** It wrote the strategy (baseline B0, a documented exception for V-12, one violation per commit, data files compared, out-of-scope defects untouched) and a 21-row checklist of every menu operation. When I asked it to mark the baseline as passed, it refused to write results nobody had observed. It ran the flows that could run through the services in a copy of `data/`, found that saving a console fails with `ClassCastException` (V-12), and gave me the results labelled as "service level", leaving the menu rows as "Not run".
+- **Decision:** Accepted the honest baseline. The checklist and the strategy were written before any correction, and the rows without evidence stayed marked as such.
+- **Related commit:** 4d0469b, ad2b33e
+
+### Entry 2
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/solid-refactor
+- **Objective:** Draw the "before" diagram and correct V-01 and V-02.
+- **Query:** I asked for the "before" class diagram and then for the first corrections of my scope.
+- **Response summary:** It drew the diagram with the 26 violation IDs and checked that it parses. For V-01 it confirmed with a search that `generateReceipt()` was only used in two places of `SaleMenu`, and gave the lines to delete and replace. For V-02 it extracted `SaleCsvMapper` from `SaleDAO` and checked that the project compiled with the change before giving it to me.
+- **Decision:** Accepted. I told it not to put commit hashes in the log rows and to show the commit message instead.
+- **Related commit:** e52f98a, bf60df1, dfbab2f, cbb647f, 6cb3024
+
+### Entry 3
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/solid-refactor
+- **Objective:** Correct V-03 part (a), V-04 and V-05, and coordinate with Developer 2.
+- **Query:** I asked it to continue and to tell me whenever one of my corrections depended on a teammate.
+- **Response summary:** It created `SaleReader` and `SaleRepository` and told me that this was the prerequisite for Developer 2's V-22, V-26 and V-18, so it had to reach `develop` early; it wrote the message for Santiago with the order of his work and the conflicts that could appear in `Main.java`. For V-04 and V-05 it designed `SaleItemSource` with two implementations over `ProductService` and `AccessoryService`, kept the order of items and the Spanish messages, and said that these two did not depend on anybody.
+- **Decision:** Accepted. I sent the message to Santiago and kept my corrections independent of his until his V-15 was merged.
+- **Related commit:** c9d6dcf, 8f9ff83, 655dd1e, 8e68675
+
+### Entry 4
+- **Date:** 2026-10-23
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/solid-refactor
+- **Objective:** Correct V-03 part (b) and V-06 once my teammates' work was merged.
+- **Query:** I uploaded the project after Ronald's and Santiago's pull requests were merged and asked to finish my part.
+- **Response summary:** It checked `develop` and found that Santiago's V-15 already made `SaleDAO` and `SaleCsvMapper` receive the customer and seller repositories, so the only missing part of V-03 was `ProductRepository` instead of the concrete `ProductDAO`. For V-06 it created the `AreaMenu` interface, made the seven menus implement it and rewrote `MainMenu` to receive the list, keeping the option texts and their order; it compiled both changes before giving them to me.
+- **Decision:** Accepted. I applied the changes and compiled with Maven before each commit.
+- **Related commit:** refactor: make SaleDAO and SaleCsvMapper depend on ProductRepository (V-03); refactor: add AreaMenu so MainMenu no longer depends on concrete menus (V-06); docs: log V-03(b) correction in solid refactor log; docs: log V-06 correction in solid refactor log
+
+### Entry 5
+- **Date:** 2026-10-23
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/solid-refactor
+- **Objective:** Verify that nothing changed and close the team-wide documents.
+- **Query:** I asked for the out-of-scope section, the B1 and Final columns, the "after" diagram and the README, and I asked it to mark all the pending rows as passed.
+- **Response summary:** It rebuilt the reference B1 (the baseline commit with only the V-12 fix) in a separate copy, ran the same scenario in both states and showed that the printed results are identical and that the eight data files are byte-identical. During this it found that a console sale with an extended warranty loses the basic warranty, in both states, and registered it as the out-of-scope finding OS-03. For the rows that need the Swing dialogs it again refused to write "Pass" without evidence and gave me the five-minute procedure to run them myself. It then wrote the "after" diagram (it parses and covers the 26 IDs) and the README changes from the real classes.
+- **Decision:** Accepted the service-level comparison as evidence only for the rows it covers; the menu-level rows are recorded only with the result I observed in the application. OS-03 is kept out of scope because fixing it changes `warranties.csv`.
+- **Related commit:** docs: record out-of-scope findings in solid refactor log; docs: record B1 and final verification results in solid refactor log; docs: add after class diagram and resolution index to solid class diagram; docs: update README with SOLID review and design changes
