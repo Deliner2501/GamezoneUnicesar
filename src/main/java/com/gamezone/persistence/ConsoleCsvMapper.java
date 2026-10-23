@@ -20,7 +20,15 @@ public class ConsoleCsvMapper implements ProductCsvMapper {
     }
 
     @Override
+    public boolean supports(Product product) {
+        return product instanceof Console;
+    }
+
+    @Override
     public String toCsvLine(Product product) {
+        if (!supports(product)) {
+            throw new IllegalArgumentException("This mapper only handles consoles");
+        }
         Console c = (Console) product;
         return "CONSOLE," + c.getId() + "," + c.getTitle() + ","
                 + c.getPrice() + "," + c.getStock() + ","

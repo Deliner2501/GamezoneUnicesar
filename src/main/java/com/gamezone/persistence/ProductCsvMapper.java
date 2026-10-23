@@ -23,10 +23,20 @@ public interface ProductCsvMapper {
     String getTypeCode();
 
     /**
-     * Builds the CSV line of the given product.
+     * Checks whether this mapper can convert the given product.
+     *
+     * @param product the product to check
+     * @return true if the product is of the type this mapper handles
+     */
+    boolean supports(Product product);
+
+    /**
+     * Builds the CSV line of the given product. The product must be
+     * supported by this mapper (see {@link #supports(Product)}).
      *
      * @param product the product to convert
      * @return the CSV line
+     * @throws IllegalArgumentException if the product is not supported
      */
     String toCsvLine(Product product);
 
