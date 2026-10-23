@@ -349,3 +349,38 @@ In Phase 2 the AI assistant was used to understand which violations of the conso
 | Decision | Reviewed that the IDs match my report; the responsible person for each boundary correction is decided by the Technical Leader in the consolidation. |
 | Related commit | docs: add Developer 2 answers to SOLID guiding questions 2 and 3 |
 
+
+### Phase 2 - Correction
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-23 |
+| Tool | Claude |
+| Phase and branch | Phase 2, `feature/solid-refactor` |
+| Objective | Correct the Developer 2 violations of the consolidated audit that only touch my own classes: V-17, V-18, V-22, V-24, V-25 (and the matching log rows). |
+| Query | Asked how to extract `ReturnRecordResolver` and `WarrantyRecordResolver` from the services, how to make `WarrantyService` depend on `SaleReader` instead of `SaleDAO`, and how to introduce the `AccessoryRepository` and `PromotionRepository` interfaces. Asked for the exact before/after of each file and for the commit message. |
+| Response | Proposed moving the record-resolution methods unchanged to the new resolver classes, injecting the resolvers through the service constructors and `Main`, and using `SaleReader` in the warranty resolver (V-18 and V-22 in one commit because `WarrantyService` no longer used `SaleDAO` at all). For V-24 and V-25 it proposed interfaces implemented by the existing DAOs with no change to `Main`. |
+| Decision | Applied as proposed. Each change was compiled with Clean and Build and checked in the related menu operation (returns list, warranties list, accessories, promotions). The first V-17 commit contained an empty `ReturnRecordResolver` because the file was not saved before committing; this was detected by comparing the repository with my working copy and fixed with an extra commit instead of rewriting history. |
+| Related commit | refactor: extract ReturnRecordResolver from ReturnService (V-17); refactor: complete ReturnRecordResolver extraction (V-17); refactor: extract WarrantyRecordResolver and depend on SaleReader (V-18, V-22); refactor: make AccessoryService depend on AccessoryRepository (V-24); refactor: make PromotionService depend on PromotionRepository (V-25) |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-23 |
+| Tool | Claude |
+| Phase and branch | Phase 2, `feature/solid-refactor` |
+| Objective | Correct the violations that cross into another member's code: V-15, V-23, V-26 and V-16. |
+| Query | Asked how to split `PersonDAO` without breaking `SaleDAO`, `SaleCsvMapper`, `PersonService` and `Main`; how to turn the return and warranty repositories into interfaces keeping the raw records; and how to extract the monthly balance from `ReturnService` adapting `ReturnMenu`, `MainMenu` and `Main`. |
+| Response | Proposed `CustomerRepository`/`SellerRepository` with `CustomerDAO`/`SellerDAO`, updating the callers in the same commit as the consolidated audit requires (V-15, V-23). For V-26 it proposed giving the interfaces the old names and moving the raw records inside them, so the services and resolvers did not need edits, and renaming the CSV classes to `CsvReturnRepository` and `CsvWarrantyRepository`. For V-16 it proposed `MonthlyBalanceService` with the same three calculations. |
+| Decision | Applied as proposed. The compiler errors found along the way (a class body deleted but its empty shell left behind, unsaved files, a lost constructor assignment) were diagnosed by sending the project and reading the compiler output, and fixed by me. The Technical Leader was notified because `SaleDAO`, `SaleCsvMapper`, `MainMenu` and `ReturnMenu` changed. |
+| Related commit | refactor: split PersonDAO into CustomerDAO and SellerDAO behind repository interfaces (V-15, V-23); refactor: add ReturnRepository and WarrantyRepository interfaces with Csv implementations (V-26); refactor: extract MonthlyBalanceService from ReturnService (V-16) |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-23 |
+| Tool | Claude |
+| Phase and branch | Phase 2, `feature/solid-refactor` |
+| Objective | Correct V-19, V-20 and V-21 using the mappers that Developer 1 added in V-08 (step 1). |
+| Query | Asked how to use `AccessoryCsvMapper`, `PromotionCsvMapper` and `WarrantyTypeMapper` in the DAOs, the warranty repository and the warranty resolver. Pasted the request of Developer 1, who also needed `AccessoryService.matchesType` to stop calling `getTypeCode()`. |
+| Response | Read the mappers from the branch and proposed that each DAO creates its mapper internally (as `SaleDAO` already does), so `Main` does not change. For `matchesType` it proposed comparing the class name with the requested type, which gives the same result for CONTROLLER, CABLE and MEMORY. |
+| Decision | Applied as proposed, one commit per violation. I waited for Developer 1's push before starting, and told him when mine was on the branch so he could remove the unused model methods. |
+| Related commit | refactor: use AccessoryCsvMapper in AccessoryDAO and stop using getTypeCode in AccessoryService (V-19); refactor: use PromotionCsvMapper in PromotionDAO (V-20); refactor: use WarrantyTypeMapper in warranty persistence and resolver (V-21) |
