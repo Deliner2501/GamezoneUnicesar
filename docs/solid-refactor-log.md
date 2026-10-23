@@ -101,6 +101,13 @@ Pull Request: _pending_.
 
 | Class | Change made | Violation ID | Principle applied | Commit/PR | Responsible |
 |---|---|---|---|---|---|
+| `Console` | `getCategory()` now returns `ProductCategory.CONSOLE` instead of `VIDEOGAME`. Documented exception: it restores console saving, which failed since GRASP V-13; every other behavior is unchanged | V-12 | LSP | `refactor: return CONSOLE category in Console.getCategory (V-12)` | Developer 1 |
+| `PromotionValidator` | `validateTargetCategory` validates with `ProductCategory.fromText`, same accepted values and same Spanish message | V-14 | OCP | `refactor: validate target category with ProductCategory.fromText (V-14)` | Developer 1 |
+| `ProductDAO` | The mapper list is received in a new constructor; the existing constructors keep the default list | V-11 | OCP | `refactor: receive product mappers in ProductDAO constructor (V-11)` | Developer 1 |
+| `ProductCsvMapper`, `VideoGameCsvMapper`, `ConsoleCsvMapper` | Added `supports(Product)`; `toCsvLine` checks it before converting, so the mapper no longer assumes a precondition the interface does not state | V-13 | LSP | `refactor: let product mappers check support before converting (V-13)` | Developer 1 |
+| `ProductService`, `ProductFactory`, `VideoGameFactory`, `ConsoleFactory` (new), `ProductMenu`, `Main` | `registerVideoGame` and `registerConsole` replaced by `registerNewProduct`, which uses one factory per category received by the constructor; call sites adapted in the same commit. `ProductService` remains the creator through its factories (tension with GRASP V-05 resolved as agreed) | V-10 | OCP | `refactor: register products through per-type factories in ProductService (V-10)` | Developer 1 |
+| `Return`, `Warranty`, `ReturnReceiptFormatter`, `WarrantyCertificateFormatter` (new), `ReturnMenu`, `WarrantyMenu` | Moved the receipt and certificate text to formatters in `ui` with identical output; model methods removed and call sites adapted in the same commit. `Return.getOriginalDiscountRate()` is now public so the discount-rate rule stays in `Return` | V-09 | SRP | `refactor: move return and warranty text generation to ui formatters (V-09)` | Developer 1 |
+| `AccessoryCsvMapper`, `PromotionCsvMapper`, `WarrantyTypeMapper` (new) | Step 1 of V-08: mappers that own the storage format in both directions, with type-code registries; additive, nothing uses them yet | V-08 (step 1) | SRP | `refactor: add accessory, promotion and warranty CSV mappers with type registries (V-08)` | Developer 1 |
 
 ## Corrections by Developer 2
 
