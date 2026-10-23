@@ -273,5 +273,4 @@ He explained to me the Conventional Commits convention that the workshop require
 - **Query:** I pasted the model classes and the grep output showing only the definitions were left, and asked for the classes without the storage methods.
 - **Response summary:** It gave the 11 complete model classes without toCsvLine, getTypeCode and compatibleConsolesAsCsv.
 - **Decision:** Accepted. I built the project, tested accessories, promotions and warranties, and checked that the CSV files kept the same format.
-- **Related commit:** V-08 final commit hash
-
+- **Related commit:** b9079ce
