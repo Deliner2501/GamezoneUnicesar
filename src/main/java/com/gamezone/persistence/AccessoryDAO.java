@@ -16,7 +16,7 @@ import java.util.List;
  * "MEMORY") is used to tell the three concrete accessory types apart
  * when reloading the file.
  */
-public class AccessoryDAO {
+  public class AccessoryDAO implements AccessoryRepository {
 
     private static final String FILE_PATH = "data/accessories.csv";
     private static final String CONSOLE_LIST_SEPARATOR = ";";
@@ -26,6 +26,7 @@ public class AccessoryDAO {
      *
      * @param accessory the accessory to persist
      */
+    @Override
     public void save(Accessory accessory) {
         List<Accessory> accessories = findAll();
         accessories.add(accessory);
@@ -38,6 +39,7 @@ public class AccessoryDAO {
      * @return the list of all persisted accessories, or an empty list
      *         if the file does not exist yet
      */
+    @Override
     public List<Accessory> findAll() {
         List<Accessory> accessories = new ArrayList<>();
         File file = new File(FILE_PATH);
@@ -67,6 +69,7 @@ public class AccessoryDAO {
      * @param id the id of the accessory to find
      * @return the matching accessory, or null if none is found
      */
+    @Override
     public Accessory findById(String id) {
         for (Accessory a : findAll()) {
             if (a.getId().equals(id)) return a;
@@ -79,6 +82,7 @@ public class AccessoryDAO {
      *
      * @param accessory the accessory with updated data
      */
+    @Override
     public void update(Accessory accessory) {
         List<Accessory> accessories = findAll();
         for (int i = 0; i < accessories.size(); i++) {
