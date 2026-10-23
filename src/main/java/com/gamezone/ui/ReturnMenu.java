@@ -2,6 +2,7 @@ package com.gamezone.ui;
 
 import com.gamezone.model.Return;
 import com.gamezone.service.ReturnService;
+import com.gamezone.service.MonthlyBalanceService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +17,17 @@ import javax.swing.JOptionPane;
 public class ReturnMenu {
 
     private final ReturnService returnService;
+    private final MonthlyBalanceService monthlyBalanceService;
 
     /**
      * Creates the return menu with the service it depends on.
      *
      * @param returnService the service used to register and query returns
+     * @param monthlyBalanceService the service used to compute the monthly balance
      */
-    public ReturnMenu(ReturnService returnService) {
+    public ReturnMenu(ReturnService returnService, MonthlyBalanceService monthlyBalanceService) {
         this.returnService = returnService;
+        this.monthlyBalanceService = monthlyBalanceService;
     }
 
     /**
@@ -81,8 +85,7 @@ public class ReturnMenu {
             if (reason == null) return;
 
             Return processedReturn = returnService.registerReturn(saleId, productIds, reason);
-            MenuDialogs.showList("Devolución registrada exitosamente", processedReturn.generateReturnReceipt());
-        } catch (IllegalArgumentException e) {
+MenuDialogs.showList("Devolución registrada exitosamente", ReturnReceiptFormatter.format(processedReturn));        } catch (IllegalArgumentException e) {
             JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(),
                     "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
@@ -126,8 +129,7 @@ public class ReturnMenu {
         }
         List<String> entries = new ArrayList<>();
         for (Return r : returns) {
-            entries.add(r.generateReturnReceipt());
-        }
+entries.add(ReturnReceiptFormatter.format(r));        }
         MenuDialogs.showList("Devoluciones", MenuDialogs.formatEntries(entries));
     }
 
@@ -141,9 +143,9 @@ public class ReturnMenu {
             int month = Integer.parseInt(monthText);
             int year = Integer.parseInt(yearText);
 
-            double totalSales = returnService.calculateMonthlySales(month, year);
-            double totalReturns = returnService.calculateMonthlyReturns(month, year);
-            double balance = returnService.generateMonthlyBalance(month, year);
+            double totalSales = monthlyBalanceService.calculateMonthlySales(month, year);
+            double totalReturns = monthlyBalanceService.calculateMonthlyReturns(month, year);
+            double balance = monthlyBalanceService.generateMonthlyBalance(month, year);
 
             String summary = "Total de ventas para " + month + "/" + year + ": " + totalSales + "\n"
                     + "Total de devoluciones para " + month + "/" + year + ": " + totalReturns + "\n"

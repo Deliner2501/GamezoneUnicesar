@@ -20,7 +20,15 @@ public class VideoGameCsvMapper implements ProductCsvMapper {
     }
 
     @Override
+    public boolean supports(Product product) {
+        return product instanceof VideoGame;
+    }
+
+    @Override
     public String toCsvLine(Product product) {
+        if (!supports(product)) {
+            throw new IllegalArgumentException("This mapper only handles video games");
+        }
         VideoGame vg = (VideoGame) product;
         return "VIDEOGAME," + vg.getId() + "," + vg.getTitle() + ","
                 + vg.getPrice() + "," + vg.getStock() + ","

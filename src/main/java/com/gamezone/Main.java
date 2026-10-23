@@ -1,20 +1,29 @@
 package com.gamezone;
 
+import com.gamezone.persistence.CsvReturnRepository;
+import com.gamezone.persistence.CsvWarrantyRepository;
 import com.gamezone.persistence.AccessoryDAO;
-import com.gamezone.persistence.PersonDAO;
+import com.gamezone.persistence.CustomerDAO;
+import com.gamezone.persistence.SellerDAO;
 import com.gamezone.persistence.ProductDAO;
 import com.gamezone.persistence.PromotionDAO;
 import com.gamezone.persistence.ReturnRepository;
 import com.gamezone.persistence.SaleDAO;
 import com.gamezone.persistence.WarrantyRepository;
 import com.gamezone.service.AccessoryService;
+import com.gamezone.service.ConsoleFactory;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
+import com.gamezone.service.WarrantyRecordResolver;
 import com.gamezone.service.ReturnService;
+import com.gamezone.service.ReturnRecordResolver;
 import com.gamezone.service.SaleService;
+import com.gamezone.service.VideoGameFactory;
 import com.gamezone.service.WarrantyService;
+import com.gamezone.service.MonthlyBalanceService;
 import com.gamezone.ui.MainMenu;
+import java.util.List;
 import javax.swing.SwingUtilities;
 
 /**
@@ -31,27 +40,32 @@ public class Main {
      */
     public static void main(String[] args) {
         // Persistence layer
-        PersonDAO personDAO = new PersonDAO();
+        CustomerDAO customerDAO = new CustomerDAO();
+        SellerDAO sellerDAO = new SellerDAO();
         ProductDAO productDAO = new ProductDAO();
         AccessoryDAO accessoryDAO = new AccessoryDAO();
         PromotionDAO promotionDAO = new PromotionDAO();
-        SaleDAO saleDAO = new SaleDAO(personDAO, productDAO);
+        SaleDAO saleDAO = new SaleDAO(customerDAO, sellerDAO, productDAO);
 
         // Service layer
         // Service layer
-        PersonService personService = new PersonService();
-        ProductService productService = new ProductService(productDAO);
+        PersonService personService = new PersonService(customerDAO, sellerDAO);
+        ProductService productService = new ProductService(productDAO,
+                List.of(new VideoGameFactory(), new ConsoleFactory()));
         AccessoryService accessoryService = new AccessoryService(accessoryDAO);
         PromotionService promotionService = new PromotionService(promotionDAO);
-        SaleService saleService = new SaleService(saleDAO, productService, accessoryDAO, promotionService, personService);
-        WarrantyRepository warrantyRepository = new WarrantyRepository();
-        WarrantyService warrantyService = new WarrantyService(warrantyRepository, saleDAO, productService);
+        SaleService saleService = new SaleService(saleDAO, productService, accessoryService, promotionService, personService);
+        WarrantyRepository warrantyRepository = new CsvWarrantyRepository();
+        WarrantyRecordResolver warrantyRecordResolver = new WarrantyRecordResolver(warrantyRepository, saleDAO, productService);
+        WarrantyService warrantyService = new WarrantyService(warrantyRepository, warrantyRecordResolver);
         saleService.setWarrantyService(warrantyService);
-        ReturnRepository returnRepository = new ReturnRepository();
-        ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService);
-
+        ReturnRepository returnRepository = new CsvReturnRepository();
+        ReturnRecordResolver returnRecordResolver = new ReturnRecordResolver(returnRepository, saleService, productService, accessoryService);
+        ReturnService returnService = new ReturnService(returnRepository, saleService, productService, accessoryService, warrantyService, returnRecordResolver);
+        MonthlyBalanceService monthlyBalanceService = new MonthlyBalanceService(saleService, returnService);
+        
         // UI layer
-        MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService);
+        MainMenu mainMenu = new MainMenu(personService, productService, saleService, accessoryService, promotionService, returnService, warrantyService, monthlyBalanceService);
         SwingUtilities.invokeLater(mainMenu::start);
     }
 }

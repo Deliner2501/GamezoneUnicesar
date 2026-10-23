@@ -1,7 +1,6 @@
 package com.gamezone.service;
 
 import com.gamezone.model.Customer;
-import com.gamezone.model.Accessory;
 import com.gamezone.model.Product;
 import com.gamezone.model.Promotion;
 import com.gamezone.model.Sale;
@@ -10,9 +9,7 @@ import com.gamezone.model.Warranty;
 import com.gamezone.exceptions.BusinessRuleException;
 import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.exceptions.ResourceNotFoundException;
-import com.gamezone.persistence.AccessoryDAO;
-import com.gamezone.persistence.SaleDAO;
-import com.gamezone.validation.ProductValidator;
+import com.gamezone.persistence.SaleRepository;
 import com.gamezone.validation.SaleValidator;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -30,9 +27,8 @@ import java.util.Map;
  */
 public class SaleService {
 
-    private SaleDAO saleDAO;
-    private ProductService productService;
-    private AccessoryDAO accessoryDAO;
+    private SaleRepository saleRepository;
+    private List<SaleItemSource> itemSources;
     private PromotionService promotionService;
     private WarrantyService warrantyService;
     private PersonService personService;
@@ -40,16 +36,18 @@ public class SaleService {
     /**
      * Creates a SaleService with its required collaborators.
      *
-     * @param saleDAO       the DAO used to persist and query sales
+     * @param saleRepository the repository used to persist and query sales
      * @param personService the service used to resolve customers and sellers by id
-     * @param accessoryDAO  the DAO used to look up and update accessory stock
+     * @param productService   the service that owns products and their stock
+     * @param accessoryService the service that owns accessories and their stock
      * @param promotionService the service used to find and apply the best available promotion
      */
-    public SaleService(SaleDAO saleDAO, ProductService productService, AccessoryDAO accessoryDAO,
+    public SaleService(SaleRepository saleRepository, ProductService productService, AccessoryService accessoryService,
                         PromotionService promotionService, PersonService personService) {
-        this.saleDAO = saleDAO;
-        this.productService = productService;
-        this.accessoryDAO = accessoryDAO;
+        this.saleRepository = saleRepository;
+        this.itemSources = List.of(
+            new ProductItemSource(productService),
+            new AccessoryItemSource(accessoryService));
         this.promotionService = promotionService;
         this.personService = personService;
     }
@@ -98,26 +96,26 @@ public class SaleService {
         Customer customer = resolveCustomer(customerId);
         Seller seller = resolveSeller(sellerId);
 
-        Map<Product, Integer> resolvedProducts = new LinkedHashMap<>();
-        Map<Accessory, Integer> resolvedAccessories = new LinkedHashMap<>();
-        resolveSaleItems(quantities, resolvedProducts, resolvedAccessories);
+        Map<SaleItemSource, Map<Product, Integer>> resolvedItems = resolveSaleItems(quantities);
 
-        List<Product> allItems = new ArrayList<>(resolvedProducts.keySet());
-        allItems.addAll(resolvedAccessories.keySet());
+        List<Product> allItems = new ArrayList<>();
+        for (Map<Product, Integer> items : resolvedItems.values()) {
+            allItems.addAll(items.keySet());
+        }
         SaleValidator.validateSaleData(customer, seller, allItems);
 
-        Sale sale = buildSale(saleId, date, customer, seller, resolvedProducts, resolvedAccessories);
+        Sale sale = buildSale(saleId, date, customer, seller, resolvedItems);
 
         applyBestPromotion(sale);
 
-        double warrantyCost = assignWarranties(sale, resolvedProducts, productIdsWithExtendedWarranty);
+        double warrantyCost = assignWarranties(sale, allItems, productIdsWithExtendedWarranty);
         if (warrantyCost > 0) {
             sale.addAdditionalCost(warrantyCost);
         }
 
-        updateInventory(resolvedProducts, resolvedAccessories);
+        updateInventory(resolvedItems);
 
-        saleDAO.save(sale);
+        saleRepository.save(sale);
         customer.addPurchase(sale);
 
         return sale;
@@ -149,15 +147,21 @@ public class SaleService {
         return seller;
     }
 
-    /**
-     * Resolves each requested item id as a product or an accessory,
-     * validating stock BEFORE any inventory is touched, so a failure
-     * halfway through never leaves the system in an inconsistent state.
-     * Populates the two maps passed in.
+        /**
+     * Resolves each requested item id against the item sources in order
+     * (products first, then accessories), validating stock BEFORE any
+     * inventory is touched, so a failure halfway through never leaves the
+     * system in an inconsistent state.
+     *
+     * @return the resolved items with their quantities, grouped by the
+     *         source that owns them, in source order
      */
-    private void resolveSaleItems(Map<String, Integer> quantities,
-                                   Map<Product, Integer> resolvedProducts,
-                                   Map<Accessory, Integer> resolvedAccessories) {
+    private Map<SaleItemSource, Map<Product, Integer>> resolveSaleItems(Map<String, Integer> quantities) {
+        Map<SaleItemSource, Map<Product, Integer>> resolvedItems = new LinkedHashMap<>();
+        for (SaleItemSource source : itemSources) {
+            resolvedItems.put(source, new LinkedHashMap<>());
+        }
+
         for (Map.Entry<String, Integer> entry : quantities.entrySet()) {
             String itemId = entry.getKey();
             int quantity = entry.getValue();
@@ -166,26 +170,21 @@ public class SaleService {
                         "debe ser mayor que cero para el ítem " + itemId);
             }
 
-            Product product = productService.findProductById(itemId);
-            if (product != null) {
-                ProductValidator.validateStockAvailability(product, quantity);
-                resolvedProducts.put(product, quantity);
-                continue;
-            }
-
-            Accessory accessory = accessoryDAO.findById(itemId);
-            if (accessory != null) {
-                if (accessory.getStock() < quantity) {
-                    throw new BusinessRuleException("Stock insuficiente para el accesorio '"
-                            + accessory.getTitle() + "': disponible " + accessory.getStock()
-                            + ", solicitado " + quantity);
+            boolean found = false;
+            for (SaleItemSource source : itemSources) {
+                Product item = source.findItem(itemId);
+                if (item != null) {
+                    source.validateStock(item, quantity);
+                    resolvedItems.get(source).put(item, quantity);
+                    found = true;
+                    break;
                 }
-                resolvedAccessories.put(accessory, quantity);
-                continue;
             }
-
-            throw new ResourceNotFoundException("producto", itemId);
+            if (!found) {
+                throw new ResourceNotFoundException("producto", itemId);
+            }
         }
+        return resolvedItems;
     }
 
     /**
@@ -193,20 +192,15 @@ public class SaleService {
      * the subtotal automatically as each one is added.
      */
     private Sale buildSale(String saleId, LocalDate date, Customer customer, Seller seller,
-                            Map<Product, Integer> resolvedProducts, Map<Accessory, Integer> resolvedAccessories) {
+                            Map<SaleItemSource, Map<Product, Integer>> resolvedItems) {
         Sale sale = new Sale(saleId, date, customer, seller);
-        for (Map.Entry<Product, Integer> entry : resolvedProducts.entrySet()) {
-            Product product = entry.getKey();
-            int quantity = entry.getValue();
-            for (int i = 0; i < quantity; i++) {
-                sale.addProduct(product);
-            }
-        }
-        for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
-            Accessory accessory = entry.getKey();
-            int quantity = entry.getValue();
-            for (int i = 0; i < quantity; i++) {
-                sale.addProduct(accessory);
+        for (Map<Product, Integer> items : resolvedItems.values()) {
+            for (Map.Entry<Product, Integer> entry : items.entrySet()) {
+                Product item = entry.getKey();
+                int quantity = entry.getValue();
+                for (int i = 0; i < quantity; i++) {
+                    sale.addProduct(item);
+                }
             }
         }
         return sale;
@@ -232,10 +226,10 @@ public class SaleService {
      * Asks each product whether it requires a warranty instead of
      * checking its concrete type (GRASP audit finding V-04: Polymorphism).
      */
-    private double assignWarranties(Sale sale, Map<Product, Integer> resolvedProducts,
+    private double assignWarranties(Sale sale, List<Product> items,
                                      List<String> productIdsWithExtendedWarranty) throws IOException {
         double warrantyCost = 0.0;
-        for (Product product : resolvedProducts.keySet()) {
+        for (Product product : items) {
             if (product.requiresWarranty()) {
                 warrantyService.assignBasicWarranty(product, sale, sale.getDate());
 
@@ -250,21 +244,16 @@ public class SaleService {
         return warrantyCost;
     }
 
-    /**
-     * Updates the inventory, delegating to the service/DAO that owns
-     * each item's stock according to its type.
+     /**
+     * Updates the inventory, delegating to the source that owns each
+     * item's stock.
      */
-    private void updateInventory(Map<Product, Integer> resolvedProducts, Map<Accessory, Integer> resolvedAccessories) {
-        for (Map.Entry<Product, Integer> entry : resolvedProducts.entrySet()) {
-            Product product = entry.getKey();
-            int quantity = entry.getValue();
-            productService.reduceStock(product.getId(), quantity);
-        }
-        for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
-            Accessory accessory = entry.getKey();
-            int quantity = entry.getValue();
-            accessory.reduceStock(quantity);
-            accessoryDAO.update(accessory);
+    private void updateInventory(Map<SaleItemSource, Map<Product, Integer>> resolvedItems) {
+        for (Map.Entry<SaleItemSource, Map<Product, Integer>> sourceEntry : resolvedItems.entrySet()) {
+            SaleItemSource source = sourceEntry.getKey();
+            for (Map.Entry<Product, Integer> entry : sourceEntry.getValue().entrySet()) {
+                source.reduceStock(entry.getKey(), entry.getValue());
+            }
         }
     }
 
@@ -275,7 +264,7 @@ public class SaleService {
      * @throws IOException if the sales file cannot be read
      */
     public List<Sale> listSales() throws IOException {
-        return saleDAO.findAll();
+        return saleRepository.findAll();
     }
 
     /**
@@ -286,7 +275,7 @@ public class SaleService {
      * @throws IOException if the sales file cannot be read
      */
     public List<Sale> listSalesByCustomer(String customerId) throws IOException {
-        return saleDAO.findByCustomer(customerId);
+        return saleRepository.findByCustomer(customerId);
     }
 
     /**
@@ -297,7 +286,7 @@ public class SaleService {
      * @throws IOException if the sales file cannot be read
      */
     public List<Sale> listSalesBySeller(String sellerId) throws IOException {
-        return saleDAO.findBySeller(sellerId);
+        return saleRepository.findBySeller(sellerId);
     }
 
     /**
@@ -308,7 +297,7 @@ public class SaleService {
      * @throws IOException if the sales cannot be read from storage
      */
     public Sale findSaleById(String saleId) throws IOException {
-        for (Sale sale : saleDAO.findAll()) {
+        for (Sale sale : saleRepository.findAll()) {
             if (sale.getId().equals(saleId)) {
                 return sale;
             }

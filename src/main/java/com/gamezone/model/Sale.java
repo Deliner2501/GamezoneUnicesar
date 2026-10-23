@@ -243,20 +243,6 @@ public double getAdditionalCost() {
     return additionalCost;
 }
 
-    
-    /**
-     * Builds a readable receipt for this sale, showing the subtotal,
-     * the discount applied (if any), and the final total. The actual
-     * formatting is delegated to {@link com.gamezone.ui.SaleReceiptFormatter}
-     * (GRASP audit finding V-01): a domain class should not be
-     * responsible for presentation text.
-     *
-     * @return a formatted, multi-line receipt
-     */
-    public String generateReceipt() {
-        return com.gamezone.ui.SaleReceiptFormatter.format(this);
-    }
-
     /**
      * Returns a readable representation of this sale.
      * @return a formatted string with the sale's data

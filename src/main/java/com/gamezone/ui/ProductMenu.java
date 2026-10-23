@@ -1,6 +1,7 @@
 package com.gamezone.ui;
 
 import com.gamezone.model.Product;
+import com.gamezone.model.ProductCategory;
 import com.gamezone.service.ProductService;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +77,8 @@ public class ProductMenu {
             double price = Double.parseDouble(priceText);
             int stock = Integer.parseInt(stockText);
 
-            productService.registerVideoGame(id, title, price, stock, platform, genre, ageRating);
+            productService.registerNewProduct(ProductCategory.VIDEOGAME, id, title, price, stock,
+                    platform, genre, ageRating);
             JOptionPane.showMessageDialog(null, "Videojuego registrado exitosamente.",
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
         } catch (NumberFormatException e) {
@@ -106,7 +108,8 @@ public class ProductMenu {
             double price = Double.parseDouble(priceText);
             int stock = Integer.parseInt(stockText);
 
-            productService.registerConsole(id, title, price, stock, brand, model, generation);
+            productService.registerNewProduct(ProductCategory.CONSOLE, id, title, price, stock,
+                    brand, model, generation);
             JOptionPane.showMessageDialog(null, "Consola registrada exitosamente.",
                     "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
         } catch (NumberFormatException e) {

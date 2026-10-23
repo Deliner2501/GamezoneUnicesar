@@ -5,9 +5,7 @@ import com.gamezone.model.ExtendedWarranty;
 import com.gamezone.model.Product;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Warranty;
-import com.gamezone.persistence.SaleDAO;
 import com.gamezone.persistence.WarrantyRepository;
-import com.gamezone.persistence.WarrantyRepository.WarrantyRecord;
 import com.gamezone.exceptions.InvalidDataException;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -20,29 +18,24 @@ import java.util.List;
  * A basic warranty is generated automatically for consoles at the
  * time of sale, while an extended warranty can be optionally assigned
  * and adds a cost to the sale. Since WarrantyRepository only reads and
- * writes raw records, this service is responsible for resolving those
- * records back into real Warranty objects using SaleDAO and
- * ProductService.
+ * writes raw records, the WarrantyRecordResolver rebuilds the real
+ * Warranty objects from them.
  */
 public class WarrantyService {
 
-    private static final String EXTENDED_TYPE = "EXTENDED";
 
     private WarrantyRepository warrantyRepository;
-    private SaleDAO saleDAO;
-    private ProductService productService;
+    private WarrantyRecordResolver recordResolver;
 
     /**
      * Creates a WarrantyService with its required collaborators.
      *
-     * @param warrantyRepository the repository used to persist and load raw warranty records
-     * @param saleDAO            the DAO used to resolve the associated sale by id
-     * @param productService     the service used to resolve the associated product by id
+     * @param warrantyRepository the repository used to persist raw warranty records
+     * @param recordResolver     the resolver that rebuilds warranties from stored records
      */
-    public WarrantyService(WarrantyRepository warrantyRepository, SaleDAO saleDAO, ProductService productService) {
+    public WarrantyService(WarrantyRepository warrantyRepository, WarrantyRecordResolver recordResolver) {
         this.warrantyRepository = warrantyRepository;
-        this.saleDAO = saleDAO;
-        this.productService = productService;
+        this.recordResolver = recordResolver;
     }
 
     /**
@@ -210,52 +203,10 @@ public class WarrantyService {
     }
 
     /**
-     * Loads every raw warranty record from the repository and resolves
-     * each one into a real Warranty object, skipping any record whose
-     * product or sale can no longer be found.
+     * Loads every registered warranty through the record resolver.
      */
     private List<Warranty> loadAllWarranties() throws IOException {
-        List<Warranty> warranties = new ArrayList<>();
-        for (WarrantyRecord record : warrantyRepository.loadAll()) {
-            Warranty warranty = resolveWarranty(record);
-            if (warranty != null) {
-                warranties.add(warranty);
-            }
-        }
-        return warranties;
-    }
-
-    /**
-     * Resolves a raw warranty record back into a real Warranty object,
-     * looking up its product and sale. Returns null if either
-     * reference can no longer be resolved.
-     */
-    private Warranty resolveWarranty(WarrantyRecord record) throws IOException {
-        Product product = productService.findProductById(record.getProductId());
-        if (product == null) {
-            // Orphan record: the product no longer exists, so the warranty is skipped.
-            return null;
-        }
-
-        Sale sale = findSaleById(record.getSaleId());
-        if (sale == null) {
-            // Orphan record: the sale no longer exists, so the warranty is skipped.
-            return null;
-        }
-
-        if (EXTENDED_TYPE.equals(record.getType())) {
-            return new ExtendedWarranty(record.getId(), product, sale, record.getStartDate());
-        }
-        return new BasicWarranty(record.getId(), product, sale, record.getStartDate());
-    }
-
-    private Sale findSaleById(String saleId) throws IOException {
-        for (Sale sale : saleDAO.findAll()) {
-            if (sale.getId().equals(saleId)) {
-                return sale;
-            }
-        }
-        return null;
+        return recordResolver.loadAll();
     }
 
     private String generateWarrantyId(List<Warranty> existingWarranties) {

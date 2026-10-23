@@ -66,7 +66,7 @@ public class Return {
      *
      * @return the discount rate, or 0.0 if the original sale has a zero subtotal
      */
-    private double originalDiscountRate() {
+    public double getOriginalDiscountRate() {
         if (originalSale.getTotal() > 0) {
             return originalSale.getDiscountRate();
         }
@@ -83,47 +83,12 @@ public class Return {
      * @return the calculated refund amount
      */
     public double calculateRefundAmount() {
-        double discountRate = originalDiscountRate();
+        double discountRate = getOriginalDiscountRate();
         double sum = 0.0;
         for (Product product : returnedProducts) {
             sum += product.getPrice() * (1 - discountRate);
         }
         this.refundAmount = sum + warrantyRefund;
         return refundAmount;
-    }
-
-    /**
-     * Builds a readable receipt for this return, in Spanish, showing
-     * the return id, date, reference to the original sale, each
-     * returned product with its list price and proportional discount,
-     * reason, and refund amount. If the refund amount has not been
-     * calculated yet, this method calculates it first so the receipt
-     * is always accurate.
-     *
-     * @return a formatted, multi-line receipt
-     */
-    public String generateReturnReceipt() {
-        if (refundAmount == 0.0) {
-            calculateRefundAmount();
-        }
-        double discountRate = originalDiscountRate();
-        StringBuilder receipt = new StringBuilder();
-        receipt.append("Recibo de devolución ").append(id).append("\n");
-        receipt.append("Fecha: ").append(date).append("\n");
-        receipt.append("Venta original: ").append(originalSale.getId()).append("\n");
-        receipt.append("Productos devueltos:\n");
-        for (Product product : returnedProducts) {
-            double listPrice = product.getPrice();
-            double proportionalDiscount = listPrice * discountRate;
-            double refundedForItem = listPrice - proportionalDiscount;
-            receipt.append("  - ").append(product.getTitle())
-                    .append(": precio de lista ").append(listPrice)
-                    .append(", descuento proporcional ").append(proportionalDiscount)
-                    .append(", reembolsado ").append(refundedForItem).append("\n");
-        }
-        receipt.append("Motivo: ").append(reason).append("\n");
-        receipt.append("Reembolso por garantías canceladas: ").append(warrantyRefund).append("\n");
-        receipt.append("Monto reembolsado: ").append(refundAmount);
-        return receipt.toString();
     }
 }

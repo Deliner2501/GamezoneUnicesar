@@ -8,7 +8,6 @@ import com.gamezone.model.Product;
 import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
 import com.gamezone.persistence.ReturnRepository;
-import com.gamezone.persistence.ReturnRepository.ReturnRecord;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -28,6 +27,7 @@ public class ReturnService {
     private ProductService productService;
     private AccessoryService accessoryService;
     private WarrantyService warrantyService;
+    private ReturnRecordResolver recordResolver;
 
     /**
      * Creates a ReturnService with its required collaborators.
@@ -37,15 +37,17 @@ public class ReturnService {
      * @param productService   the service used to restore stock of returned products
      * @param accessoryService the service used to restore stock of returned accessories
      * @param warrantyService  the service used to cancel warranties of returned consoles
+     * @param recordResolver   the resolver that rebuilds returns from stored records
      */
     public ReturnService(ReturnRepository returnRepository, SaleService saleService,
                           ProductService productService, AccessoryService accessoryService,
-                          WarrantyService warrantyService) {
+                          WarrantyService warrantyService, ReturnRecordResolver recordResolver) {
         this.returnRepository = returnRepository;
         this.saleService = saleService;
         this.productService = productService;
         this.accessoryService = accessoryService;
         this.warrantyService = warrantyService;
+        this.recordResolver = recordResolver;
     }
 
     /**
@@ -191,53 +193,11 @@ public class ReturnService {
         return "RET" + String.format("%03d", nextNumber);
     }
     
-        /**
-     * Loads every raw return record from the repository and resolves
-     * each one into a real Return object, skipping any record whose
-     * sale or products can no longer be found.
+    /**
+     * Loads every registered return through the record resolver.
      */
     private List<Return> loadAllReturns() throws IOException {
-        List<Return> returns = new ArrayList<>();
-        for (ReturnRecord record : returnRepository.loadAll()) {
-            Return resolved = resolveReturn(record);
-            if (resolved != null) {
-                returns.add(resolved);
-            }
-        }
-        return returns;
-    }
-
-    /**
-     * Resolves a raw return record back into a real Return object,
-     * looking up its original sale and returned products. Returns null
-     * if the sale or every product can no longer be resolved.
-     */
-    private Return resolveReturn(ReturnRecord record) throws IOException {
-        Sale originalSale = saleService.findSaleById(record.getSaleId());
-        if (originalSale == null) {
-            return null;
-        }
-
-        List<Product> returnedProducts = new ArrayList<>();
-        for (String productId : record.getProductIds()) {
-            Product product = productService.findProductById(productId);
-            if (product == null) {
-                product = accessoryService.findById(productId);
-            }
-            if (product != null) {
-                returnedProducts.add(product);
-            }
-        }
-        if (returnedProducts.isEmpty()) {
-            return null;
-        }
-
-        Return resolved = new Return(record.getId(), record.getDate(), originalSale,
-                returnedProducts, record.getReason(), record.getWarrantyRefund());
-        if (record.isRefundCalculated()) {
-            resolved.calculateRefundAmount();
-        }
-        return resolved;
+        return recordResolver.loadAll();
     }
     
 
@@ -285,36 +245,6 @@ public class ReturnService {
         return result;
     }
 
-    /**
-     * Calculates the net balance (sales minus returns) for a given month and year.
-     *
-     * @param month the month to calculate the balance for (1-12)
-     * @param year  the year to calculate the balance for
-     * @return the total sales minus the total returns for that period
-     * @throws IOException if sales or returns cannot be read from storage
-     */
-    public double calculateMonthlySales(int month, int year) throws IOException {
-        double totalSales = 0.0;
-        for (Sale sale : saleService.listSales()) {
-            if (sale.getDate().getMonthValue() == month && sale.getDate().getYear() == year) {
-                totalSales += sale.getFinalTotal();
-            }
-        }
-        return totalSales;
-    }
-
-    public double calculateMonthlyReturns(int month, int year) throws IOException {
-        double totalReturns = 0.0;
-        for (Return r : loadAllReturns()) {
-            if (r.getDate().getMonthValue() == month && r.getDate().getYear() == year) {
-                totalReturns += r.getRefundAmount();
-            }
-        }
-        return totalReturns;
-    }
-
-    public double generateMonthlyBalance(int month, int year) throws IOException {
-        return calculateMonthlySales(month, year) - calculateMonthlyReturns(month, year);
-    }
+    
 }
 

@@ -112,7 +112,7 @@ public class SaleMenu {
 
             Sale sale = saleService.registerSale(saleId, LocalDate.now(), customerId, sellerId,
                     productQuantities, productIdsWithExtendedWarranty);
-            MenuDialogs.showList("Venta registrada exitosamente", sale.generateReceipt());
+            MenuDialogs.showList("Venta registrada exitosamente", SaleReceiptFormatter.format(sale));
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(null, "Error: la cantidad debe ser un valor numérico válido.",
                     "GameZone Unicesar - Error", JOptionPane.ERROR_MESSAGE);
@@ -158,7 +158,7 @@ public class SaleMenu {
         }
         List<String> entries = new ArrayList<>();
         for (Sale sale : sales) {
-            entries.add(sale.generateReceipt());
+            entries.add(SaleReceiptFormatter.format(sale));
         }
         MenuDialogs.showList("Ventas", MenuDialogs.formatEntries(entries));
     }

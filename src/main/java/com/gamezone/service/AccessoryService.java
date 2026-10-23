@@ -4,7 +4,7 @@ import com.gamezone.model.Accessory;
 import com.gamezone.model.Cable;
 import com.gamezone.model.Controller;
 import com.gamezone.model.Memory;
-import com.gamezone.persistence.AccessoryDAO;
+import com.gamezone.persistence.AccessoryRepository;
 import com.gamezone.validation.AccessoryValidator;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,10 +15,15 @@ import java.util.List;
  */
 public class AccessoryService {
 
-    private AccessoryDAO accessoryDAO;
+    private AccessoryRepository accessoryRepository;
 
-    public AccessoryService(AccessoryDAO accessoryDAO) {
-        this.accessoryDAO = accessoryDAO;
+    /**
+     * Creates the service with the storage it reads and writes accessories through.
+     *
+     * @param accessoryRepository the accessory storage the service depends on
+     */
+    public AccessoryService(AccessoryRepository accessoryRepository) {
+        this.accessoryRepository = accessoryRepository;
     }
 
     /**
@@ -35,7 +40,7 @@ public class AccessoryService {
     public Controller registerController(String id, String title, double price, int stock, String connectionType) {
         Controller controller = new Controller(id, title, price, stock, connectionType);
         AccessoryValidator.validateAccessoryData(controller.getId(), controller.getPrice());        
-        accessoryDAO.save(controller);
+        accessoryRepository.save(controller);
         return controller;
     }
 
@@ -55,7 +60,7 @@ public class AccessoryService {
                                 double lengthInMeters, String connectorType) {
         Cable cable = new Cable(id, title, price, stock, lengthInMeters, connectorType);
         AccessoryValidator.validateAccessoryData(cable.getId(), cable.getPrice());
-        accessoryDAO.save(cable);
+        accessoryRepository.save(cable);
         return cable;
     }
 
@@ -75,7 +80,7 @@ public class AccessoryService {
                                   int capacityInGigabytes, String memoryType) {
         Memory memory = new Memory(id, title, price, stock, capacityInGigabytes, memoryType);
         AccessoryValidator.validateAccessoryData(memory.getId(), memory.getPrice());
-        accessoryDAO.save(memory);
+        accessoryRepository.save(memory);
         return memory;
     }
 
@@ -91,7 +96,7 @@ public class AccessoryService {
         Accessory accessory = findById(accessoryId);
         AccessoryValidator.validateAccessoryExists(accessory, accessoryId);
         accessory.addCompatibleConsole(consoleId);
-        accessoryDAO.update(accessory);
+        accessoryRepository.update(accessory);
     }
 
     /**
@@ -100,7 +105,7 @@ public class AccessoryService {
      * @return the list of available accessories
      */
     public List<Accessory> listAllAccessories() {
-        return accessoryDAO.findAll();
+        return accessoryRepository.findAll();
     }
 
     /**
@@ -111,7 +116,7 @@ public class AccessoryService {
      */
     public List<Accessory> listAccessoriesByType(String type) {
         List<Accessory> result = new ArrayList<>();
-        for (Accessory a : accessoryDAO.findAll()) {
+        for (Accessory a : accessoryRepository.findAll()) {
             if (matchesType(a, type)) {
                 result.add(a);
             }
@@ -127,7 +132,7 @@ public class AccessoryService {
      */
     public List<Accessory> findAccessoriesCompatibleWith(String consoleId) {
         List<Accessory> result = new ArrayList<>();
-        for (Accessory a : accessoryDAO.findAll()) {
+        for (Accessory a : accessoryRepository.findAll()) {
             if (a.isCompatibleWith(consoleId)) {
                 result.add(a);
             }
@@ -142,7 +147,7 @@ public class AccessoryService {
      * @return the matching accessory, or null if none is found
      */
     public Accessory findById(String id) {
-        return accessoryDAO.findById(id);
+        return accessoryRepository.findById(id);
     }
     
         /**
@@ -153,7 +158,7 @@ public class AccessoryService {
      * @return true if there is enough stock, false otherwise
      */
     public boolean checkStock(String accessoryId, int quantity) {
-        Accessory accessory = accessoryDAO.findById(accessoryId);
+        Accessory accessory = accessoryRepository.findById(accessoryId);
         if (accessory == null) {
             return false;
         }
@@ -170,12 +175,12 @@ public class AccessoryService {
      * @throws BusinessRuleException if the quantity exceeds the current stock
      */
     public void updateStock(String accessoryId, int quantity) {
-        Accessory accessory = accessoryDAO.findById(accessoryId);
+        Accessory accessory = accessoryRepository.findById(accessoryId);
         AccessoryValidator.validateAccessoryExists(accessory, accessoryId);
         AccessoryValidator.validateQuantityPositive(quantity);
         AccessoryValidator.validateStockAvailability(accessory, quantity);
         accessory.reduceStock(quantity);
-        accessoryDAO.update(accessory);
+        accessoryRepository.update(accessory);
     }
 
     
@@ -190,15 +195,15 @@ public class AccessoryService {
      * @throws ResourceNotFoundException if the accessory does not exist
      */
     public void restoreStock(String accessoryId, int quantity) {
-        Accessory accessory = accessoryDAO.findById(accessoryId);
+        Accessory accessory = accessoryRepository.findById(accessoryId);
         AccessoryValidator.validateAccessoryExists(accessory, accessoryId);
         accessory.increaseStock(quantity);
-        accessoryDAO.update(accessory);
+        accessoryRepository.update(accessory);
     }
 
 
     private boolean matchesType(Accessory accessory, String type) {
         if (type == null) return false;
-        return accessory.getTypeCode().equalsIgnoreCase(type);
+        return accessory.getClass().getSimpleName().equalsIgnoreCase(type);
     }
 }

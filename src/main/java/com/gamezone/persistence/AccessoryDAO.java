@@ -1,13 +1,9 @@
 package com.gamezone.persistence;
 
 import com.gamezone.model.Accessory;
-import com.gamezone.model.Cable;
-import com.gamezone.model.Controller;
-import com.gamezone.model.Memory;
 import com.gamezone.exceptions.PersistenceException;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -16,16 +12,17 @@ import java.util.List;
  * "MEMORY") is used to tell the three concrete accessory types apart
  * when reloading the file.
  */
-public class AccessoryDAO {
+  public class AccessoryDAO implements AccessoryRepository {
 
     private static final String FILE_PATH = "data/accessories.csv";
-    private static final String CONSOLE_LIST_SEPARATOR = ";";
-
+    private final AccessoryCsvMapper mapper = new AccessoryCsvMapper();
+    
     /**
      * Saves a single accessory by appending it to the file.
      *
      * @param accessory the accessory to persist
      */
+    @Override
     public void save(Accessory accessory) {
         List<Accessory> accessories = findAll();
         accessories.add(accessory);
@@ -38,6 +35,7 @@ public class AccessoryDAO {
      * @return the list of all persisted accessories, or an empty list
      *         if the file does not exist yet
      */
+    @Override
     public List<Accessory> findAll() {
         List<Accessory> accessories = new ArrayList<>();
         File file = new File(FILE_PATH);
@@ -48,7 +46,7 @@ public class AccessoryDAO {
             while ((line = reader.readLine()) != null) {
                 if (line.isBlank()) continue;
                 try {
-                    Accessory a = parseLine(line);
+                    Accessory a = mapper.parseLine(line);
                     if (a != null) accessories.add(a);
                 } catch (Exception e) {
                     // Corrupted line: skipped so one bad row does not block the whole file.
@@ -67,6 +65,7 @@ public class AccessoryDAO {
      * @param id the id of the accessory to find
      * @return the matching accessory, or null if none is found
      */
+    @Override
     public Accessory findById(String id) {
         for (Accessory a : findAll()) {
             if (a.getId().equals(id)) return a;
@@ -79,6 +78,7 @@ public class AccessoryDAO {
      *
      * @param accessory the accessory with updated data
      */
+    @Override
     public void update(Accessory accessory) {
         List<Accessory> accessories = findAll();
         for (int i = 0; i < accessories.size(); i++) {
@@ -96,7 +96,7 @@ public class AccessoryDAO {
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_PATH))) {
             for (Accessory a : accessories) {
-                writer.println(a.toCsvLine());
+                writer.println(mapper.toCsvLine(a));
             }
         } catch (IOException e) {
             throw new PersistenceException(
@@ -105,40 +105,4 @@ public class AccessoryDAO {
     }
 
     
-    private Accessory parseLine(String line) {
-        String[] parts = line.split(",", -1);
-        String type = parts[0];
-        String id = parts[1];
-        String title = parts[2];
-        double price = Double.parseDouble(parts[3]);
-        int stock = Integer.parseInt(parts[4]);
-
-        Accessory accessory = null;
-
-        if (type.equals("CONTROLLER")) {
-            String connectionType = parts[5];
-            accessory = new Controller(id, title, price, stock, connectionType);
-            applyCompatibleConsoles(accessory, parts, 6);
-        } else if (type.equals("CABLE")) {
-            double lengthInMeters = Double.parseDouble(parts[5]);
-            String connectorType = parts[6];
-            accessory = new Cable(id, title, price, stock, lengthInMeters, connectorType);
-            applyCompatibleConsoles(accessory, parts, 7);
-        } else if (type.equals("MEMORY")) {
-            int capacityInGigabytes = Integer.parseInt(parts[5]);
-            String memoryType = parts[6];
-            accessory = new Memory(id, title, price, stock, capacityInGigabytes, memoryType);
-            applyCompatibleConsoles(accessory, parts, 7);
-        }
-
-        return accessory;
-    }
-
-    private void applyCompatibleConsoles(Accessory accessory, String[] parts, int consolesIndex) {
-        if (parts.length <= consolesIndex || parts[consolesIndex].isBlank()) {
-            return;
-        }
-        List<String> consoleIds = Arrays.asList(parts[consolesIndex].split(CONSOLE_LIST_SEPARATOR));
-        accessory.setCompatibleConsoleIds(consoleIds);
-    }
 }

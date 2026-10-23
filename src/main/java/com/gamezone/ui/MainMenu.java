@@ -11,6 +11,7 @@ import com.gamezone.service.ProductService;
 import com.gamezone.service.PromotionService;
 import com.gamezone.service.ReturnService;
 import com.gamezone.service.SaleService;
+import com.gamezone.service.MonthlyBalanceService;
 import com.gamezone.service.WarrantyService;
 import javax.swing.JOptionPane;
 
@@ -45,17 +46,18 @@ public class MainMenu {
      * @param promotionService the service for managing promotions
      * @param returnService the service for managing returns
      * @param warrantyService the service for managing warranties
+     * @param monthlyBalanceService the service for the monthly balance report
      */
     public MainMenu(PersonService personService, ProductService productService,
                      SaleService saleService, AccessoryService accessoryService,
                      PromotionService promotionService, ReturnService returnService,
-                     WarrantyService warrantyService) {
+                     WarrantyService warrantyService, MonthlyBalanceService monthlyBalanceService) {
         this.productMenuView = new ProductMenu(productService);
         this.personMenuView = new PersonMenu(personService);
         this.saleMenuView = new SaleMenu(saleService, productService);
         this.accessoryMenuView = new AccessoryMenu(accessoryService);
         this.promotionMenuView = new PromotionMenu(promotionService);
-        this.returnMenuView = new ReturnMenu(returnService);
+        this.returnMenuView = new ReturnMenu(returnService, monthlyBalanceService);
         this.warrantyMenuView = new WarrantyMenu(warrantyService);
     }
 

@@ -71,8 +71,7 @@ public class WarrantyMenu {
                 JOptionPane.showMessageDialog(null, "No se encontró una garantía para ese producto en esa venta.",
                         "GameZone Unicesar", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                MenuDialogs.showList("Garantía encontrada", warranty.generateWarrantyCertificate());
-            }
+MenuDialogs.showList("Garantía encontrada", WarrantyCertificateFormatter.format(warranty));            }
         } catch (IOException e) {
             MenuDialogs.showPersistenceError();
         }
@@ -120,8 +119,7 @@ public class WarrantyMenu {
         }
         List<String> entries = new ArrayList<>();
         for (Warranty warranty : warranties) {
-            entries.add(warranty.generateWarrantyCertificate());
-        }
+entries.add(WarrantyCertificateFormatter.format(warranty));        }
         MenuDialogs.showList("Garantías", MenuDialogs.formatEntries(entries));
     }
 }
