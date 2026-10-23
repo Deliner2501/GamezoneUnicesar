@@ -214,3 +214,53 @@ He explained to me the Conventional Commits convention that the workshop require
 
 ## Requirement 8 - Phase 2 - Correction (feature/solid-refactor)
 
+### Entry 1
+- **Date:** 2026-10-22
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Resume the work after reinstalling the computer and understand my assigned violations.
+- **Query:** I explained that my machine was formatted and I had to reinstall NetBeans, the JDK and Git, and pasted the consolidated audit lines for Developer 1 (V-07 to V-14) and the correction order.
+- **Response summary:** It explained how to clone the repository, configure Git and switch to feature/solid-refactor, and the order of my corrections (V-12 first, then the independent ones, then V-08 in three steps).
+- **Decision:** Accepted. I cloned into a new folder and signed in to GitHub again.
+- **Related commit:** -
+
+### Entry 2
+- **Date:** 2026-10-22
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Correct V-12, V-14, V-11 and V-13.
+- **Query:** I pasted Console, PromotionValidator, ProductDAO and the product mappers and asked how to fix each violation without changing the behavior.
+- **Response summary:** It explained each fix (CONSOLE category, validation through ProductCategory.fromText, mapper list received by constructor, supports check in the mappers) and gave the complete classes.
+- **Decision:** Accepted. I built the project before each commit and tested registering a video game and a console.
+- **Related commit:** e3e9d4e, b0e3c45, 490ab0c, 47cc8f9
+
+### Entry 3
+- **Date:** 2026-10-22
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Correct V-10 and V-09.
+- **Query:** I pasted ProductService, ProductMenu, Main, the formatters and the menus and asked how to apply factories and move the text generation out of the model.
+- **Response summary:** It proposed a ProductFactory per type, a single registerNewProduct method, and two formatters in ui. It warned that the receipt calculates the refund first when it is zero, so the formatter keeps that behavior.
+- **Decision:** Accepted. I did the changes in steps and tested the receipts and certificates before the commit.
+- **Related commit:** 0e29dbe, 959a863
+
+### Entry 4
+- **Date:** 2026-10-23
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Do step 1 of V-08 and coordinate with Developer 2.
+- **Query:** I pasted the DAOs, the warranty repository and the resolver Developer 2 changed and asked what the mappers should contain.
+- **Response summary:** It proposed AccessoryCsvMapper, PromotionCsvMapper and WarrantyTypeMapper with type-code registries, and warned that AccessoryService also uses getTypeCode, so Developer 2 must change it before I remove that method.
+- **Decision:** Accepted. I uploaded the mappers and told Developer 2.
+- **Related commit:** b43e922
+
+### Entry 5
+- **Date:** 2026-10-22
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Understand Git problems during the work.
+- **Query:** I asked about a push that asked for GitHub sign-in after reinstalling, and how to recover my position after closing the terminal.
+- **Response summary:** It explained the browser sign-in and the commands to locate the project and check the branch.
+- **Decision:** Accepted.
+- **Related commit:** -
+
