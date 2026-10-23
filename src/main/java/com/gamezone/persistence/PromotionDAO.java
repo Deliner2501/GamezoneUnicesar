@@ -1,12 +1,8 @@
 package com.gamezone.persistence;
 
 import com.gamezone.exceptions.PersistenceException;
-import com.gamezone.model.BulkPurchaseDiscount;
-import com.gamezone.model.CategoryDiscount;
-import com.gamezone.model.PercentageDiscount;
 import com.gamezone.model.Promotion;
 import java.io.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +15,7 @@ import java.util.List;
 public class PromotionDAO implements PromotionRepository {
 
     private static final String FILE_PATH = "data/promotions.csv";
+    private final PromotionCsvMapper mapper = new PromotionCsvMapper();
 
     /**
      * Persists the full list of promotions, overwriting the file's
@@ -33,7 +30,7 @@ public class PromotionDAO implements PromotionRepository {
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_PATH))) {
             for (Promotion p : promotions) {
-                writer.println(p.toCsvLine());
+                writer.println(mapper.toCsvLine(p));
             }
         } catch (IOException e) {
             throw new PersistenceException(
@@ -58,7 +55,7 @@ public class PromotionDAO implements PromotionRepository {
             while ((line = reader.readLine()) != null) {
                 if (line.isBlank()) continue;
                 try {
-                    Promotion p = parseLine(line);
+                    Promotion p = mapper.parseLine(line);
                     if (p != null) promotions.add(p);
                 } catch (Exception e) {
                     // Corrupted line: skipped so one bad row does not block the whole file.
@@ -71,26 +68,4 @@ public class PromotionDAO implements PromotionRepository {
         return promotions;
     }
 
-    private Promotion parseLine(String line) {
-        String[] parts = line.split(",", -1);
-        String type = parts[0];
-        String id = parts[1];
-        String name = parts[2];
-        LocalDate startDate = LocalDate.parse(parts[3]);
-        LocalDate endDate = LocalDate.parse(parts[4]);
-
-        if (type.equals("PERCENTAGE")) {
-            double percentage = Double.parseDouble(parts[5]);
-            return new PercentageDiscount(id, name, startDate, endDate, percentage);
-        } else if (type.equals("CATEGORY")) {
-            double percentage = Double.parseDouble(parts[5]);
-            String targetCategory = parts[6];
-            return new CategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
-        } else if (type.equals("BULK")) {
-            int minQuantity = Integer.parseInt(parts[5]);
-            double percentage = Double.parseDouble(parts[6]);
-            return new BulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
-        }
-        return null;
-    }
 }
