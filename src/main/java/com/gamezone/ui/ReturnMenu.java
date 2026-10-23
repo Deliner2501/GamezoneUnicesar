@@ -14,7 +14,7 @@ import javax.swing.JOptionPane;
  * monthly balance. Extracted out of MainMenu so this area's UI logic
  * is cohesive on its own (GRASP audit finding V-06: High Cohesion).
  */
-public class ReturnMenu {
+public class ReturnMenu implements AreaMenu {
 
     private final ReturnService returnService;
     private final MonthlyBalanceService monthlyBalanceService;
@@ -30,9 +30,15 @@ public class ReturnMenu {
         this.monthlyBalanceService = monthlyBalanceService;
     }
 
+    @Override
+    public String getTitle() {
+        return "Gestionar devoluciones";
+    }
+    
     /**
      * Shows the return menu and dispatches the chosen option.
      */
+    @Override
     public void show() {
         String[] options = {
                 "Registrar una devolución",

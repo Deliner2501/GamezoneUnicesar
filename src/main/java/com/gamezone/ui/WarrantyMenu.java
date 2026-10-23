@@ -13,7 +13,7 @@ import javax.swing.JOptionPane;
  * expiring soon. Extracted out of MainMenu so this area's UI logic is
  * cohesive on its own (GRASP audit finding V-06: High Cohesion).
  */
-public class WarrantyMenu {
+public class WarrantyMenu implements AreaMenu {
 
     private final WarrantyService warrantyService;
 
@@ -26,9 +26,15 @@ public class WarrantyMenu {
         this.warrantyService = warrantyService;
     }
 
+    @Override
+    public String getTitle() {
+        return "Gestionar garantías";
+    }
+    
     /**
      * Shows the warranty menu and dispatches the chosen option.
      */
+    @Override
     public void show() {
         String[] options = {
                 "Consultar garantía por producto y venta",

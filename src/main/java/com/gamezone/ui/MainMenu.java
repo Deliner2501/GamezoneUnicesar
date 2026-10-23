@@ -5,60 +5,34 @@ import com.gamezone.exceptions.GameZoneException;
 import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.exceptions.ResourceNotFoundException;
-import com.gamezone.service.AccessoryService;
-import com.gamezone.service.PersonService;
-import com.gamezone.service.ProductService;
-import com.gamezone.service.PromotionService;
-import com.gamezone.service.ReturnService;
-import com.gamezone.service.SaleService;
-import com.gamezone.service.MonthlyBalanceService;
-import com.gamezone.service.WarrantyService;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JOptionPane;
 
 /**
  * Console-based user interface for the GameZone Unicesar system.
- * Shows the main menu and delegates each area (products, people, sales,
- * accessories, promotions, returns, warranties) to its own dedicated
- * menu class, so this class is only responsible for the main loop and
+ * Shows the main menu and delegates each area to the {@link AreaMenu}
+ * it receives, so this class is only responsible for the main loop and
  * translating system exceptions into user-facing messages (GRASP audit
- * finding V-06: High Cohesion). All text shown to the end user is
- * written in Spanish, while the code itself follows English naming
- * conventions.
+ * finding V-06: High Cohesion). It does not know the concrete menus, so a
+ * new area can be added without editing it (SOLID audit finding V-06).
+ * All text shown to the end user is written in Spanish, while the code
+ * itself follows English naming conventions.
  */
 public class MainMenu {
 
-    private final ProductMenu productMenuView;
-    private final PersonMenu personMenuView;
-    private final SaleMenu saleMenuView;
-    private final AccessoryMenu accessoryMenuView;
-    private final PromotionMenu promotionMenuView;
-    private final ReturnMenu returnMenuView;
-    private final WarrantyMenu warrantyMenuView;
+    private static final String EXIT_OPTION = "Salir";
+
+    private final List<AreaMenu> areaMenus;
 
     /**
-     * Creates the main menu with the services it depends on, building
-     * the dedicated menu for each area.
+     * Creates the main menu with the area menus it shows, in the order
+     * they appear in the list.
      *
-     * @param personService  the service for managing customers and sellers
-     * @param productService the service for managing products
-     * @param saleService    the service for registering and querying sales
-     * @param accessoryService the service for managing accessories
-     * @param promotionService the service for managing promotions
-     * @param returnService the service for managing returns
-     * @param warrantyService the service for managing warranties
-     * @param monthlyBalanceService the service for the monthly balance report
+     * @param areaMenus the menus of every area of the application
      */
-    public MainMenu(PersonService personService, ProductService productService,
-                     SaleService saleService, AccessoryService accessoryService,
-                     PromotionService promotionService, ReturnService returnService,
-                     WarrantyService warrantyService, MonthlyBalanceService monthlyBalanceService) {
-        this.productMenuView = new ProductMenu(productService);
-        this.personMenuView = new PersonMenu(personService);
-        this.saleMenuView = new SaleMenu(saleService, productService);
-        this.accessoryMenuView = new AccessoryMenu(accessoryService);
-        this.promotionMenuView = new PromotionMenu(promotionService);
-        this.returnMenuView = new ReturnMenu(returnService, monthlyBalanceService);
-        this.warrantyMenuView = new WarrantyMenu(warrantyService);
+    public MainMenu(List<AreaMenu> areaMenus) {
+        this.areaMenus = areaMenus;
     }
 
     /**
@@ -66,18 +40,15 @@ public class MainMenu {
      * the user chooses to exit.
      */
     public void start() {
+        List<String> titles = new ArrayList<>();
+        for (AreaMenu areaMenu : areaMenus) {
+            titles.add(areaMenu.getTitle());
+        }
+        titles.add(EXIT_OPTION);
+        String[] options = titles.toArray(new String[0]);
+
         boolean running = true;
         while (running) {
-            String[] options = {
-                    "Gestionar productos",
-                    "Gestionar clientes y vendedores",
-                    "Gestionar ventas",
-                    "Gestionar accesorios",
-                    "Gestionar promociones",
-                    "Gestionar devoluciones",
-                    "Gestionar garantías",
-                    "Salir"
-            };
             Object selectedOption = JOptionPane.showInputDialog(
                     null,
                     "Seleccione una opción:",
@@ -92,15 +63,10 @@ public class MainMenu {
                     : java.util.Arrays.asList(options).indexOf(selectedOption);
 
             try {
-                switch (choice) {
-                    case 0 -> productMenuView.show();
-                    case 1 -> personMenuView.show();
-                    case 2 -> saleMenuView.show();
-                    case 3 -> accessoryMenuView.show();
-                    case 4 -> promotionMenuView.show();
-                    case 5 -> returnMenuView.show();
-                    case 6 -> warrantyMenuView.show();
-                    case 7, -1 -> running = false;
+                if (choice >= 0 && choice < areaMenus.size()) {
+                    areaMenus.get(choice).show();
+                } else {
+                    running = false;
                 }
             } catch (ResourceNotFoundException e) {
                 MenuDialogs.showResourceNotFound(e);

@@ -13,7 +13,7 @@ import javax.swing.JOptionPane;
  * Extracted out of MainMenu so this area's UI logic is cohesive on its
  * own (GRASP audit finding V-06: High Cohesion).
  */
-public class PromotionMenu {
+public class PromotionMenu implements AreaMenu {
 
     private final PromotionService promotionService;
 
@@ -26,9 +26,15 @@ public class PromotionMenu {
         this.promotionService = promotionService;
     }
 
+    @Override
+    public String getTitle() {
+        return "Gestionar promociones";
+    }
+    
     /**
      * Shows the promotion menu and dispatches the chosen option.
      */
+    @Override
     public void show() {
         String[] options = {
                 "Registrar promoción por porcentaje",
