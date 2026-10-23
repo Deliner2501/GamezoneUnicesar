@@ -31,16 +31,6 @@ public class BasicWarranty extends Warranty {
     public String getWarrantyType() {
         return "Garantía Básica";
     }
-    
-        /**
-     * Returns the code used to identify this warranty type in storage.
-     *
-     * @return "BASIC"
-     */
-    @Override
-    public String getTypeCode() {
-        return "BASIC";
-    }
 
     /**
      * Returns the additional cost of a basic warranty: none.

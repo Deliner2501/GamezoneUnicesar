@@ -73,16 +73,4 @@ public class CategoryDiscount extends Promotion {
         ProductCategory target = ProductCategory.fromText(targetCategory);
         return target != null && product.getCategory() == target;
     }
-
-    /**
-     * Returns the CSV line that represents this promotion.
-     *
-     * @return the line in the format CATEGORY,id,name,start,end,percentage,category
-     */
-    @Override
-    public String toCsvLine() {
-        return "CATEGORY," + getId() + "," + getName() + ","
-                + getStartDate() + "," + getEndDate() + ","
-                + percentage + "," + targetCategory;
-    }
 }
