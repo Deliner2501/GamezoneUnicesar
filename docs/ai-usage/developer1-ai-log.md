@@ -264,3 +264,14 @@ He explained to me the Conventional Commits convention that the workshop require
 - **Decision:** Accepted.
 - **Related commit:** -
 
+
+### Entry 6
+- **Date:** 2026-10-23
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Finish V-08 once Developer 2 switched the DAOs.
+- **Query:** I pasted the model classes and the grep output showing only the definitions were left, and asked for the classes without the storage methods.
+- **Response summary:** It gave the 11 complete model classes without toCsvLine, getTypeCode and compatibleConsolesAsCsv.
+- **Decision:** Accepted. I built the project, tested accessories, promotions and warranties, and checked that the CSV files kept the same format.
+- **Related commit:** V-08 final commit hash
+
