@@ -108,6 +108,7 @@ Pull Request: _pending_.
 |---|---|---|---|---|---|
 | `AccessoryRepository` (new), `AccessoryDAO`, `AccessoryService` | Added the `AccessoryRepository` interface (`save`, `findAll`, `findById`, `update`); `AccessoryDAO` implements it and `AccessoryService` now receives the interface instead of the concrete DAO. `Main` is unchanged because it already passes an `AccessoryDAO`. Behavior, messages and `accessories.csv` are unchanged | V-24 | DIP | refactor: make AccessoryService depend on AccessoryRepository (V-24) | Developer 2 |
 | `PromotionRepository` (new), `PromotionDAO`, `PromotionService` | Added the `PromotionRepository` interface (`saveAll`, `loadAll`); `PromotionDAO` implements it and `PromotionService` now receives the interface instead of the concrete DAO. `Main` is unchanged because it already passes a `PromotionDAO`. Behavior, messages and `promotions.csv` are unchanged | V-25 | DIP | refactor: make PromotionService depend on PromotionRepository (V-25) | Developer 2 |
+| `ReturnRecordResolver` (new), `ReturnService`, `Main` | Extracted `loadAllReturns` and `resolveReturn` to the new `ReturnRecordResolver`, which rebuilds `Return` objects from the stored records. `ReturnService` receives the resolver in its constructor and delegates to it; `Main` creates the resolver and passes it. The lookup logic is unchanged, so listings, messages and `returns.csv` stay the same | V-17 | SRP | refactor: extract ReturnRecordResolver from ReturnService (V-17) | Developer 2 |
 
 ## Out-of-scope findings and justifications
 
