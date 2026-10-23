@@ -16,8 +16,7 @@ public class ProductDAO implements ProductRepository {
 
     private final String filePath;
     private final DataLogger logger;
-    private final List<ProductCsvMapper> mappers =
-            List.of(new VideoGameCsvMapper(), new ConsoleCsvMapper());
+    private final List<ProductCsvMapper> mappers;
 
     /**
      * Creates a DAO that uses the default file and reports warnings to the console.
@@ -36,14 +35,28 @@ public class ProductDAO implements ProductRepository {
     }
 
     /**
-     * Creates a DAO that uses the given file and logger.
+     * Creates a DAO that uses the given file and logger, with the default
+     * mappers (video games and consoles).
      *
      * @param filePath the CSV file where products are stored
      * @param logger   the logger that receives the warnings
      */
     public ProductDAO(String filePath, DataLogger logger) {
+        this(filePath, logger, List.of(new VideoGameCsvMapper(), new ConsoleCsvMapper()));
+    }
+
+    /**
+     * Creates a DAO that uses the given file, logger and product mappers.
+     * Supporting a new product type only requires passing its mapper here.
+     *
+     * @param filePath the CSV file where products are stored
+     * @param logger   the logger that receives the warnings
+     * @param mappers  the mappers of the product types this DAO supports
+     */
+    public ProductDAO(String filePath, DataLogger logger, List<ProductCsvMapper> mappers) {
         this.filePath = filePath;
         this.logger = logger;
+        this.mappers = List.copyOf(mappers);
     }
 
     /**
