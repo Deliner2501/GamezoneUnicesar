@@ -107,7 +107,7 @@ Pull Request: _pending_.
 | Class | Change made | Violation ID | Principle applied | Commit/PR | Responsible |
 |---|---|---|---|---|---|
 | `AccessoryRepository` (new), `AccessoryDAO`, `AccessoryService` | Added the `AccessoryRepository` interface (`save`, `findAll`, `findById`, `update`); `AccessoryDAO` implements it and `AccessoryService` now receives the interface instead of the concrete DAO. `Main` is unchanged because it already passes an `AccessoryDAO`. Behavior, messages and `accessories.csv` are unchanged | V-24 | DIP | refactor: make AccessoryService depend on AccessoryRepository (V-24) | Developer 2 |
-
+| `PromotionRepository` (new), `PromotionDAO`, `PromotionService` | Added the `PromotionRepository` interface (`saveAll`, `loadAll`); `PromotionDAO` implements it and `PromotionService` now receives the interface instead of the concrete DAO. `Main` is unchanged because it already passes a `PromotionDAO`. Behavior, messages and `promotions.csv` are unchanged | V-25 | DIP | refactor: make PromotionService depend on PromotionRepository (V-25) | Developer 2 |
 
 ## Out-of-scope findings and justifications
 
