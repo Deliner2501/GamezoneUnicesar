@@ -1,6 +1,7 @@
 package com.gamezone.validation;
 
 import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.model.ProductCategory;
 
 /**
  * Groups the validation rules related to promotions. Services call
@@ -27,17 +28,14 @@ public class PromotionValidator {
 
     /**
      * Validates that the target category of a category discount is one
-     * of the supported categories: VIDEOGAME, CONSOLE or ACCESSORY
+     * of the categories defined by {@link ProductCategory}
      * (case-insensitive).
      *
      * @param targetCategory the target category to check
      * @throws InvalidDataException if the category is null or not supported
      */
     public static void validateTargetCategory(String targetCategory) {
-        if (targetCategory == null
-                || !(targetCategory.equalsIgnoreCase("VIDEOGAME")
-                     || targetCategory.equalsIgnoreCase("CONSOLE")
-                     || targetCategory.equalsIgnoreCase("ACCESSORY"))) {
+        if (ProductCategory.fromText(targetCategory) == null) {
             throw new InvalidDataException("categoría objetivo",
                     "debe ser VIDEOGAME, CONSOLE o ACCESSORY");
         }
