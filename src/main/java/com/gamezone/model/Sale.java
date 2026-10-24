@@ -192,6 +192,22 @@ public class Sale {
     public double getDiscountAmount() {
         return discountAmount;
     }
+    
+    /**
+     * Returns the proportion of the subtotal that was discounted by the
+     * applied promotion, as a fraction (for example, 0.1 for a 10%
+     * discount). Used by classes that need to apply the same discount
+     * proportion to a subset of this sale's products — such as
+     * {@link com.gamezone.model.Return} when calculating a partial
+     * refund — instead of recomputing the rate themselves
+     * (GRASP audit finding V-09: Information Expert).
+     *
+     * @return the discount rate, or 0.0 if no promotion was applied or
+     *         the subtotal is zero
+     */
+    public double getDiscountRate() {
+        return discountAmount / total;
+    }
 
     /**
      * Returns the final amount to charge for this sale, after subtracting
@@ -226,33 +242,6 @@ public void addAdditionalCost(double amount) {
 public double getAdditionalCost() {
     return additionalCost;
 }
-
-    /**
-     * Builds a readable receipt for this sale, showing the subtotal,
-     * the discount applied (if any), and the final total.
-     *
-     * @return a formatted, multi-line receipt
-     */
-    public String generateReceipt() {
-        StringBuilder receipt = new StringBuilder();
-        receipt.append("Recibo de venta ").append(id).append("\n");
-        receipt.append("Fecha: ").append(date).append("\n");
-        receipt.append("Cliente: ").append(customer.getName()).append("\n");
-        receipt.append("Vendedor: ").append(seller.getName()).append("\n");
-        receipt.append("Productos: ").append(products.size()).append("\n");
-        receipt.append("Subtotal: ").append(total).append("\n");
-        if (additionalCost > 0) {
-            receipt.append("Cargos adicionales (garantías extendidas): ").append(additionalCost).append("\n");
-        }
-        if (appliedPromotionName != null) {
-            receipt.append("Descuento aplicado (").append(appliedPromotionName)
-                    .append("): -").append(discountAmount).append("\n");
-        } else {
-            receipt.append("Descuento aplicado: ninguno\n");
-        }
-        receipt.append("Total final: ").append(getFinalTotal());
-        return receipt.toString();
-    }
 
     /**
      * Returns a readable representation of this sale.

@@ -2,6 +2,8 @@ package com.gamezone.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
+
 
 /**
  * Represents a customer of the store.
@@ -39,7 +41,7 @@ public class Customer extends Person {
      * @return the purchase history
      */
     public List<Sale> getPurchaseHistory() {
-        return purchaseHistory;
+        return Collections.unmodifiableList(purchaseHistory);
     }
 
     /**

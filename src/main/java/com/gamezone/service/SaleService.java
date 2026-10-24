@@ -1,18 +1,20 @@
 package com.gamezone.service;
 
 import com.gamezone.model.Customer;
-import com.gamezone.model.Accessory;
-import com.gamezone.model.Console;
 import com.gamezone.model.Product;
 import com.gamezone.model.Promotion;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
 import com.gamezone.model.Warranty;
-import com.gamezone.persistence.ProductDAO;
-import com.gamezone.persistence.AccessoryDAO;
-import com.gamezone.persistence.SaleDAO;
+import com.gamezone.exceptions.BusinessRuleException;
+import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.exceptions.ResourceNotFoundException;
+import com.gamezone.persistence.SaleRepository;
+import com.gamezone.validation.SaleValidator;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +27,8 @@ import java.util.Map;
  */
 public class SaleService {
 
-    private SaleDAO saleDAO;
-    private ProductDAO productDAO;
-    private AccessoryDAO accessoryDAO;
+    private SaleRepository saleRepository;
+    private List<SaleItemSource> itemSources;
     private PromotionService promotionService;
     private WarrantyService warrantyService;
     private PersonService personService;
@@ -35,61 +36,43 @@ public class SaleService {
     /**
      * Creates a SaleService with its required collaborators.
      *
-     * @param saleDAO       the DAO used to persist and query sales
-     * @param productDAO    the DAO used to look up and update product stock
+     * @param saleRepository the repository used to persist and query sales
      * @param personService the service used to resolve customers and sellers by id
-     * @param accessoryDAO  the DAO used to look up and update accessory stock
+     * @param productService   the service that owns products and their stock
+     * @param accessoryService the service that owns accessories and their stock
      * @param promotionService the service used to find and apply the best available promotion
      */
-        public SaleService(SaleDAO saleDAO, ProductDAO productDAO, AccessoryDAO accessoryDAO,
-                    PromotionService promotionService, PersonService personService) {
-    this.saleDAO = saleDAO;
-    this.productDAO = productDAO;
-    this.accessoryDAO = accessoryDAO;
-    this.promotionService = promotionService;
-    this.personService = personService;
-}
+    public SaleService(SaleRepository saleRepository, ProductService productService, AccessoryService accessoryService,
+                        PromotionService promotionService, PersonService personService) {
+        this.saleRepository = saleRepository;
+        this.itemSources = List.of(
+            new ProductItemSource(productService),
+            new AccessoryItemSource(accessoryService));
+        this.promotionService = promotionService;
+        this.personService = personService;
+    }
 
-/**
- * Sets the warranty service used to automatically assign basic and
- * extended warranties when a sale is registered. Injected separately
- * from the constructor to break the circular dependency between
- * SaleService and WarrantyRepository (which itself depends on
- * SaleService to resolve sale references when loading warranties).
- *
- * @param warrantyService the service used to assign warranties
- */
-public void setWarrantyService(WarrantyService warrantyService) {
-    this.warrantyService = warrantyService;
-}
+    /**
+     * Sets the warranty service used to automatically assign basic and
+     * extended warranties when a sale is registered. Injected separately
+     * from the constructor to break the circular dependency between
+     * SaleService and WarrantyRepository (which itself depends on
+     * SaleService to resolve sale references when loading warranties).
+     *
+     * @param warrantyService the service used to assign warranties
+     */
+    public void setWarrantyService(WarrantyService warrantyService) {
+        this.warrantyService = warrantyService;
+    }
 
     /**
      * Registers a new sale for the given customer and seller, buying the
-     * requested quantity of each product. The sale is rejected if the
-     * product map is empty, if any product does not exist, or if any
-     * product does not have enough stock available. If the sale is
-     * accepted, the stock of every involved product is reduced and
-     * the sale is persisted.
-     *
-     * @param saleId            the unique identifier for the new sale
-     * @param date              the date of the sale
-     * @param customerId        the id of the customer making the purchase
-     * @param sellerId          the id of the seller attending the sale
-     * @param productQuantities a map of product id to quantity purchased
-     * @param productIdsWithExtendedWarranty ids of the console products that should
-     *        additionally receive an extended warranty (can be null or empty)
-     * @return the registered sale, with its total already calculated
-     * @throws IllegalArgumentException if the product list is empty, a
-     *         customer/seller/product is not found, or stock is insufficient
-     * @throws IOException if the sale cannot be persisted
-     */
-            /**
-     * Registers a new sale for the given customer and seller, buying the
      * requested quantity of each product. The registration follows a
-     * fixed, unified sequence: validate the request, resolve every item
-     * and check its stock, build the sale and its subtotal, apply the
-     * best available promotion, generate warranties, calculate the final
-     * total, update the inventory, and finally persist everything.
+     * fixed, unified sequence: resolve the customer and seller, resolve
+     * every item and check its stock, validate the overall sale data,
+     * build the sale and its subtotal, apply the best available
+     * promotion, generate warranties, calculate the final total, update
+     * the inventory, and finally persist everything.
      *
      * @param saleId            the unique identifier for the new sale
      * @param date              the date of the sale
@@ -99,99 +82,155 @@ public void setWarrantyService(WarrantyService warrantyService) {
      * @param productIdsWithExtendedWarranty ids of the console products that should
      *        additionally receive an extended warranty (can be null or empty)
      * @return the registered sale, with its total already calculated
-     * @throws IllegalArgumentException if the product list is empty, a
-     *         customer/seller/product is not found, or stock is insufficient
+     * @throws ResourceNotFoundException if the customer, seller, or a product/accessory is not found
+     * @throws InvalidDataException if a requested quantity is not positive
+     * @throws BusinessRuleException if the sale has no products or stock is insufficient
      * @throws IOException if the sale cannot be persisted
      */
-    public Sale registerSale(String saleId, LocalDate date, String customerId, String sellerId,
+        public Sale registerSale(String saleId, LocalDate date, String customerId, String sellerId,
                               Map<String, Integer> productQuantities,
                               List<String> productIdsWithExtendedWarranty) throws IOException {
 
-        // Step 1: validate that the sale has at least one item.
-        if (productQuantities == null || productQuantities.isEmpty()) {
-            throw new IllegalArgumentException("A sale must contain at least one product");
+        Map<String, Integer> quantities = (productQuantities != null) ? productQuantities : Collections.emptyMap();
+
+        Customer customer = resolveCustomer(customerId);
+        Seller seller = resolveSeller(sellerId);
+
+        Map<SaleItemSource, Map<Product, Integer>> resolvedItems = resolveSaleItems(quantities);
+
+        List<Product> allItems = new ArrayList<>();
+        for (Map<Product, Integer> items : resolvedItems.values()) {
+            allItems.addAll(items.keySet());
+        }
+        SaleValidator.validateSaleData(customer, seller, allItems);
+
+        Sale sale = buildSale(saleId, date, customer, seller, resolvedItems);
+
+        applyBestPromotion(sale);
+
+        double warrantyCost = assignWarranties(sale, allItems, productIdsWithExtendedWarranty);
+        if (warrantyCost > 0) {
+            sale.addAdditionalCost(warrantyCost);
         }
 
+        updateInventory(resolvedItems);
+
+        saleRepository.save(sale);
+        customer.addPurchase(sale);
+
+        return sale;
+    }
+
+    /**
+     * Resolves the customer by id.
+     *
+     * @throws ResourceNotFoundException if no customer has that id
+     */
+    private Customer resolveCustomer(String customerId) {
         Customer customer = personService.findCustomerById(customerId);
         if (customer == null) {
-            throw new IllegalArgumentException("Customer not found: " + customerId);
+            throw new ResourceNotFoundException("cliente", customerId);
         }
+        return customer;
+    }
 
+    /**
+     * Resolves the seller by id.
+     *
+     * @throws ResourceNotFoundException if no seller has that id
+     */
+    private Seller resolveSeller(String sellerId) {
         Seller seller = personService.findSellerById(sellerId);
         if (seller == null) {
-            throw new IllegalArgumentException("Seller not found: " + sellerId);
+            throw new ResourceNotFoundException("vendedor", sellerId);
+        }
+        return seller;
+    }
+
+        /**
+     * Resolves each requested item id against the item sources in order
+     * (products first, then accessories), validating stock BEFORE any
+     * inventory is touched, so a failure halfway through never leaves the
+     * system in an inconsistent state.
+     *
+     * @return the resolved items with their quantities, grouped by the
+     *         source that owns them, in source order
+     */
+    private Map<SaleItemSource, Map<Product, Integer>> resolveSaleItems(Map<String, Integer> quantities) {
+        Map<SaleItemSource, Map<Product, Integer>> resolvedItems = new LinkedHashMap<>();
+        for (SaleItemSource source : itemSources) {
+            resolvedItems.put(source, new LinkedHashMap<>());
         }
 
-        // Step 2: resolve each item as a product or an accessory, validating
-        // stock BEFORE touching any inventory, so a failure halfway through
-        // never leaves the system in an inconsistent state.
-        Map<Product, Integer> resolvedProducts = new LinkedHashMap<>();
-        Map<Accessory, Integer> resolvedAccessories = new LinkedHashMap<>();
-        for (Map.Entry<String, Integer> entry : productQuantities.entrySet()) {
+        for (Map.Entry<String, Integer> entry : quantities.entrySet()) {
             String itemId = entry.getKey();
             int quantity = entry.getValue();
             if (quantity <= 0) {
-                throw new IllegalArgumentException("Quantity must be positive for item: " + itemId);
+                throw new InvalidDataException("cantidad",
+                        "debe ser mayor que cero para el ítem " + itemId);
             }
 
-            Product product = productDAO.findById(itemId);
-            if (product != null) {
-                if (product.getStock() < quantity) {
-                    throw new IllegalArgumentException(
-                            "Insufficient stock for product: " + product.getTitle()
-                                    + " (available: " + product.getStock() + ", requested: " + quantity + ")");
+            boolean found = false;
+            for (SaleItemSource source : itemSources) {
+                Product item = source.findItem(itemId);
+                if (item != null) {
+                    source.validateStock(item, quantity);
+                    resolvedItems.get(source).put(item, quantity);
+                    found = true;
+                    break;
                 }
-                resolvedProducts.put(product, quantity);
-                continue;
             }
-
-            Accessory accessory = accessoryDAO.findById(itemId);
-            if (accessory != null) {
-                if (accessory.getStock() < quantity) {
-                    throw new IllegalArgumentException(
-                            "Insufficient stock for accessory: " + accessory.getTitle()
-                                    + " (available: " + accessory.getStock() + ", requested: " + quantity + ")");
-                }
-                resolvedAccessories.put(accessory, quantity);
-                continue;
+            if (!found) {
+                throw new ResourceNotFoundException("producto", itemId);
             }
-
-            throw new IllegalArgumentException("Product or accessory not found: " + itemId);
         }
+        return resolvedItems;
+    }
 
-        // Step 3: create the sale and add every resolved item, which
-        // calculates the subtotal automatically as each one is added.
+    /**
+     * Creates the sale and adds every resolved item, which recalculates
+     * the subtotal automatically as each one is added.
+     */
+    private Sale buildSale(String saleId, LocalDate date, Customer customer, Seller seller,
+                            Map<SaleItemSource, Map<Product, Integer>> resolvedItems) {
         Sale sale = new Sale(saleId, date, customer, seller);
-        for (Map.Entry<Product, Integer> entry : resolvedProducts.entrySet()) {
-            Product product = entry.getKey();
-            int quantity = entry.getValue();
-            for (int i = 0; i < quantity; i++) {
-                sale.addProduct(product);
+        for (Map<Product, Integer> items : resolvedItems.values()) {
+            for (Map.Entry<Product, Integer> entry : items.entrySet()) {
+                Product item = entry.getKey();
+                int quantity = entry.getValue();
+                for (int i = 0; i < quantity; i++) {
+                    sale.addProduct(item);
+                }
             }
         }
-        for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
-            Accessory accessory = entry.getKey();
-            int quantity = entry.getValue();
-            for (int i = 0; i < quantity; i++) {
-                sale.addProduct(accessory);
-            }
-        }
+        return sale;
+    }
 
-        // Step 4: find and register the best applicable promotion. This is
-        // calculated strictly over the items' subtotal, before any warranty
-        // cost is added, so warranties are never discounted.
+    /**
+     * Finds and applies the best available promotion to the sale, if any.
+     * Calculated strictly over the items' subtotal, before any warranty
+     * cost is added, so warranties are never discounted.
+     */
+    private void applyBestPromotion(Sale sale) {
         Promotion bestPromotion = promotionService.findBestPromotionFor(sale);
         if (bestPromotion != null) {
             double discount = bestPromotion.calculateDiscount(sale);
             sale.applyPromotion(bestPromotion.getName(), discount);
         }
+    }
 
-        // Step 5: generate the automatic basic warranty for every console in
-        // the sale, plus any extended warranty explicitly requested for a
-        // console, summing the extended warranties' additional cost.
+    /**
+     * Assigns the automatic basic warranty to every product in the sale
+     * that requires one, plus any extended warranty explicitly requested,
+     * and returns the total extended-warranty cost to add to the sale.
+     * Asks each product whether it requires a warranty instead of
+     * checking its concrete type (GRASP audit finding V-04: Polymorphism).
+     */
+    private double assignWarranties(Sale sale, List<Product> items,
+                                     List<String> productIdsWithExtendedWarranty) throws IOException {
         double warrantyCost = 0.0;
-        for (Product product : resolvedProducts.keySet()) {
-            if (product instanceof Console) {
+        for (Product product : items) {
+            if (product.requiresWarranty()) {
                 warrantyService.assignBasicWarranty(product, sale, sale.getDate());
 
                 boolean wantsExtendedWarranty = productIdsWithExtendedWarranty != null
@@ -202,34 +241,20 @@ public void setWarrantyService(WarrantyService warrantyService) {
                 }
             }
         }
+        return warrantyCost;
+    }
 
-        // Step 6: register the warranty cost so the final total reflects it
-        // (Sale.getFinalTotal() = subtotal - discount + additional cost).
-        if (warrantyCost > 0) {
-            sale.addAdditionalCost(warrantyCost);
+     /**
+     * Updates the inventory, delegating to the source that owns each
+     * item's stock.
+     */
+    private void updateInventory(Map<SaleItemSource, Map<Product, Integer>> resolvedItems) {
+        for (Map.Entry<SaleItemSource, Map<Product, Integer>> sourceEntry : resolvedItems.entrySet()) {
+            SaleItemSource source = sourceEntry.getKey();
+            for (Map.Entry<Product, Integer> entry : sourceEntry.getValue().entrySet()) {
+                source.reduceStock(entry.getKey(), entry.getValue());
+            }
         }
-
-        // Step 7: update the inventory, delegating to the DAO that owns
-        // each item's stock according to its type.
-        for (Map.Entry<Product, Integer> entry : resolvedProducts.entrySet()) {
-            Product product = entry.getKey();
-            int quantity = entry.getValue();
-            product.reduceStock(quantity);
-            productDAO.update(product);
-        }
-        for (Map.Entry<Accessory, Integer> entry : resolvedAccessories.entrySet()) {
-            Accessory accessory = entry.getKey();
-            int quantity = entry.getValue();
-            accessory.reduceStock(quantity);
-            accessoryDAO.update(accessory);
-        }
-
-        // Step 8: persist the sale. Warranties were already persisted
-        // individually as they were assigned in step 5.
-        saleDAO.save(sale);
-        customer.addPurchase(sale);
-
-        return sale;
     }
 
     /**
@@ -239,7 +264,7 @@ public void setWarrantyService(WarrantyService warrantyService) {
      * @throws IOException if the sales file cannot be read
      */
     public List<Sale> listSales() throws IOException {
-        return saleDAO.findAll();
+        return saleRepository.findAll();
     }
 
     /**
@@ -250,7 +275,7 @@ public void setWarrantyService(WarrantyService warrantyService) {
      * @throws IOException if the sales file cannot be read
      */
     public List<Sale> listSalesByCustomer(String customerId) throws IOException {
-        return saleDAO.findByCustomer(customerId);
+        return saleRepository.findByCustomer(customerId);
     }
 
     /**
@@ -261,22 +286,22 @@ public void setWarrantyService(WarrantyService warrantyService) {
      * @throws IOException if the sales file cannot be read
      */
     public List<Sale> listSalesBySeller(String sellerId) throws IOException {
-        return saleDAO.findBySeller(sellerId);
+        return saleRepository.findBySeller(sellerId);
     }
-    
+
     /**
- * Finds a sale by its id.
- *
- * @param saleId the id of the sale to find
- * @return the sale with the given id, or null if none is found
- * @throws IOException if the sales cannot be read from storage
- */
-public Sale findSaleById(String saleId) throws IOException {
-    for (Sale sale : saleDAO.findAll()) {
-        if (sale.getId().equals(saleId)) {
-            return sale;
+     * Finds a sale by its id.
+     *
+     * @param saleId the id of the sale to find
+     * @return the sale with the given id, or null if none is found
+     * @throws IOException if the sales cannot be read from storage
+     */
+    public Sale findSaleById(String saleId) throws IOException {
+        for (Sale sale : saleRepository.findAll()) {
+            if (sale.getId().equals(saleId)) {
+                return sale;
+            }
         }
+        return null;
     }
-    return null;
-}
 }

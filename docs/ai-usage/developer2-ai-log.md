@@ -162,3 +162,225 @@ That error appears the first time you push a new branch to GitHub, because there
 | Response | Proposed adding warrantyRefund to Return's constructor and including it in calculateRefundAmount and generateReturnReceipt; in ReturnService, calculating the warranty refund before creating the Return, only for products instanceof Console. While cross-checking references to the modified constructor, found that ReturnRepository.fromLine still used the old Return constructor and that the CSV file did not persist warrantyRefund, which would have lost that value on reload (the warranties would already be deleted and could not be recalculated); fixed by adding the field to the file format. |
 | Decision | All proposed changes were accepted, including the ReturnRepository fix found during the cross-check of the modified constructor's references. |
 | Related commit | feat: refund canceled warranties on console return and persist them |
+
+
+## Requirement 6 - Validations and Exceptions (ProductService, PersonService, SaleService, ProductDAO, PersonDAO, SaleDAO)
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor ProductService to delegate validation to ProductValidator and throw typed exceptions instead of IllegalArgumentException. |
+| Query | Asked how to replace the inline validation in registerProduct and restoreStock with calls to ProductValidator.validateProductData and ProductValidator.validateProductExists, without breaking findProductById and checkStock, which other classes rely on returning null/false instead of throwing. |
+| Response | Proposed throwing InvalidDataException directly for a null Product (since ProductValidator.validateProductData requires primitives already extracted), delegating the rest of registerProduct's checks to the validator, and using validateProductExists in restoreStock. Recommended leaving findProductById and checkStock unchanged, since ReturnRepository and WarrantyService depend on their null/false contract as a sentinel value. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: use ProductValidator and typed exceptions in ProductService |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor PersonService to delegate validation to PersonValidator and throw typed exceptions. |
+| Query | Asked how to add data and uniqueness validation to registerCustomer using PersonValidator, given that the method previously only checked for a duplicate id and validated nothing else. |
+| Response | Proposed calling PersonValidator.validatePersonData before building the Customer, then PersonValidator.validateUniquePerson (which requires a List<Person>) by wrapping the existing List<Customer> in a new ArrayList<Person> to satisfy Java's generic invariance. Recommended leaving findCustomerById/findSellerById unchanged (still nullable), since SaleService relies on that null to detect a missing customer/seller. |
+| Decision | Accepted as proposed; flagged as an additive validation (customer data was not previously validated at all), which the requirement explicitly allows. |
+| Related commit | refactor: use PersonValidator and typed exceptions in PersonService |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor SaleService.registerSale to use ProductValidator, SaleValidator and typed exceptions for every failure path. |
+| Query | Asked how to map each existing IllegalArgumentException in registerSale (customer/seller not found, invalid quantity, product/accessory not found, insufficient stock, empty product list) to the appropriate custom exception and validator call. |
+| Response | Proposed: ResourceNotFoundException thrown directly for a missing customer/seller (more specific than PersonValidator.validatePersonExists, which only reports a generic "persona"); InvalidDataException thrown directly for a non-positive quantity (no dedicated validator method exists for this); ProductValidator.validateStockAvailability for insufficient product stock; BusinessRuleException thrown directly for insufficient accessory stock (no AccessoryValidator exists, out of this requirement's scope); ResourceNotFoundException for an item that is neither a product nor an accessory; and SaleValidator.validateSaleData(customer, seller, combinedItemsList), called once all items are resolved, to enforce the "at least one product" rule. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: use ProductValidator, SaleValidator and typed exceptions in SaleService |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor ProductDAO so IOException is caught internally and relaunched as PersistenceException with file and operation context. |
+| Query | Asked how to change ProductDAO's existing behavior, which silently swallowed IOException (printing a message and continuing with an empty/partial list), into raising PersistenceException as the requirement specifies. |
+| Response | Proposed wrapping the existing try/catch(IOException) blocks in findAll() and writeAll() to throw `new PersistenceException(message, e)` instead of printing, including the file path and whether it was a read or write operation in the message. Noted this is a real behavior change (errors now surface instead of being silently ignored), which matches the requirement's intent. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: wrap IOException as PersistenceException in ProductDAO |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor PersonDAO so IOException is caught internally and relaunched as PersistenceException. |
+| Query | Asked whether removing the `throws IOException` declaration from PersonDAO's methods was necessary once the IOException was wrapped internally, given that PersonService and MainMenu's catch blocks depend on it. |
+| Response | Explained that Java allows a method to keep declaring a checked exception (`throws IOException`) even if nothing in its body can throw it anymore, so PersonDAO's methods can keep that declaration unchanged while internally throwing PersistenceException (unchecked) on failure. Recommended this over removing the declaration, to avoid a cascading, unplanned change into PersonService and MainMenu (the latter being the Technical Leader's responsibility, per the team's own coordination notes for this requirement). Also proposed changing the null-list check from IllegalArgumentException to InvalidDataException. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: wrap IOException as PersistenceException in PersonDAO |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-09 |
+| Tool | Claude |
+| Phase and branch | feature/exception-handling |
+| Objective | Refactor SaleDAO so IOException is caught internally and relaunched as PersistenceException, consistent with ProductDAO and PersonDAO. |
+| Query | Asked for the equivalent change in SaleDAO's save and findAll methods, the only two points that perform real file I/O in that class. |
+| Response | Proposed the same pattern used in PersonDAO: wrap the try-with-resources blocks in save() and findAll() with catch(IOException e) that throws PersistenceException with file and operation context, while keeping `throws IOException` declared on the public method signatures for the same compatibility reason explained for PersonDAO. |
+| Decision | Accepted as proposed. |
+| Related commit | refactor: wrap IOException as PersistenceException in SaleDAO |
+
+
+
+## Requirement 7 - GRASP Audit
+
+### Phase 1 - Audit
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit the Person/Customer/Seller hierarchy, PersonDAO and PersonService against the nine GRASP patterns. |
+| Query | Asked for a pattern-by-pattern review of my own Requirement 1/Workshop 1 people classes, following the same format the Líder Técnico used in leader-audit.md (one section per class, nine pattern subsections each, explicit violations with evidence/explanation/consequence/proposed solution). |
+| Response | Found two violations: Customer.getPurchaseHistory() returns the live mutable list instead of an unmodifiable view (Protected Variations); PersonDAO/PersonService still declare throws IOException even though the checked exception is fully wrapped as PersistenceException internally since Requirement 6, misstating the real failure contract (Protected Variations). Everything else (Information Expert, Creator, Controller, Low/High Cohesion, Polymorphism, Pure Fabrication, Indirection) was judged correctly applied or not applicable, with justification for each verdict. |
+| Decision | Accepted both findings as documented; flagged the dead throws IOException issue as needing coordination with the Líder Técnico's MainMenu catch blocks. |
+| Related commit | docs: add Person/Customer/Seller hierarchy GRASP audit findings; docs: add PersonDAO GRASP audit findings; docs: add PersonService GRASP audit findings |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit AccessoryDAO and AccessoryService against the nine GRASP patterns. |
+| Query | Same audit format as above, applied to the accessories module, which (unlike Product/Person/Sale) was never refactored during Requirement 6. |
+| Response | Found four violations: AccessoryDAO.writeAll() and AccessoryService.matchesType() use instanceof/type-string checks instead of polymorphic dispatch (Polymorphism); AccessoryDAO silently swallows IOException via System.out.println instead of wrapping it as PersistenceException (Protected Variations); AccessoryService keeps validation as a private method instead of a dedicated AccessoryValidator, unlike every other domain in the project (Pure Fabrication); AccessoryService throws raw IllegalArgumentException instead of the typed GameZoneException hierarchy (Protected Variations). |
+| Decision | Accepted all four findings; noted two (the instanceof checks) require a type-discriminator method added to the Accessory hierarchy, which is Developer 1's scope and needs coordination. |
+| Related commit | docs: add AccessoryDAO GRASP audit findings; docs: add AccessoryService GRASP audit findings |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit PromotionDAO and PromotionService against the nine GRASP patterns. |
+| Query | Same audit format, applied to the promotions module, also untouched by Requirement 6. |
+| Response | Found the same shape of violations as accessories, by the same root causes: instanceof checks in PromotionDAO.saveAll() instead of polymorphic serialization (Polymorphism); silently swallowed IOException (Protected Variations); validation logic as private methods instead of a PromotionValidator (Pure Fabrication); raw IllegalArgumentException instead of the typed hierarchy (Protected Variations). Also confirmed findBestPromotionFor() correctly uses polymorphism (calculateDiscount/isActive) with no violation. |
+| Decision | Accepted all findings; noted the parallel structure with the Accessory findings so the Líder can consolidate them as a recurring pattern across both modules if useful. |
+| Related commit | docs: add PromotionDAO GRASP audit findings; docs: add PromotionService GRASP audit findings |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit ReturnRepository and ReturnService (including the monthly balance methods) against the nine GRASP patterns. |
+| Query | Same audit format, applied to the returns module. Specifically asked whether ReturnRepository's dependency on SaleService/ProductService/AccessoryService was a Low Coupling problem, given the project's layering rule and the precedent set by the WarrantyRepository/A2 fix. |
+| Response | Confirmed it is a real violation: ReturnRepository (persistence layer) depends on three service-layer classes, inverting the required ui→service→persistence→model direction — the same shape already fixed for WarrantyRepository via the WarrantyRecord DTO in ajuste A2, never applied here. Proposed the same fix (a ReturnRecord DTO, resolution logic moved to ReturnService). Also found: silent println-based record skipping (Protected Variations); registerReturn concentrating nine responsibilities in one method, mirroring the Líder's SaleService finding (High Cohesion); instanceof Console/Accessory checks for warranty cancellation and stock routing (Polymorphism); raw IllegalArgumentException throughout (Protected Variations). The monthly balance methods were judged correctly placed and not a separate violation. |
+| Decision | Accepted all findings, including the Low Coupling one as the most significant finding of my audit. |
+| Related commit | docs: add ReturnRepository GRASP audit findings; docs: add ReturnService GRASP audit findings; docs: add monthly balance methods GRASP audit findings |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-13 |
+| Tool | Claude |
+| Phase and branch | feature/grasp-audit |
+| Objective | Audit WarrantyRepository and WarrantyService against the nine GRASP patterns. |
+| Query | Same audit format, applied to the warranty module, which was already partially fixed by ajuste A2. Asked whether the A2 fix resolved all GRASP concerns or only the circular-dependency one. |
+| Response | Confirmed Low Coupling and Indirection are now correctly applied (the DTO pattern works as intended), and High Cohesion/Polymorphism are also correct (no oversized methods, no instanceof on Warranty subtypes — getAdditionalCost/isActive are called polymorphically). Found two remaining, smaller violations: WarrantyRepository.toLine() still uses instanceof instead of Warranty.getWarrantyType() (Polymorphism); WarrantyRepository propagates raw IOException and WarrantyService uses raw IllegalArgumentException plus silent println skips, the same unmigrated-exception pattern found elsewhere (Protected Variations). |
+| Decision | Accepted both findings; noted this module needed the fewest fixes of all five, as expected given the prior A2 work. |
+| Related commit | docs: add WarrantyRepository GRASP audit findings; docs: add WarrantyService GRASP audit findings |
+
+| Field            | Content                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Date             | 2026-10-14                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Tool             | ChatGPT                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Phase and branch | feature/grasp-audit                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Objective        | Review and document the answers to orienting questions 2 and 3 in docs/grasp-analysis.md, focusing on cross-member violations and overlapping GRASP patterns.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Query            | Asked for help answering orienting questions 2 and 3 of Requirement 7. Question 2 required identifying concrete violations involving code owned by different team members, explaining how they were recorded in the consolidated audit, and assigning correction responsibilities. Question 3 required explaining how fragments violating multiple GRASP patterns were registered without duplicating findings and how the team selected the pattern guiding each correction.                                                                                                                                                                                                                                                           |
+| Response         | The analysis identified two cross-member cases for Question 2: ReturnRepository depends on service-layer classes, violating the required dependency direction, and the instanceof Console checks appear in SaleService, MainMenu and ReturnService. It explained how these findings should be documented in the individual reports and consolidated audit, with correction responsibilities assigned according to code ownership. For Question 3, it explained that Sale.generateReceipt() was registered under Protected Variations, with Pure Fabrication noted as a related pattern, while serialization instanceof checks were registered under Polymorphism because the proposed polymorphic methods directly address the problem. |
+| Decision         | Used the analysis to document the answers in English in docs/grasp-analysis.md. The answers were checked against the project's existing audit findings, class responsibilities and correction coordination rules to keep the explanations consistent with the repository.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Related commit   | 485ff83 — docs: answer orienting questions 2 and 3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+
+
+## Phase 2 — GRASP Refactor (branch `feature/grasp-refactor`)
+
+In Phase 2 the AI assistant was used to understand which violations of the consolidated audit were assigned to Developer 2, to propose the before/after code of each correction, and to explain compile errors. Every change was applied, compiled and tested by Developer 2 in NetBeans; each correction is one activity with its own `refactor:` commit and its own row in `docs/grasp-refactor-log.md`. Verification evidence is in `docs/grasp-refactor-verification-dev2.md`.
+
+| Date | Tool | Phase and branch | Objective | Query | Response | Decision | Related commit |
+|---|---|---|---|---|---|---|---|
+| 2026-10-14 | Claude | Phase 2, `feature/grasp-refactor` | Identify which violations of the consolidated audit belong to Developer 2 | Asked which violations I had to correct and how they map to my own audit IDs | Listed the 19 violations assigned to Developer 2, the mapping to my report IDs and the ones that depend on Developer 1 (FF-05, FF-06) | Worked one violation at a time, starting with the ones without dependencies | n/a |
+| 2026-10-14 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-15 and V-16 | Asked for the before/after code and the exact lines | Proposed `Collections.unmodifiableList` in `Customer` and removing the dead `throws IOException` from `PersonDAO` and `PersonService` | Applied both. The compile errors in `Main` and `MainMenu` (unreachable `catch (IOException)`) were fixed in the same commit after coordinating with the Technical Leader | 2ec20ac, 397611f, 1d3e6e4 |
+| 2026-10-14 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-31 and V-32 in the warranty persistence | Asked how to remove the `instanceof ExtendedWarranty` check and the unwrapped `IOException` | Proposed `Warranty.getTypeCode()` and wrapping the exception in `PersistenceException`. It first suggested reusing `getWarrantyType()`, which returns display text; that was an error, so a separate storage code was added | Applied the corrected design after getting permission from Developer 1 to edit the `Warranty` classes | 98f86d1 |
+| 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-33 in `WarrantyService` | Asked how to replace `IllegalArgumentException` and the `println` calls | Proposed `InvalidDataException` and removing the console output | Kept skipping orphan records silently instead of throwing, to avoid a behavior change | 4c84e80 |
+| 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-18 and V-23 in `AccessoryDAO` and `PromotionDAO` | Asked how to stop swallowing `IOException` | Proposed wrapping it in `PersistenceException` with a message naming the file and the operation | Applied as proposed; corrupted lines are still skipped to avoid a behavior change | 7ba3166, 5ba8b70 |
+| 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-20, V-21, V-24 and V-25 | Asked how to move validation out of the services and use typed exceptions | Proposed `AccessoryValidator` and `PromotionValidator` following `ProductValidator`; it checked that `MainMenu` already handles the typed exceptions in its central `catch` | Applied as proposed, keeping the validation rules unchanged. Two commits per pair: validator first, service second | ed86b8f, f1076d9, 9fa1c5d, 15c65fa |
+| 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-26 and V-27 in `ReturnRepository` | Asked how to remove the dependency on the service layer | Proposed the `ReturnRecord` raw record (same pattern as `WarrantyRecord`) and moving the resolution of sales and products to `ReturnService` | Applied as proposed, including the one-line change in `Main`, which was reported to the Technical Leader. Tested the returns flow manually | 65fc88d |
+| 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-28, V-29 and V-30 in `ReturnService` | Asked how to split `registerReturn`, replace the exceptions and remove `instanceof Console` | Proposed private helper methods, typed exceptions and `product.requiresWarranty()` | Applied as proposed. The `instanceof Accessory` used for stock restoration was kept as a documented exception | d7272e4, 3729f0a, 52c5354 |
+| 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Correct V-17, V-19 and V-22 after Developer 1 pushed `getTypeCode()` and `toCsvLine()` | Asked me to check that the new methods produce the same CSV text as the DAOs | Compared the output of `toCsvLine()` with the lines the DAOs wrote and confirmed they are identical; proposed using them in `AccessoryDAO`, `AccessoryService` and `PromotionDAO` | Applied as proposed; the CSV files are unchanged | fca12ea, 73b4a5d, 95839d5 |
+| 2026-10-15 | Claude | Phase 2, `feature/grasp-refactor` | Verify FF-07 and prepare the no-regression checklist | Asked how to check that no code modifies the lists Developer 1 makes unmodifiable, and for a manual test plan | Proposed a search for call sites and a 15-check manual table covering every flow touched | Ran the search and all 15 checks myself; all passed. Wrote the results in the verification file | 78980b3, c94446d |
+
+
+## Requirement 8 - SOLID Audit
+
+### Phase 1 - Audit
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-17 |
+| Tool | Claude |
+| Phase and branch | Phase 1, `feature/solid-audit` |
+| Objective | Audit my scope (Person/Customer/Seller, Accessory, Promotion, Return and Warranty services and persistence, GRASP correction classes) against the five SOLID principles and write `docs/solid-audit/developer2-audit.md`. |
+| Query | Asked for a scope section and one section per principle (SRP, OCP, LSP, ISP, DIP) in the same format used in Requirement 7: verdict per principle and, for each violation, ID, principle, module, evidence, explanation, consequence, proposed solution and code of another member. Asked to use the current state of `develop` after the Requirement 7 corrections. |
+| Response | Proposed 13 violations: SRP V-01 to V-04 (`PersonDAO` handles two entities; `ReturnService` mixes the monthly balance and the record mapping; `WarrantyService` mixes the record mapping and a duplicated sale lookup), OCP V-05 to V-08 (type `if/else` chains in `AccessoryDAO.parseLine` and `PromotionDAO.parseLine`, fixed categories in `PromotionValidator`, type condition in `WarrantyService.resolveWarranty`), ISP V-09 (`WarrantyService` depends on the whole `SaleDAO`), DIP V-10 to V-13 (services create or depend on concrete DAOs). LSP was judged correct. |
+| Decision | Checked each line number and quote against the code before pasting. Accepted all findings. Reported the findings that touch the Technical Leader's code (`SaleDAO`, `Main`, `ReturnMenu`, `SaleService` bypassing `AccessoryService`) in the field "Code of another member" and in the section "Reported to the Technical Leader". Kept `ReturnService.restoreStockOf` (`instanceof Accessory`) as the documented exception from Requirement 7. |
+| Related commit | docs: add scope section to developer2 SOLID audit; docs: add SRP findings to developer2 SOLID audit; docs: add OCP findings to developer2 SOLID audit; docs: add LSP analysis to developer2 SOLID audit; docs: add ISP findings to developer2 SOLID audit; docs: add DIP findings to developer2 SOLID audit; docs: add summary table to developer2 SOLID audit |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-17 |
+| Tool | Claude |
+| Phase and branch | Phase 1, `feature/solid-audit` |
+| Objective | Answer guiding questions 2 and 3 in `docs/solid-analysis.md`. |
+| Query | Asked for the answers to question 2 (boundary findings between members' code) and question 3 (relation with the GRASP audit), using real cases from my report. |
+| Response | Proposed the boundary cases V-01, V-02, V-09, V-10 to V-13 and the stock bypass in `SaleService`, and how they are registered and assigned. For GRASP, proposed V-03, V-04 and V-08 as SOLID problems left in code already corrected, and the polymorphic `toCsvLine()`/`getTypeCode()`, `requiresWarranty()` and the raw records as GRASP corrections that also solved a SOLID problem. |
+| Decision | Reviewed that the IDs match my report; the responsible person for each boundary correction is decided by the Technical Leader in the consolidation. |
+| Related commit | docs: add Developer 2 answers to SOLID guiding questions 2 and 3 |
+
+
+### Phase 2 - Correction
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-23 |
+| Tool | Claude |
+| Phase and branch | Phase 2, `feature/solid-refactor` |
+| Objective | Correct the Developer 2 violations of the consolidated audit that only touch my own classes: V-17, V-18, V-22, V-24, V-25 (and the matching log rows). |
+| Query | Asked how to extract `ReturnRecordResolver` and `WarrantyRecordResolver` from the services, how to make `WarrantyService` depend on `SaleReader` instead of `SaleDAO`, and how to introduce the `AccessoryRepository` and `PromotionRepository` interfaces. Asked for the exact before/after of each file and for the commit message. |
+| Response | Proposed moving the record-resolution methods unchanged to the new resolver classes, injecting the resolvers through the service constructors and `Main`, and using `SaleReader` in the warranty resolver (V-18 and V-22 in one commit because `WarrantyService` no longer used `SaleDAO` at all). For V-24 and V-25 it proposed interfaces implemented by the existing DAOs with no change to `Main`. |
+| Decision | Applied as proposed. Each change was compiled with Clean and Build and checked in the related menu operation (returns list, warranties list, accessories, promotions). The first V-17 commit contained an empty `ReturnRecordResolver` because the file was not saved before committing; this was detected by comparing the repository with my working copy and fixed with an extra commit instead of rewriting history. |
+| Related commit | refactor: extract ReturnRecordResolver from ReturnService (V-17); refactor: complete ReturnRecordResolver extraction (V-17); refactor: extract WarrantyRecordResolver and depend on SaleReader (V-18, V-22); refactor: make AccessoryService depend on AccessoryRepository (V-24); refactor: make PromotionService depend on PromotionRepository (V-25) |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-23 |
+| Tool | Claude |
+| Phase and branch | Phase 2, `feature/solid-refactor` |
+| Objective | Correct the violations that cross into another member's code: V-15, V-23, V-26 and V-16. |
+| Query | Asked how to split `PersonDAO` without breaking `SaleDAO`, `SaleCsvMapper`, `PersonService` and `Main`; how to turn the return and warranty repositories into interfaces keeping the raw records; and how to extract the monthly balance from `ReturnService` adapting `ReturnMenu`, `MainMenu` and `Main`. |
+| Response | Proposed `CustomerRepository`/`SellerRepository` with `CustomerDAO`/`SellerDAO`, updating the callers in the same commit as the consolidated audit requires (V-15, V-23). For V-26 it proposed giving the interfaces the old names and moving the raw records inside them, so the services and resolvers did not need edits, and renaming the CSV classes to `CsvReturnRepository` and `CsvWarrantyRepository`. For V-16 it proposed `MonthlyBalanceService` with the same three calculations. |
+| Decision | Applied as proposed. The compiler errors found along the way (a class body deleted but its empty shell left behind, unsaved files, a lost constructor assignment) were diagnosed by sending the project and reading the compiler output, and fixed by me. The Technical Leader was notified because `SaleDAO`, `SaleCsvMapper`, `MainMenu` and `ReturnMenu` changed. |
+| Related commit | refactor: split PersonDAO into CustomerDAO and SellerDAO behind repository interfaces (V-15, V-23); refactor: add ReturnRepository and WarrantyRepository interfaces with Csv implementations (V-26); refactor: extract MonthlyBalanceService from ReturnService (V-16) |
+
+| Field | Content |
+|---|---|
+| Date | 2026-10-23 |
+| Tool | Claude |
+| Phase and branch | Phase 2, `feature/solid-refactor` |
+| Objective | Correct V-19, V-20 and V-21 using the mappers that Developer 1 added in V-08 (step 1). |
+| Query | Asked how to use `AccessoryCsvMapper`, `PromotionCsvMapper` and `WarrantyTypeMapper` in the DAOs, the warranty repository and the warranty resolver. Pasted the request of Developer 1, who also needed `AccessoryService.matchesType` to stop calling `getTypeCode()`. |
+| Response | Read the mappers from the branch and proposed that each DAO creates its mapper internally (as `SaleDAO` already does), so `Main` does not change. For `matchesType` it proposed comparing the class name with the requested type, which gives the same result for CONTROLLER, CABLE and MEMORY. |
+| Decision | Applied as proposed, one commit per violation. I waited for Developer 1's push before starting, and told him when mine was on the branch so he could remove the unused model methods. |
+| Related commit | refactor: use AccessoryCsvMapper in AccessoryDAO and stop using getTypeCode in AccessoryService (V-19); refactor: use PromotionCsvMapper in PromotionDAO (V-20); refactor: use WarrantyTypeMapper in warranty persistence and resolver (V-21) |

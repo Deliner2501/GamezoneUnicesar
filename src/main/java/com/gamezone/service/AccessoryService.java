@@ -4,7 +4,8 @@ import com.gamezone.model.Accessory;
 import com.gamezone.model.Cable;
 import com.gamezone.model.Controller;
 import com.gamezone.model.Memory;
-import com.gamezone.persistence.AccessoryDAO;
+import com.gamezone.persistence.AccessoryRepository;
+import com.gamezone.validation.AccessoryValidator;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,10 +15,15 @@ import java.util.List;
  */
 public class AccessoryService {
 
-    private AccessoryDAO accessoryDAO;
+    private AccessoryRepository accessoryRepository;
 
-    public AccessoryService(AccessoryDAO accessoryDAO) {
-        this.accessoryDAO = accessoryDAO;
+    /**
+     * Creates the service with the storage it reads and writes accessories through.
+     *
+     * @param accessoryRepository the accessory storage the service depends on
+     */
+    public AccessoryService(AccessoryRepository accessoryRepository) {
+        this.accessoryRepository = accessoryRepository;
     }
 
     /**
@@ -29,12 +35,12 @@ public class AccessoryService {
      * @param stock          the initial stock available
      * @param connectionType the connection type (e.g. "Wireless", "Wired")
      * @return the registered controller
-     * @throws IllegalArgumentException if the id is empty or the price is negative
+     * @throws InvalidDataException if the id is empty or the price is negative
      */
     public Controller registerController(String id, String title, double price, int stock, String connectionType) {
         Controller controller = new Controller(id, title, price, stock, connectionType);
-        validateAccessory(controller);
-        accessoryDAO.save(controller);
+        AccessoryValidator.validateAccessoryData(controller.getId(), controller.getPrice());        
+        accessoryRepository.save(controller);
         return controller;
     }
 
@@ -48,13 +54,13 @@ public class AccessoryService {
      * @param lengthInMeters the length of the cable in meters
      * @param connectorType  the connector type (e.g. "HDMI", "USB", "Optical")
      * @return the registered cable
-     * @throws IllegalArgumentException if the id is empty or the price is negative
+     * @throws InvalidDataException if the id is empty or the price is negative
      */
     public Cable registerCable(String id, String title, double price, int stock,
                                 double lengthInMeters, String connectorType) {
         Cable cable = new Cable(id, title, price, stock, lengthInMeters, connectorType);
-        validateAccessory(cable);
-        accessoryDAO.save(cable);
+        AccessoryValidator.validateAccessoryData(cable.getId(), cable.getPrice());
+        accessoryRepository.save(cable);
         return cable;
     }
 
@@ -68,13 +74,13 @@ public class AccessoryService {
      * @param capacityInGigabytes the storage capacity in gigabytes
      * @param memoryType          the memory type (e.g. "SD", "microSD", "Internal card")
      * @return the registered memory
-     * @throws IllegalArgumentException if the id is empty or the price is negative
+     * @throws InvalidDataException if the id is empty or the price is negative
      */
     public Memory registerMemory(String id, String title, double price, int stock,
                                   int capacityInGigabytes, String memoryType) {
         Memory memory = new Memory(id, title, price, stock, capacityInGigabytes, memoryType);
-        validateAccessory(memory);
-        accessoryDAO.save(memory);
+        AccessoryValidator.validateAccessoryData(memory.getId(), memory.getPrice());
+        accessoryRepository.save(memory);
         return memory;
     }
 
@@ -84,15 +90,13 @@ public class AccessoryService {
      *
      * @param accessoryId the id of the accessory
      * @param consoleId   the id of the console to register as compatible
-     * @throws IllegalArgumentException if the accessory does not exist
+     * @throws ResourceNotFoundException if the accessory does not exist
      */
     public void registerCompatibility(String accessoryId, String consoleId) {
         Accessory accessory = findById(accessoryId);
-        if (accessory == null) {
-            throw new IllegalArgumentException("Accessory not found: " + accessoryId);
-        }
+        AccessoryValidator.validateAccessoryExists(accessory, accessoryId);
         accessory.addCompatibleConsole(consoleId);
-        accessoryDAO.update(accessory);
+        accessoryRepository.update(accessory);
     }
 
     /**
@@ -101,7 +105,7 @@ public class AccessoryService {
      * @return the list of available accessories
      */
     public List<Accessory> listAllAccessories() {
-        return accessoryDAO.findAll();
+        return accessoryRepository.findAll();
     }
 
     /**
@@ -112,7 +116,7 @@ public class AccessoryService {
      */
     public List<Accessory> listAccessoriesByType(String type) {
         List<Accessory> result = new ArrayList<>();
-        for (Accessory a : accessoryDAO.findAll()) {
+        for (Accessory a : accessoryRepository.findAll()) {
             if (matchesType(a, type)) {
                 result.add(a);
             }
@@ -128,7 +132,7 @@ public class AccessoryService {
      */
     public List<Accessory> findAccessoriesCompatibleWith(String consoleId) {
         List<Accessory> result = new ArrayList<>();
-        for (Accessory a : accessoryDAO.findAll()) {
+        for (Accessory a : accessoryRepository.findAll()) {
             if (a.isCompatibleWith(consoleId)) {
                 result.add(a);
             }
@@ -143,7 +147,7 @@ public class AccessoryService {
      * @return the matching accessory, or null if none is found
      */
     public Accessory findById(String id) {
-        return accessoryDAO.findById(id);
+        return accessoryRepository.findById(id);
     }
     
         /**
@@ -154,7 +158,7 @@ public class AccessoryService {
      * @return true if there is enough stock, false otherwise
      */
     public boolean checkStock(String accessoryId, int quantity) {
-        Accessory accessory = accessoryDAO.findById(accessoryId);
+        Accessory accessory = accessoryRepository.findById(accessoryId);
         if (accessory == null) {
             return false;
         }
@@ -166,24 +170,20 @@ public class AccessoryService {
      *
      * @param accessoryId the id of the accessory to update
      * @param quantity    the quantity to subtract from the current stock
-     * @throws IllegalArgumentException if the accessory does not exist,
-     *         the quantity is not positive, or it exceeds the current stock
+     * @throws ResourceNotFoundException if the accessory does not exist
+     * @throws InvalidDataException if the quantity is not positive
+     * @throws BusinessRuleException if the quantity exceeds the current stock
      */
     public void updateStock(String accessoryId, int quantity) {
-        Accessory accessory = accessoryDAO.findById(accessoryId);
-        if (accessory == null) {
-            throw new IllegalArgumentException("Accessory not found: " + accessoryId);
-        }
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than zero");
-        }
-        if (accessory.getStock() < quantity) {
-            throw new IllegalArgumentException("Not enough stock for accessory: " + accessoryId);
-        }
+        Accessory accessory = accessoryRepository.findById(accessoryId);
+        AccessoryValidator.validateAccessoryExists(accessory, accessoryId);
+        AccessoryValidator.validateQuantityPositive(quantity);
+        AccessoryValidator.validateStockAvailability(accessory, quantity);
         accessory.reduceStock(quantity);
-        accessoryDAO.update(accessory);
+        accessoryRepository.update(accessory);
     }
 
+    
     
     /**
      * Increases the stock of an accessory, used when a returned
@@ -192,33 +192,18 @@ public class AccessoryService {
      *
      * @param accessoryId the id of the accessory whose stock is restored
      * @param quantity    the quantity to add back to stock
-     * @throws IllegalArgumentException if the accessory does not exist
+     * @throws ResourceNotFoundException if the accessory does not exist
      */
     public void restoreStock(String accessoryId, int quantity) {
-        Accessory accessory = accessoryDAO.findById(accessoryId);
-        if (accessory == null) {
-            throw new IllegalArgumentException("Accessory not found: " + accessoryId);
-        }
+        Accessory accessory = accessoryRepository.findById(accessoryId);
+        AccessoryValidator.validateAccessoryExists(accessory, accessoryId);
         accessory.increaseStock(quantity);
-        accessoryDAO.update(accessory);
+        accessoryRepository.update(accessory);
     }
-    
-    private void validateAccessory(Accessory accessory) {
-        if (accessory.getId() == null || accessory.getId().isEmpty()) {
-            throw new IllegalArgumentException("Accessory must have a valid id");
-        }
-        if (accessory.getPrice() < 0) {
-            throw new IllegalArgumentException("Accessory price cannot be negative");
-        }
-    }
+
 
     private boolean matchesType(Accessory accessory, String type) {
         if (type == null) return false;
-        return switch (type.toUpperCase()) {
-            case "CONTROLLER" -> accessory instanceof Controller;
-            case "CABLE" -> accessory instanceof Cable;
-            case "MEMORY" -> accessory instanceof Memory;
-            default -> false;
-        };
+        return accessory.getClass().getSimpleName().equalsIgnoreCase(type);
     }
 }

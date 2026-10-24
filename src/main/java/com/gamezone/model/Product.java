@@ -28,11 +28,22 @@ public abstract class Product {
      * @param quantity the amount to subtract from the current stock
      * @throws IllegalArgumentException if the quantity exceeds the current stock
      */
-    public void reduceStock(int quantity) {
-        if (quantity > this.stock) {
+        public void reduceStock(int quantity) {
+        if (!hasEnoughStock(quantity)) {
             throw new IllegalArgumentException("Insufficient stock for product: " + id);
         }
         this.stock -= quantity;
+    }
+
+    /**
+     * Checks whether this product has at least the given quantity in stock.
+     * This is the single source of the "enough stock" rule.
+     *
+     * @param quantity the quantity requested
+     * @return true if the current stock covers the quantity, false otherwise
+     */
+    public boolean hasEnoughStock(int quantity) {
+        return this.stock >= quantity;
     }
     
     /**
@@ -48,6 +59,16 @@ public void increaseStock(int quantity) {
     }
     this.stock += quantity;
 }
+    /**
+     * Indicates whether this product is sold with a warranty. Products
+     * have no warranty by default; subclasses that do must override this.
+     *
+     * @return true if the product requires a warranty, false otherwise
+     */
+    public boolean requiresWarranty() {
+        return false;
+    }
+
 
     /**
      * Returns a full description integrating this product's specific
@@ -56,4 +77,11 @@ public void increaseStock(int quantity) {
      * @return the full description of the product
      */
     public abstract String getFullDescription();
+        /**
+     * Returns the category this product belongs to. Each subclass
+     * must implement this on its own.
+     *
+     * @return the category of the product
+     */
+    public abstract ProductCategory getCategory();
 }

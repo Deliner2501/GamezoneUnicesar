@@ -18,7 +18,7 @@ public class Console extends Product {
         this.generation = generation;
     }
 
-       /**
+    /**
      * Returns the brand of this console.
      *
      * @return the brand
@@ -38,6 +38,17 @@ public class Console extends Product {
      * @return the generation
      */
     public String getGeneration() { return generation; }
+
+    /**
+     * Indicates that consoles are always sold with a warranty.
+     *
+     * @return true
+     */
+    @Override
+    public boolean requiresWarranty() {
+        return true;
+    }
+
     /**
      * Returns a full description integrating this console's
      * specific characteristics.
@@ -49,5 +60,15 @@ public class Console extends Product {
         return getTitle() + " - Brand: " + brand + ", Model: " + model
                 + ", Generation: " + generation + ", Price: " + getPrice()
                 + ", Stock: " + getStock();
+    }
+
+    /**
+     * Returns the category of this product.
+     *
+     * @return {@link ProductCategory#CONSOLE}
+     */
+    @Override
+    public ProductCategory getCategory() {
+        return ProductCategory.CONSOLE;
     }
 }

@@ -14,10 +14,7 @@ public class CategoryDiscount extends Promotion {
     public CategoryDiscount(String id, String name, LocalDate startDate, LocalDate endDate,
                              double percentage, String targetCategory) {
         super(id, name, startDate, endDate);
-        if (targetCategory == null
-                || !(targetCategory.equalsIgnoreCase("VIDEOGAME")
-                     || targetCategory.equalsIgnoreCase("CONSOLE")
-                     || targetCategory.equalsIgnoreCase("ACCESSORY"))) {
+        if (ProductCategory.fromText(targetCategory) == null) {
             throw new IllegalArgumentException(
                     "Target category must be VIDEOGAME, CONSOLE or ACCESSORY");
         }
@@ -73,13 +70,7 @@ public class CategoryDiscount extends Promotion {
     }
 
     private boolean matchesCategory(Product product) {
-        if (targetCategory.equalsIgnoreCase("VIDEOGAME")) {
-            return product instanceof VideoGame;
-        } else if (targetCategory.equalsIgnoreCase("CONSOLE")) {
-            return product instanceof Console;
-        } else if (targetCategory.equalsIgnoreCase("ACCESSORY")) {
-            return product instanceof Accessory;
-        }
-        return false;
+        ProductCategory target = ProductCategory.fromText(targetCategory);
+        return target != null && product.getCategory() == target;
     }
 }

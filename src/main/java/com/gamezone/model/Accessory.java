@@ -1,6 +1,7 @@
 package com.gamezone.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -18,22 +19,24 @@ public abstract class Accessory extends Product {
     }
 
     /**
-     * Returns the list of console ids this accessory is compatible with.
+     * Returns an unmodifiable view of the console ids this accessory is
+     * compatible with. Use {@link #addCompatibleConsole(String)} to add one.
      *
-     * @return the list of compatible console ids
+     * @return the unmodifiable list of compatible console ids
      */
     public List<String> getCompatibleConsoleIds() {
-        return compatibleConsoleIds;
+        return Collections.unmodifiableList(compatibleConsoleIds);
     }
 
     /**
-     * Replaces the entire list of compatible console ids.
-     * Useful when reconstructing an accessory from persisted data.
+     * Replaces the entire list of compatible console ids with a copy of
+     * the given list. Useful when reconstructing an accessory from
+     * persisted data.
      *
      * @param compatibleConsoleIds the new list of compatible console ids
      */
     public void setCompatibleConsoleIds(List<String> compatibleConsoleIds) {
-        this.compatibleConsoleIds = compatibleConsoleIds;
+        this.compatibleConsoleIds = new ArrayList<>(compatibleConsoleIds);
     }
 
     /**
@@ -55,5 +58,15 @@ public abstract class Accessory extends Product {
      */
     public boolean isCompatibleWith(String consoleId) {
         return compatibleConsoleIds.contains(consoleId);
+    }
+
+    /**
+     * Returns the category of this product.
+     *
+     * @return {@link ProductCategory#ACCESSORY}
+     */
+    @Override
+    public ProductCategory getCategory() {
+        return ProductCategory.ACCESSORY;
     }
 }

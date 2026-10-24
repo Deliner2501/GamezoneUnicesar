@@ -4,7 +4,8 @@ import com.gamezone.model.BulkPurchaseDiscount;
 import com.gamezone.model.CategoryDiscount;
 import com.gamezone.model.PercentageDiscount;
 import com.gamezone.model.Promotion;
-import com.gamezone.persistence.PromotionDAO;
+import com.gamezone.persistence.PromotionRepository;
+import com.gamezone.validation.PromotionValidator;
 import java.time.LocalDate;
 import java.util.List;
 import com.gamezone.model.Sale;
@@ -16,10 +17,15 @@ import java.util.ArrayList;
  */
 public class PromotionService {
 
-    private PromotionDAO promotionDAO;
+    private PromotionRepository promotionRepository;
 
-    public PromotionService(PromotionDAO promotionDAO) {
-        this.promotionDAO = promotionDAO;
+    /**
+     * Creates the service with the storage it reads and writes promotions through.
+     *
+     * @param promotionRepository the promotion storage the service depends on
+     */
+    public PromotionService(PromotionRepository promotionRepository) {
+        this.promotionRepository = promotionRepository;
     }
 
     /**
@@ -30,15 +36,16 @@ public class PromotionService {
      * @param startDate  the date the promotion becomes active
      * @param endDate    the date the promotion stops being active
      * @param percentage the discount percentage applied to the sale's total
+     * @throws InvalidDataException if the percentage is out of range
      * @return the registered promotion
      */
     public PercentageDiscount registerPercentageDiscount(String id, String name, LocalDate startDate,
                                                       LocalDate endDate, double percentage) {
-        validatePercentage(percentage);
+        PromotionValidator.validatePercentage(percentage);
         PercentageDiscount promotion = new PercentageDiscount(id, name, startDate, endDate, percentage);
-        List<Promotion> promotions = promotionDAO.loadAll();
+        List<Promotion> promotions = promotionRepository.loadAll();
         promotions.add(promotion);
-        promotionDAO.saveAll(promotions);
+        promotionRepository.saveAll(promotions);
         return promotion;
     }
 
@@ -51,17 +58,18 @@ public class PromotionService {
      * @param endDate        the date the promotion stops being active
      * @param percentage     the discount percentage applied to the target category
      * @param targetCategory the category this promotion applies to ("VIDEOGAME", "CONSOLE" or "ACCESSORY")
+     * @throws InvalidDataException if the percentage is out of range or the category is not supported
      * @return the registered promotion
      */
     public CategoryDiscount registerCategoryDiscount(String id, String name, LocalDate startDate,
                                                       LocalDate endDate, double percentage,
                                                       String targetCategory) {
-        validatePercentage(percentage);
-        validateTargetCategory(targetCategory);
+        PromotionValidator.validatePercentage(percentage);
+        PromotionValidator.validateTargetCategory(targetCategory);
         CategoryDiscount promotion = new CategoryDiscount(id, name, startDate, endDate, percentage, targetCategory);
-        List<Promotion> promotions = promotionDAO.loadAll();
+        List<Promotion> promotions = promotionRepository.loadAll();
         promotions.add(promotion);
-        promotionDAO.saveAll(promotions);
+        promotionRepository.saveAll(promotions);
         return promotion;
     }
 
@@ -74,16 +82,17 @@ public class PromotionService {
      * @param endDate     the date the promotion stops being active
      * @param minQuantity the minimum number of products required for the promotion to apply
      * @param percentage  the discount percentage applied to the sale's total
+     * @throws InvalidDataException if the percentage is out of range
      * @return the registered promotion
      */
     public BulkPurchaseDiscount registerBulkPurchaseDiscount(String id, String name, LocalDate startDate,
                                                               LocalDate endDate, int minQuantity,
                                                               double percentage) {
-        validatePercentage(percentage);
+        PromotionValidator.validatePercentage(percentage);
         BulkPurchaseDiscount promotion = new BulkPurchaseDiscount(id, name, startDate, endDate, minQuantity, percentage);
-        List<Promotion> promotions = promotionDAO.loadAll();
+        List<Promotion> promotions = promotionRepository.loadAll();
         promotions.add(promotion);
-        promotionDAO.saveAll(promotions);
+        promotionRepository.saveAll(promotions);
         return promotion;
     }
 
@@ -93,7 +102,7 @@ public class PromotionService {
      * @return the list of all promotions
      */
     public List<Promotion> listAllPromotions() {
-        return promotionDAO.loadAll();
+        return promotionRepository.loadAll();
     }
 
     /**
@@ -105,7 +114,7 @@ public class PromotionService {
     public List<Promotion> listActivePromotions() {
         List<Promotion> active = new ArrayList<>();
         LocalDate today = LocalDate.now();
-        for (Promotion p : promotionDAO.loadAll()) {
+        for (Promotion p : promotionRepository.loadAll()) {
             if (p.isActive(today)) {
                 active.add(p);
             }
@@ -143,25 +152,13 @@ public class PromotionService {
      * @return the matching promotion, or null if none is found
      */
     public Promotion findById(String id) {
-        for (Promotion p : promotionDAO.loadAll()) {
+        for (Promotion p : promotionRepository.loadAll()) {
             if (p.getId().equals(id)) return p;
         }
         return null;
     }
 
-    private void validatePercentage(double percentage) {
-        if (percentage < 0 || percentage > 100) {
-            throw new IllegalArgumentException("Percentage must be between 0 and 100");
-        }
-    }
 
-    private void validateTargetCategory(String targetCategory) {
-        if (targetCategory == null
-                || !(targetCategory.equalsIgnoreCase("VIDEOGAME")
-                     || targetCategory.equalsIgnoreCase("CONSOLE")
-                     || targetCategory.equalsIgnoreCase("ACCESSORY"))) {
-            throw new IllegalArgumentException(
-                    "Target category must be VIDEOGAME, CONSOLE or ACCESSORY");
-        }
-    }
+
+
 }

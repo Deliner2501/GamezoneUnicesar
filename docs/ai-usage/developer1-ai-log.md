@@ -71,3 +71,272 @@
 - **Response summary:** Provided the full class: calculateRefundAmount now computes a discountRate from Sale.getDiscountAmount()/Sale.getTotal() and applies it to each returned item's price; generateReturnReceipt updated to show list price, proportional discount, and refunded amount per item.
 - **Decision:** Accepted as provided.
 - **Related commit:** 90a2ea7
+
+4. **"When I push my new branch, it didn't appear on GitHub. Why?" **
+
+The branch existed only locally because the first push had never been made. I used git push -u origin feature/product-module to create it on the remote and link it with my local branch.
+
+5. **"The class diagram sent by the leader does not have setters in Product, but my code does. Should I leave them?" **
+
+We compared the official diagram against my code and confirmed that the diagram only defined getters (plus reduceStock() to modify the stock), so I removed the four setters to keep the class faithful to the design agreed by the team.
+
+6. **"When compiling the complete project I get error: release version 26 not supported. Is it my mistake?" **
+
+The AI explained to me that this error comes from the maven.compiler.release configuration in the pom.xml, a general configuration file of the project that it is not up to me to modify - I warned the leader to adjust it.
+
+7. **"A colleague suggested that the leader work on a separate project and copy the code later to avoid Git conflicts. Is that necessary?" **
+
+I asked the AI if that made technical sense. He explained to me that Git merges files, not folders, so two modules with folders of the same name (persistence, for example) do not generate conflict if they have different files - the team decided to continue working directly on the real repo.
+
+9. **"What do the prefixes feat:, fix:, refactor: mean in the commits, and when is each one used?" **
+
+He explained to me the Conventional Commits convention that the workshop requires: feat: for new functionality, fix: to correct errors, refactor: to reorganize without changing behavior, and docs:/chore: for documentation and maintenance.
+
+
+
+
+---
+
+## Phase 1 - Audit (feature/grasp-audit)
+
+### Entry 1
+- **Date:** 2026-10-13
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Understand Requirement 7, its two phases and my role as Developer 1.
+- **Query:** I shared the Requirement 7 PDF and asked what I had to do and in what order.
+- **Response summary:** It summarized the two phases, my audit scope (products, accessories, promotions, Return and Sale.canBeReturned, warranties, exceptions and validation) and the deliverables (individual audit, orienting questions, AI log), and explained the nine GRASP patterns with a key question for each.
+- **Decision:** Accepted. I confirmed the scope against the responsibility table of the PDF and used the key questions as a checklist for the audit.
+- **Related commit:** -
+
+### Entry 2
+- **Date:** 2026-10-13
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Know which version of the code had to be audited.
+- **Query:** I asked how to check whether Requirement 6 was already merged into develop and which commit to audit.
+- **Response summary:** It gave git fetch, git log and git grep commands, and told me to compare the source tree of the audit branch with develop.
+- **Decision:** Accepted. The audit is based on commit a377cfb, whose src tree is identical to develop at d669eed (git diff showed no source differences).
+- **Related commit:** f207ad8
+
+### Entry 3
+- **Date:** 2026-10-13
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Audit the product module against the nine patterns.
+- **Query:** I pasted Product, VideoGame, Console, ProductDAO and ProductService and asked for the candidate findings per pattern.
+- **Response summary:** It proposed violations in the duplicated stock rule, the instanceof chain in ProductDAO, the dependency of ProductService on the concrete ProductDAO and the console output inside ProductDAO, and marked Creator, Controller, Pure Fabrication and Indirection as correct. I ran Select-String commands to get the exact lines.
+- **Decision:** Accepted the findings and used the lines returned by Select-String as evidence. The use of ProductDAO inside SaleService and the creation of VideoGame and Console inside MainMenu were not audited by me and were reported to the Technical Leader as boundary findings.
+- **Related commit:** 64c8c7e, 7d90fae
+
+### Entry 4
+- **Date:** 2026-10-13
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Audit the accessory, promotion, return, warranty, exception and validation classes.
+- **Query:** I pasted the source of those classes and asked for the findings and the correct applications of each pattern.
+- **Response summary:** It proposed three additional violations: Return computing the discount rate from data owned by Sale, CategoryDiscount selecting the category with instanceof and text codes, and Accessory and Return exposing their internal mutable lists. It also listed where Polymorphism, Pure Fabrication, Indirection and Protected Variations are correctly applied.
+- **Decision:** Accepted. I kept as evidence the class, the method and the code fragment of each finding.
+- **Related commit:** 64c8c7e, 7d90fae, bee37d8, 9265cf1
+
+### Entry 5
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 1, feature/grasp-audit
+- **Objective:** Answer the orienting question assigned to me.
+- **Query:** I asked which questions were pending in grasp-analysis.md and for an answer to question 4, based on the no-regression section of the PDF.
+- **Response summary:** It detected that question 4 was missing and drafted the answer: a baseline checklist run on develop, one violation per commit, verification on every Pull Request, comparison of the data files and the evidence shown at the end.
+- **Decision:** Accepted, and I asked the Technical Leader to confirm that it matches the strategy of the refactor log.
+- **Related commit:** a8af1b0
+
+## Phase 2 - Correction (feature/grasp-refactor)
+
+
+### Entry 1
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand the consolidated audit and in what order my violations had to be corrected.
+- **Query:** I pasted the lines of consolidated-audit.md assigned to Developer 1 and the frontier findings, and asked what each one required and what depended on what.
+- **Response summary:** It explained which violations were mine (V-08 to V-14), which prerequisites I owed to the Leader and Developer 2 (FF-01, FF-02, FF-05, FF-06) and why V-09 and V-14 stay blocked until FF-03 and FF-07 are done.
+- **Decision:** Accepted the order: prerequisites first so my teammates are unblocked.
+- **Related commit:** -
+
+### Entry 2
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand how to remove instanceof checks and duplicated rules in the Product, Promotion and Accessory hierarchies without changing behavior.
+- **Query:** I asked why an abstract method in the base class solves the instanceof problem, how to keep the CSV format identical, and what exactly to change in each class.
+- **Response summary:** It explained Polymorphism and Information Expert for these cases and proposed the changes (requiresWarranty, registerVideoGame/registerConsole, ProductCategory with getCategory, toCsvLine, getTypeCode, hasEnoughStock), showing the before and after of each file.
+- **Decision:** Applied each proposal myself in its own commit and checked BUILD SUCCESS. Left out the parts that belong to Developer 2 and the Leader. When a method was pasted in the wrong place in CategoryDiscount, I replaced the class with the complete version it gave me.
+- **Related commit:** 0cfe78f, 3a561dd, 1d908d5, 297f07d, f71384e, 53c8503, 0353999
+
+### Entry 3
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand how to correct V-10, V-11 and V-12 in ProductDAO and ProductService.
+- **Query:** I pasted ProductDAO and Main and asked how an injected logger, per-type CSV mappers and a repository interface fit together. Replacing the code piece by piece was giving me errors, so I asked for the complete classes.
+- **Response summary:** It explained the roles of the logger, the mappers and the interface, and gave the complete ProductDAO and ProductService for each commit, keeping the out-of-scope defects (F-02, F-03) untouched.
+- **Decision:** Accepted. I built the project before each commit and used git log to check that nobody else had modified ProductService.
+- **Related commit:** 96fc2e0, c41916a, c3e9a89
+
+### Entry 4
+- **Date:** 2026-10-14
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand Git errors during the work.
+- **Query:** I pasted the output of rejected pushes and the vim screen of a merge and asked what was happening.
+- **Response summary:** It explained that the remote had new commits, that git pull was needed first and how to leave vim.
+- **Decision:** Accepted.
+- **Related commit:** -
+
+
+### Entry 5
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Correct V-14 and review my earlier changes.
+- **Query:** I pasted Return and Accessory and asked for the complete classes, to avoid errors when replacing pieces.
+- **Response summary:** It explained why unmodifiable views and defensive copies protect the internal lists, and noticed that Accessory.getCategory returned VIDEOGAME instead of ACCESSORY, an error from my earlier change. It gave the complete classes.
+- **Decision:** Accepted. I fixed the category in its own fix commit and applied V-14 in a second commit, building the project before each one.
+- **Related commit:** 1b7d364, ec4d9c2
+
+### Entry 6
+- **Date:** 2026-10-15
+- **Tool:** Claude
+- **Phase and branch:** Phase 2, feature/grasp-refactor
+- **Objective:** Understand how to apply V-09 using the Leader's Sale.getDiscountRate.
+- **Query:** I pasted Sale and Return and asked whether the new method behaves like the old formula and what to change in Return.
+- **Response summary:** It pointed out that getDiscountRate divides by zero when the subtotal is zero while the old code guarded that case, so Return keeps the guard. It also advised keeping both per-item expressions to avoid changing printed decimals, and gave the complete Return class.
+- **Decision:** Accepted. Built the project before the commit. I will tell the Leader that his JavaDoc and his code differ for a zero subtotal.
+- **Related commit:** d3a4497
+
+
+---
+
+## Requirement 8 - Phase 1 - Audit (feature/solid-audit)
+
+### Entry 1
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Understand Requirement 8 and the rules for AI use.
+- **Query:** I shared the Requirement 8 PDF and asked what I had to do. The AI use policy page was marked as an unofficial working copy, so I asked the professor, who confirmed by WhatsApp that AI use is allowed for Requirement 8.
+- **Response summary:** It summarized the two phases, my scope and the deliverables, and pointed out that the policy page was not official until the professor confirmed.
+- **Decision:** Accepted. I asked the professor and saved his confirmation.
+- **Related commit:** -
+
+### Entry 2
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Audit my code against the five SOLID principles.
+- **Query:** I pasted the source of my scope (products, accessories, promotions, warranties, Return, exceptions, validation and my GRASP classes) and asked for the verdicts with evidence.
+- **Response summary:** It proposed eight violations (V-01 to V-08: SRP, OCP and LSP), ISP and DIP as correct, two boundary findings and two out-of-scope findings, quoting classes and methods.
+- **Decision:** Accepted after checking each piece of evidence against the code with Select-String. I wrote the report in my own file.
+- **Related commit:** 
+
+### Entry 3
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Understand a defect found while auditing.
+- **Query:** While reading Console I noticed it returns the VIDEOGAME category, and asked what it caused.
+- **Response summary:** It explained that ProductDAO.writeAll selects the video game mapper and fails with ClassCastException, and that the error came from my GRASP V-13 change. I first made a fix branch, then decided with the team to correct it in Phase 2 with its violation ID.
+- **Decision:** Recorded as V-06 (LSP). I deleted the fix branch so the audited code stays the same as develop.
+- **Related commit:** 
+
+### Entry 4
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Answer orienting question 4.
+- **Query:** I asked for the no-regression strategy answer, based on the requirement.
+- **Response summary:** It drafted the strategy (baseline, one violation per commit, per-PR checks, data file comparison) and added the known baseline difference caused by V-06.
+- **Decision:** Accepted. I will ask the Leader to keep solid-refactor-log.md consistent with it.
+- **Related commit:** 
+
+### Entry 5
+- **Date:** 2026-10-17
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 1, feature/solid-audit
+- **Objective:** Understand Git operations during the work.
+- **Query:** I asked how to create the audit file, commit in parts and delete a branch I pushed by mistake.
+- **Response summary:** It gave the commands for add, commit, pull, push and deleting a remote branch.
+- **Decision:** Accepted.
+- **Related commit:** -
+
+## Requirement 8 - Phase 2 - Correction (feature/solid-refactor)
+
+### Entry 1
+- **Date:** 2026-10-22
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Resume the work after reinstalling the computer and understand my assigned violations.
+- **Query:** I explained that my machine was formatted and I had to reinstall NetBeans, the JDK and Git, and pasted the consolidated audit lines for Developer 1 (V-07 to V-14) and the correction order.
+- **Response summary:** It explained how to clone the repository, configure Git and switch to feature/solid-refactor, and the order of my corrections (V-12 first, then the independent ones, then V-08 in three steps).
+- **Decision:** Accepted. I cloned into a new folder and signed in to GitHub again.
+- **Related commit:** -
+
+### Entry 2
+- **Date:** 2026-10-22
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Correct V-12, V-14, V-11 and V-13.
+- **Query:** I pasted Console, PromotionValidator, ProductDAO and the product mappers and asked how to fix each violation without changing the behavior.
+- **Response summary:** It explained each fix (CONSOLE category, validation through ProductCategory.fromText, mapper list received by constructor, supports check in the mappers) and gave the complete classes.
+- **Decision:** Accepted. I built the project before each commit and tested registering a video game and a console.
+- **Related commit:** e3e9d4e, b0e3c45, 490ab0c, 47cc8f9
+
+### Entry 3
+- **Date:** 2026-10-22
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Correct V-10 and V-09.
+- **Query:** I pasted ProductService, ProductMenu, Main, the formatters and the menus and asked how to apply factories and move the text generation out of the model.
+- **Response summary:** It proposed a ProductFactory per type, a single registerNewProduct method, and two formatters in ui. It warned that the receipt calculates the refund first when it is zero, so the formatter keeps that behavior.
+- **Decision:** Accepted. I did the changes in steps and tested the receipts and certificates before the commit.
+- **Related commit:** 0e29dbe, 959a863
+
+### Entry 4
+- **Date:** 2026-10-23
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Do step 1 of V-08 and coordinate with Developer 2.
+- **Query:** I pasted the DAOs, the warranty repository and the resolver Developer 2 changed and asked what the mappers should contain.
+- **Response summary:** It proposed AccessoryCsvMapper, PromotionCsvMapper and WarrantyTypeMapper with type-code registries, and warned that AccessoryService also uses getTypeCode, so Developer 2 must change it before I remove that method.
+- **Decision:** Accepted. I uploaded the mappers and told Developer 2.
+- **Related commit:** b43e922
+
+### Entry 5
+- **Date:** 2026-10-22
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Understand Git problems during the work.
+- **Query:** I asked about a push that asked for GitHub sign-in after reinstalling, and how to recover my position after closing the terminal.
+- **Response summary:** It explained the browser sign-in and the commands to locate the project and check the branch.
+- **Decision:** Accepted.
+- **Related commit:** -
+
+
+### Entry 6
+- **Date:** 2026-10-23
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Finish V-08 once Developer 2 switched the DAOs.
+- **Query:** I pasted the model classes and the grep output showing only the definitions were left, and asked for the classes without the storage methods.
+- **Response summary:** It gave the 11 complete model classes without toCsvLine, getTypeCode and compatibleConsolesAsCsv.
+- **Decision:** Accepted. I built the project, tested accessories, promotions and warranties, and checked that the CSV files kept the same format.
+- **Related commit:** b9079ce
+
+### Entry 7
+- **Date:** 2026-10-23
+- **Tool:** Claude
+- **Phase and branch:** Requirement 8, Phase 2, feature/solid-refactor
+- **Objective:** Correct V-07 in ProductDAO and the product mappers.
+- **Query:** I pasted ProductDAO and the product mappers and asked how to make the mappers own both directions of the CSV format.
+- **Response summary:** It replaced create(...) with parse(String[]) in the three mapper classes and reduced ProductDAO.parseLine to splitting and delegating, and warned about the small difference for unknown type codes.
+- **Decision:** Accepted. I built the project and checked that products.csv kept the same format.
+- **Related commit:** ef288a0

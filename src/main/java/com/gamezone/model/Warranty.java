@@ -69,7 +69,7 @@ public abstract class Warranty {
      * @param date the date to check
      * @return true if the date falls within the warranty's coverage range
      */
-       public boolean isActive(LocalDate date) {
+    public boolean isActive(LocalDate date) {
         return !date.isBefore(startDate) && !date.isAfter(endDate);
     }
 
@@ -86,23 +86,6 @@ public abstract class Warranty {
     }
 
     /**
-     * Builds a readable certificate for this warranty, in Spanish,
-     * showing its id, type, associated product, coverage dates, and
-     * additional cost.
-     *
-     * @return a formatted, multi-line certificate
-     */
-    public String generateWarrantyCertificate() {
-        StringBuilder certificate = new StringBuilder();
-        certificate.append("Certificado de garantía ").append(id).append("\n");
-        certificate.append("Tipo: ").append(getWarrantyType()).append("\n");
-        certificate.append("Producto: ").append(product.getTitle()).append("\n");
-        certificate.append("Fecha de inicio: ").append(startDate).append("\n");
-        certificate.append("Fecha de fin: ").append(endDate).append("\n");
-        certificate.append("Costo adicional: ").append(getAdditionalCost());
-        return certificate.toString();
-    }
-        /**
      * Returns a readable representation of this warranty.
      *
      * @return a formatted string with the warranty's basic data
